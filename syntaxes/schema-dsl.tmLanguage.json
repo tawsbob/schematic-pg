@@ -1,0 +1,118 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/public-schema/master/tmLanguage.schema.json",
+  "name": "Schema DSL",
+  "scopeName": "source.schema-dsl",
+  "fileTypes": ["schema"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#triple-strings" },
+    { "include": "#strings" },
+    { "include": "#directives" },
+    { "include": "#attributes" },
+    { "include": "#keywords" },
+    { "include": "#booleans" },
+    { "include": "#numbers" },
+    { "include": "#enum-values" },
+    { "include": "#types" },
+    { "include": "#identifiers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.schema-dsl",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "triple-strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.schema-dsl",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "applyEndPatternLast": true
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.schema-dsl",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.schema-dsl",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "directives": {
+      "patterns": [
+        {
+          "name": "keyword.decorator.directive.schema-dsl",
+          "match": "@@\\w+"
+        }
+      ]
+    },
+    "attributes": {
+      "patterns": [
+        {
+          "name": "keyword.decorator.attribute.schema-dsl",
+          "match": "(?<!@)@\\w+"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.schema-dsl",
+          "match": "\\b(extensions|enums|models|model)\\b"
+        }
+      ]
+    },
+    "booleans": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.schema-dsl",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.schema-dsl",
+          "match": "\\b\\d+(?:\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "enum-values": {
+      "patterns": [
+        {
+          "name": "constant.other.enum.schema-dsl",
+          "match": "\\b[A-Z][A-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "entity.name.type.schema-dsl",
+          "match": "\\b[A-Z][a-zA-Z0-9]*(?:\\([^)]*\\))?\\??(?:\\[\\])?"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.schema-dsl",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_-]*\\b"
+        }
+      ]
+    }
+  }
+}
