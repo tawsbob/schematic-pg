@@ -9,6 +9,7 @@
     "generate": "tsx src/sql-generator/cli.ts",
     "setup:env": "test -f .env || cp .env.example .env",
     "db:ping": "tsx src/db/cli.ts",
+    "db:bootstrap": "tsx src/db/bootstrap-cli.ts",
     "test": "node --import tsx --test 'src/**/__tests__/**/*.test.ts'",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
