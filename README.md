@@ -249,8 +249,8 @@ my-project/
 
 - [x] Hand-written lexer & recursive-descent parser
 - [x] SQL DDL generator (full regeneration)
-- [x] Hono route generator with Zod validation
-- [x] Static ACL middleware generation
+- [ ] Hono route generator with Zod validation
+- [ ] Static ACL middleware generation
 - [ ] Diff-based migration planner
 - [ ] Row-level policy injection (`WHERE` clause generation)
 - [ ] Type generation for frontend consumption
