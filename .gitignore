@@ -3,6 +3,12 @@ node_modules
 docker_data/
 .DS_Store
 .idea
-.vscode
+/.vscode
 .history
 migrations/
+editors/vscode/syntaxes/
+editors/vscode/language-configuration.json
+editors/vscode/out/
+editors/vscode/server/
+editors/language-server/out/
+editors/vscode/*.vsix

@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "editors/vscode",
+    "editors/language-server"
+  ],
+  "exports": {
+    "./schema-dsl": "./src/schema-dsl/index.ts"
+  },
   "scripts": {
     "parse": "tsx src/schema-dsl/cli.ts",
     "tokenize": "tsx src/schema-dsl/cli.ts --tokens",
@@ -16,7 +23,9 @@
     "db:diff": "tsx src/db/diff-cli.ts",
     "db:migrate": "tsx src/db/migrate-cli.ts",
     "db:migrate:status": "tsx src/db/migrate-cli.ts status",
-    "test": "node --import tsx --test 'src/**/__tests__/**/*.test.ts'",
+    "build:lsp": "npm run build --workspace=@postgrest/schema-dsl-language-server",
+    "build:extension": "npm run vscode:prepublish --workspace=postgrest-schema-dsl-vscode && npm run package --workspace=postgrest-schema-dsl-vscode",
+    "test": "node --import tsx --test 'src/**/__tests__/**/*.test.ts' 'editors/language-server/__tests__/**/*.test.ts'",
     "test:integration": "node --import tsx --test 'src/**/__tests__/**/*.integration.test.ts'",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

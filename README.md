@@ -637,7 +637,7 @@ my-project/
 - [ ] Row-level policy injection (`WHERE` clause generation)
 - [ ] Type generation for frontend consumption
 - [ ] Tree-sitter grammar for editor support
-- [ ] VS Code extension with syntax highlighting
+- [x] VS Code extension with syntax highlighting and language server
 - [ ] JWT Authentication
 
 ---

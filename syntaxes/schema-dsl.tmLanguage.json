@@ -12,8 +12,9 @@
     { "include": "#keywords" },
     { "include": "#booleans" },
     { "include": "#numbers" },
-    { "include": "#enum-values" },
     { "include": "#types" },
+    { "include": "#language-constants" },
+    { "include": "#enum-values" },
     { "include": "#identifiers" }
   ],
   "repository": {
@@ -31,7 +32,11 @@
           "name": "string.quoted.triple.schema-dsl",
           "begin": "\"\"\"",
           "end": "\"\"\"",
-          "applyEndPatternLast": true
+          "applyEndPatternLast": true,
+          "contentName": "source.sql.embedded.schema-dsl",
+          "patterns": [
+            { "include": "source.sql" }
+          ]
         }
       ]
     },
@@ -90,19 +95,39 @@
         }
       ]
     },
-    "enum-values": {
-      "patterns": [
-        {
-          "name": "constant.other.enum.schema-dsl",
-          "match": "\\b[A-Z][A-Z0-9_]*\\b"
-        }
-      ]
-    },
     "types": {
       "patterns": [
         {
           "name": "entity.name.type.schema-dsl",
+          "match": "\\b(?:UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|POINT|SERIAL|BIGINT|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL)(?:\\([^)]*\\))?\\??(?:\\[\\])?"
+        },
+        {
+          "name": "entity.name.type.schema-dsl",
           "match": "\\b[A-Z][a-zA-Z0-9]*(?:\\([^)]*\\))?\\??(?:\\[\\])?"
+        }
+      ]
+    },
+    "language-constants": {
+      "patterns": [
+        {
+          "name": "support.constant.schema-dsl",
+          "match": "\\b(?:select|insert|update|delete|all|BEFORE|AFTER|ROW|UPDATE|INSERT|DELETE|CASCADE|SET_NULL|RESTRICT|NO_ACTION|BTREE|GIN|GIST|HASH|BRIN)\\b"
+        },
+        {
+          "name": "support.function.schema-dsl",
+          "match": "\\b(?:gen_random_uuid|now)\\b"
+        },
+        {
+          "name": "support.type.property-name.schema-dsl",
+          "match": "\\b(?:fields|references|onDelete|onUpdate|role|allow|where|timing|event|level|execute|pattern|message|min|max|name|type|unique|version)\\b"
+        }
+      ]
+    },
+    "enum-values": {
+      "patterns": [
+        {
+          "name": "constant.other.enum.schema-dsl",
+          "match": "\\b[A-Z][A-Z0-9_]{1,}\\b"
         }
       ]
     },

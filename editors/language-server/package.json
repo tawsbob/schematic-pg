@@ -1,0 +1,19 @@
+{
+  "name": "@postgrest/schema-dsl-language-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./out/server.js",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "test": "node --import tsx --test '__tests__/**/*.test.ts'"
+  },
+  "dependencies": {
+    "postgrest-schema-dsl": "file:../..",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.5"
+  }
+}
