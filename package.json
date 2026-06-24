@@ -8,6 +8,8 @@
     "tokenize": "tsx src/schema-dsl/cli.ts --tokens",
     "generate": "tsx src/sql-generator/cli.ts",
     "generate:client": "tsx src/db/generate-client-cli.ts",
+    "generate:api": "tsx src/api-generator/generate-api-cli.ts",
+    "dev:api": "npm run generate:client && npm run generate:api && tsx generated/app.ts",
     "setup:env": "test -f .env || cp .env.example .env",
     "db:ping": "tsx src/db/cli.ts",
     "db:bootstrap": "tsx src/db/bootstrap-cli.ts",
@@ -27,6 +29,10 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "pg": "^8.22.0"
+    "@hono/node-server": "^2.0.6",
+    "@hono/zod-validator": "^0.8.0",
+    "hono": "^4.12.27",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
   }
 }
