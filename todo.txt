@@ -3,3 +3,7 @@
 - [x] Generate a database from scratch.
 - [x] generate a migration with a difference for each entity type to verify that it is working
 - [x] Develop the key CLI commands for data migration.
+- [x] Develop the database client generator.
+- [] Test the database client generator and query builder.
+- [ ] develop the router builder.
+- [ ] develop the routers query filters by url. 

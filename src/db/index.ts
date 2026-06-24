@@ -1,6 +1,21 @@
 export { bootstrapDatabase, generateBootstrapSql } from './bootstrap.js';
 export { DatabaseClient } from './client.js';
 export { getDatabaseUrl } from './config.js';
+export { QueryBuilder } from './query-builder.js';
+export { WhereTranslator } from './where-translator.js';
+export { createModelClient } from './model-client.js';
+export { TypeGenerator, generateDbTypes } from './type-generator.js';
+export { DbClientGenerator, generateDbClientFiles } from './db-client-generator.js';
+export { buildModelMeta, buildModelMetaSnapshot, hydrateModelMeta } from './model-meta.js';
+export {
+  DatabaseError,
+  UniqueConstraintError,
+  ForeignKeyConstraintError,
+  NotFoundError,
+  mapPgError,
+} from './errors.js';
+export { mapRow, mapRows } from './row-mapper.js';
+export { toCamelCase, pluralize, toTableName, toColumnName, toClientKey } from './utils/naming.js';
 export { loadEnv, resetLoadEnvForTests } from './load-env.js';
 export { defaultSchemaPath, generateSchemaDiff, summarizeMigrations } from './diff.js';
 export type { DiffResult } from './diff.js';
