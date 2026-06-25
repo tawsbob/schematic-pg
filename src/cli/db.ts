@@ -5,6 +5,7 @@ import { applyPendingMigrations } from '../db/migrate.js';
 import { createMigration, getAppliedMigrationFilenames, listMigrationFiles } from '../db/migrations.js';
 import { snapshotExists } from '../db/schema-state.js';
 import { resolveSchemaPath } from './paths.js';
+import { waitForDatabase } from './wait-for-database.js';
 
 function parseDiffArgs(args: string[]): { schemaPath: string; name?: string; print: boolean } {
   let schemaPath = resolveSchemaPath();
@@ -60,6 +61,7 @@ export async function runDbBootstrap(schemaPath?: string): Promise<void> {
   const client = new DatabaseClient();
 
   try {
+    await waitForDatabase({ client });
     await bootstrapDatabase(resolvedSchemaPath, client);
     process.stdout.write(`Database bootstrapped from ${resolvedSchemaPath}\n`);
   } finally {

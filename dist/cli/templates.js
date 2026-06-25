@@ -32,7 +32,7 @@ npm-debug.log*
 export const DOCKER_COMPOSE_TEMPLATE = `services:
   postgres:
     image: postgis/postgis:16-3.4
-    container_name: schematic-pg-dev-container
+    container_name: schematic-pg-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -65,9 +65,7 @@ export const TSCONFIG_TEMPLATE = `{
 export const MAKEFILE_TEMPLATE = `.PHONY: dev
 
 dev:
-\tdocker compose up -d
-\tnpx ${PACKAGE_NAME} generate
-\tnpx ${PACKAGE_NAME} db:bootstrap
+\tdocker compose up -d --wait
 \tnpx ${PACKAGE_NAME} dev
 `;
 export const HEALTH_ROUTE_TEMPLATE = `import { Hono } from 'hono';

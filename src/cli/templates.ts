@@ -71,9 +71,7 @@ export const TSCONFIG_TEMPLATE = `{
 export const MAKEFILE_TEMPLATE = `.PHONY: dev
 
 dev:
-\tdocker compose up -d
-\tnpx ${PACKAGE_NAME} generate
-\tnpx ${PACKAGE_NAME} db:bootstrap
+\tdocker compose up -d --wait
 \tnpx ${PACKAGE_NAME} dev
 `;
 

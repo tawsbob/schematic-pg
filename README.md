@@ -201,11 +201,12 @@ npx schematic-pg init my-app
 cd my-app
 ```
 
-Edit `app.schema`, then generate code and start the API:
+Edit `app.schema`, then start the full dev loop:
 
 ```bash
 make dev
-# → starts PostgreSQL, generates code, bootstraps the DB, and runs the dev server
+# → starts PostgreSQL, generates code, bootstraps the DB, runs the dev server,
+#   and watches app.schema for changes (regenerate + bootstrap + restart)
 # → http://localhost:3000
 ```
 
@@ -213,17 +214,22 @@ Or run each step individually:
 
 ```bash
 # Start PostgreSQL (PostGIS-enabled, matches .env defaults)
-docker compose up -d
+docker compose up -d --wait
 
-# Generate schema.sql + generated/ (db client, routes, policies, Zod schemas)
-npx schematic-pg generate
-
-# Apply DDL to the database and snapshot schema state
-npx schematic-pg db:bootstrap
-
-# Regenerate client + API and start the server
+# Generate, bootstrap, start server, and watch app.schema (default)
 npx schematic-pg dev
 # → http://localhost:3000
+
+# One-shot dev server without schema watching:
+npx schematic-pg dev --no-watch
+```
+
+Manual split when you need finer control:
+
+```bash
+npx schematic-pg generate
+npx schematic-pg db:bootstrap
+npx schematic-pg dev --no-watch
 ```
 
 The `init` command creates everything you need to get running:
@@ -233,7 +239,7 @@ The `init` command creates everything you need to get running:
 | `app.schema` | Starter schema (one `User` model) — edit this |
 | `.env` | `DATABASE_URL`, JWT settings |
 | `docker-compose.yml` | Local PostGIS PostgreSQL on `:5432` |
-| `Makefile` | `make dev` — docker compose + generate + db:bootstrap + dev |
+| `Makefile` | `make dev` — docker compose (with health wait) + `schematic-pg dev` |
 | `tsconfig.json` | TypeScript config for `generated/` and `src/routes/` |
 | `package.json` | `schematic-pg` + runtime deps (`hono`, `pg`, `zod`, …) |
 | `src/routes/health.ts` | Example custom route mounted at `/health` |
@@ -261,7 +267,7 @@ Generated code imports the runtime from the `schematic-pg` package (`schematic-p
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
 
-Set these in `.env` before running `db:bootstrap` or `dev`.
+Set these in `.env` before running `dev` or `db:bootstrap`.
 
 ---
 
@@ -289,13 +295,22 @@ Run `generate:client` before `generate:api` when using the split commands — ro
 ### Development server
 
 ```bash
-schematic-pg dev [schema]   # generate:client + generate:api, then start generated/app.ts
+schematic-pg dev [schema] [--no-watch]
 ```
+
+`dev` runs the full local loop:
+
+1. `generate` — writes `schema.sql` and `generated/*`
+2. `db:bootstrap` — waits for Postgres, applies DDL, snapshots schema state
+3. Starts `generated/app.ts`
+4. Watches `app.schema` (default) — on change, re-runs generate, bootstrap, and server restart
+
+Pass `--no-watch` for a one-shot run without file watching.
 
 Equivalent npm scripts in a project created by `init`:
 
 ```bash
-make dev           # docker compose up -d + generate + db:bootstrap + dev
+make dev           # docker compose up -d --wait + schematic-pg dev
 npm run dev        # schematic-pg dev
 npm run generate   # schematic-pg generate
 ```

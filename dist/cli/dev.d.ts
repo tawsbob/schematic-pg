@@ -1,1 +1,1 @@
-export declare function runDev(schemaPath?: string): Promise<void>;
+export declare function runDev(args?: string[]): Promise<void>;

@@ -14,7 +14,7 @@ Commands:
   generate:sql [schema]      Generate SQL DDL to stdout
   generate:client [schema]   Generate db client files
   generate:api [schema]      Generate API files
-  dev [schema]               Regenerate client + API and start server
+  dev [schema] [--no-watch]  Generate, bootstrap DB, start server, watch schema
   db:ping                    Test database connection
   db:bootstrap [schema]      Apply DDL and snapshot schema state
   db:diff [schema]           Show schema diff (--name <name> to write migration)
@@ -57,7 +57,7 @@ async function main(): Promise<void> {
         await generateApi(schemaPath);
         break;
       case 'dev':
-        await runDev(schemaPath);
+        await runDev(args);
         break;
       case 'db:ping':
         await runDbPing();
