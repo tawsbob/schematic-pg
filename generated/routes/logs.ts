@@ -3,16 +3,22 @@ import { Hono } from 'hono';
 import type { AppEnv } from 'schematic-pg/api/types';
 import { validateJson, validateParam, validateQuery } from 'schematic-pg/api/middleware/validate';
 import { notFoundResponse } from 'schematic-pg/api/middleware/errors';
-import { buildListQuery } from 'schematic-pg/api/utils/list-query';
-import { omitFields, omitFieldsMany } from 'schematic-pg/api/utils/omit-fields';
+import { buildReadQuery } from 'schematic-pg/api/utils/read-query';
+import { parseIncludeQuery } from 'schematic-pg/api/utils/include-query';
+import { omitFields } from 'schematic-pg/api/utils/omit-fields';
+import { shapeResponse, shapeResponseMany } from 'schematic-pg/api/utils/response-shape';
 import {
   LogCreateSchema,
   LogUpdateSchema,
   LogParamSchema,
   LogListQuerySchema,
+  LogGetQuerySchema,
   LOG_LIST_QUERY_FIELDS,
+  LOG_INCLUDABLE_RELATIONS,
   LOG_OMIT_FIELDS,
   LOG_SORTABLE_FIELDS,
+  API_OMIT_FIELDS_BY_MODEL,
+  API_RELATION_TARGETS,
 } from '../schemas/validation.js';
 
 const router = new Hono<AppEnv>();
@@ -20,23 +26,34 @@ const router = new Hono<AppEnv>();
 router.get('/', validateQuery(LogListQuerySchema), async (c) => {
   const db = c.get('db');
   const query = c.req.valid('query');
-  const { where, orderBy, take, skip } = buildListQuery(
+  const { where, orderBy, take, skip, include } = buildReadQuery(
     query,
     LOG_LIST_QUERY_FIELDS,
     LOG_SORTABLE_FIELDS,
+    LOG_INCLUDABLE_RELATIONS,
   );
-  const rows = await db.log.findMany({ where, orderBy, take, skip });
-  return c.json(omitFieldsMany(rows, LOG_OMIT_FIELDS));
+  const rows = await db.log.findMany({
+    where,
+    orderBy,
+    take,
+    skip,
+    include,
+  });
+  return c.json(shapeResponseMany(rows, 'Log', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS));
 });
 
-router.get('/:id', validateParam(LogParamSchema), async (c) => {
+router.get('/:id', validateParam(LogParamSchema), validateQuery(LogGetQuerySchema), async (c) => {
   const db = c.get('db');
   const params = c.req.valid('param');
-  const row = await db.log.findUnique({ id: params.id });
+  const query = c.req.valid('query');
+  const include = query.include
+    ? parseIncludeQuery(query.include, LOG_INCLUDABLE_RELATIONS)
+    : undefined;
+  const row = await db.log.findUnique({ id: params.id }, { include });
   if (!row) {
     return notFoundResponse(c);
   }
-  return c.json(omitFields(row, LOG_OMIT_FIELDS));
+  return c.json(shapeResponse(row, 'Log', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS));
 });
 
 router.post('/', validateJson(LogCreateSchema), async (c) => {

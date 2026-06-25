@@ -3,16 +3,22 @@ import { Hono } from 'hono';
 import type { AppEnv } from 'schematic-pg/api/types';
 import { validateJson, validateParam, validateQuery } from 'schematic-pg/api/middleware/validate';
 import { notFoundResponse } from 'schematic-pg/api/middleware/errors';
-import { buildListQuery } from 'schematic-pg/api/utils/list-query';
-import { omitFields, omitFieldsMany } from 'schematic-pg/api/utils/omit-fields';
+import { buildReadQuery } from 'schematic-pg/api/utils/read-query';
+import { parseIncludeQuery } from 'schematic-pg/api/utils/include-query';
+import { omitFields } from 'schematic-pg/api/utils/omit-fields';
+import { shapeResponse, shapeResponseMany } from 'schematic-pg/api/utils/response-shape';
 import {
   OrderCreateSchema,
   OrderUpdateSchema,
   OrderParamSchema,
   OrderListQuerySchema,
+  OrderGetQuerySchema,
   ORDER_LIST_QUERY_FIELDS,
+  ORDER_INCLUDABLE_RELATIONS,
   ORDER_OMIT_FIELDS,
   ORDER_SORTABLE_FIELDS,
+  API_OMIT_FIELDS_BY_MODEL,
+  API_RELATION_TARGETS,
 } from '../schemas/validation.js';
 
 const router = new Hono<AppEnv>();
@@ -20,23 +26,34 @@ const router = new Hono<AppEnv>();
 router.get('/', validateQuery(OrderListQuerySchema), async (c) => {
   const db = c.get('db');
   const query = c.req.valid('query');
-  const { where, orderBy, take, skip } = buildListQuery(
+  const { where, orderBy, take, skip, include } = buildReadQuery(
     query,
     ORDER_LIST_QUERY_FIELDS,
     ORDER_SORTABLE_FIELDS,
+    ORDER_INCLUDABLE_RELATIONS,
   );
-  const rows = await db.order.findMany({ where, orderBy, take, skip });
-  return c.json(omitFieldsMany(rows, ORDER_OMIT_FIELDS));
+  const rows = await db.order.findMany({
+    where,
+    orderBy,
+    take,
+    skip,
+    include,
+  });
+  return c.json(shapeResponseMany(rows, 'Order', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS));
 });
 
-router.get('/:id', validateParam(OrderParamSchema), async (c) => {
+router.get('/:id', validateParam(OrderParamSchema), validateQuery(OrderGetQuerySchema), async (c) => {
   const db = c.get('db');
   const params = c.req.valid('param');
-  const row = await db.order.findUnique({ id: params.id });
+  const query = c.req.valid('query');
+  const include = query.include
+    ? parseIncludeQuery(query.include, ORDER_INCLUDABLE_RELATIONS)
+    : undefined;
+  const row = await db.order.findUnique({ id: params.id }, { include });
   if (!row) {
     return notFoundResponse(c);
   }
-  return c.json(omitFields(row, ORDER_OMIT_FIELDS));
+  return c.json(shapeResponse(row, 'Order', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS));
 });
 
 router.post('/', validateJson(OrderCreateSchema), async (c) => {

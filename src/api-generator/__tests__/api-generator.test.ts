@@ -36,6 +36,11 @@ describe('ZodSchemaGenerator', () => {
     assert.match(output, /email_contains: z\.coerce\.string\(\)\.optional\(\)/);
     assert.match(output, /role_in: z\.coerce\.string\(\)\.optional\(\)/);
     assert.match(output, /export const USER_OMIT_FIELDS = \["passwordHash"\] as const;/);
+    assert.match(output, /export const USER_INCLUDABLE_RELATIONS = \{/);
+    assert.match(output, /export const UserGetQuerySchema = z/);
+    assert.match(output, /include: z\.string\(\)\.optional\(\)/);
+    assert.match(output, /export const API_OMIT_FIELDS_BY_MODEL = \{/);
+    assert.match(output, /export const API_RELATION_TARGETS = \{/);
     assert.match(output, /export type UserResponse = Omit<User, 'passwordHash'>;/);
     const userQueryFields =
       output.match(/export const USER_LIST_QUERY_FIELDS = (\[[\s\S]*?\]) as const;/)?.[1] ?? '';
@@ -90,7 +95,7 @@ describe('RouteGenerator', () => {
     const content = routes.get('product-orders.ts');
 
     assert.match(content!, /router\.get\('\/:orderId\/:productId'/);
-    assert.match(content!, /findUnique\(\{ orderId: params\.orderId, productId: params\.productId \}\)/);
+    assert.match(content!, /findUnique\(\{ orderId: params\.orderId, productId: params\.productId \}, \{ include \}\)/);
   });
 
   it('injects policy checks for models with @policy attributes', () => {
@@ -111,14 +116,17 @@ describe('RouteGenerator', () => {
     const products = routes.get('products.ts')!;
 
     assert.match(users, /validateQuery\(UserListQuerySchema\)/);
-    assert.match(users, /buildListQuery\(/);
+    assert.match(users, /validateQuery\(UserGetQuerySchema\)/);
+    assert.match(users, /buildReadQuery\(/);
+    assert.match(users, /parseIncludeQuery\(/);
+    assert.match(users, /shapeResponseMany\(rows, 'User'/);
+    assert.match(users, /shapeResponse\(row, 'User'/);
     assert.match(users, /mergeWhere\(where, policyWhere\)/);
-    assert.match(users, /omitFieldsMany\(rows, USER_OMIT_FIELDS\)/);
     assert.match(users, /omitFields\(row, USER_OMIT_FIELDS\)/);
     assert.match(users, /c\.json\(omitFields\(row, USER_OMIT_FIELDS\), 201\)/);
 
     assert.match(products, /validateQuery\(ProductListQuerySchema\)/);
-    assert.match(products, /omitFieldsMany\(rows, PRODUCT_OMIT_FIELDS\)/);
+    assert.match(products, /shapeResponseMany\(rows, 'Product'/);
     assert.doesNotMatch(products, /mergeWhere\(where, policyWhere\)/);
   });
 

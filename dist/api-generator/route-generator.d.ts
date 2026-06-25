@@ -6,6 +6,7 @@ export declare class RouteGenerator {
     generate(): string;
     private jsonRow;
     private jsonRows;
+    private mutationJsonRow;
     private generateListRoute;
     private generateGetRoute;
     private generateCreateRoute;

@@ -3,8 +3,11 @@ export declare class ZodSchemaGenerator {
     private readonly schema;
     constructor(schema: Schema);
     generate(): string;
+    private generateGlobalMetadata;
     private generateModelSchemas;
     private generateListQuerySchemas;
+    private generateIncludeRefinement;
+    private generateReadQueryRefinement;
     private generateListQueryFieldLines;
     private generateObjectField;
     private generateParamField;

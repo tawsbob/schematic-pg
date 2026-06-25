@@ -15,6 +15,7 @@ import {
   signTestJwtWithoutSub,
 } from '../../__tests__/helpers/jwt.js';
 import { createApp } from '../../../generated/app.js';
+import { createDbClient } from '../../../generated/db.js';
 import type { AppEnv } from '../types.js';
 
 interface RequestOptions {
@@ -343,6 +344,97 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
       });
 
       assert.equal(invalidResponse.status, 400);
+    });
+  });
+
+  describe('include query param', () => {
+    before(async () => {
+      const db = createDbClient(pool);
+
+      await db.profile.create({
+        userId: users.alice.id,
+        bio: 'Hello',
+        avatar: 'avatar.png',
+        location: '(0,0)',
+      });
+
+      await db.order.create({
+        userId: users.alice.id,
+        totalAmount: '10.00',
+        items: { count: 1 },
+      });
+    });
+
+    it('returns nested profile on GET /users/:id?include=profile', async () => {
+      const response = await request(app, `/users/${users.alice.id}`, {
+        token: adminToken,
+        query: { include: 'profile' },
+      });
+
+      assert.equal(response.status, 200);
+      const row = (await response.json()) as { profile: { bio: string } | null };
+      assert.ok(row.profile);
+      assert.equal(row.profile.bio, 'Hello');
+    });
+
+    it('returns orders array on GET /users?include=orders', async () => {
+      const response = await request(app, '/users', {
+        token: adminToken,
+        query: { include: 'orders' },
+      });
+
+      assert.equal(response.status, 200);
+      const rows = (await response.json()) as Array<{ orders?: unknown[] }>;
+      const alice = rows.find((row) => (row as { id: string }).id === users.alice.id);
+      assert.ok(alice);
+      assert.ok(Array.isArray(alice!.orders));
+      assert.ok((alice!.orders ?? []).length >= 1);
+    });
+
+    it('returns 400 for invalid include query params', async () => {
+      const response = await request(app, '/users', {
+        token: adminToken,
+        query: { include: 'notReal' },
+      });
+
+      assert.equal(response.status, 400);
+    });
+
+    it('strips nested omitted fields on include=orders.user', async () => {
+      const response = await request(app, '/users', {
+        token: adminToken,
+        query: { include: 'orders.user' },
+      });
+
+      assert.equal(response.status, 200);
+      const rows = (await response.json()) as Array<{
+        id: string;
+        orders?: Array<{ user?: Record<string, unknown> }>;
+      }>;
+      const alice = rows.find((row) => row.id === users.alice.id);
+      assert.ok(alice);
+      const nestedUser = alice!.orders?.[0]?.user;
+      assert.ok(nestedUser);
+      assert.equal('passwordHash' in nestedUser, false);
+    });
+
+    it('allows scoped user to include profile on own record', async () => {
+      const response = await request(app, `/users/${users.alice.id}`, {
+        token: aliceToken,
+        query: { include: 'profile' },
+      });
+
+      assert.equal(response.status, 200);
+      const row = (await response.json()) as { profile: { bio: string } | null };
+      assert.ok(row.profile);
+    });
+
+    it('still enforces policy on GET /users/:id without include', async () => {
+      const response = await request(app, `/users/${users.bob.id}`, {
+        token: aliceToken,
+      });
+
+      assert.equal(response.status, 404);
     });
   });
 });

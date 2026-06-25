@@ -1,8 +1,14 @@
 import type { Field, Model, Schema } from '../../schema-dsl/ast.js';
+import type { IncludableRelationTree } from '../../api/utils/include-query.js';
 export declare function isStoredScalarField(field: Field, schema: Schema): boolean;
+export declare function isRelationField(field: Field, schema: Schema): boolean;
 export declare function isUnfilterable(field: Field): boolean;
+export declare function isUnincludeable(field: Field): boolean;
 export declare function isOmitted(field: Field): boolean;
 export declare function getFilterableFields(model: Model, schema: Schema): Field[];
 export declare function getOmittedFields(model: Model, schema: Schema): Field[];
+export declare function getIncludableRelationFields(model: Model, schema: Schema): Field[];
+export declare function buildIncludableRelationTree(model: Model, schema: Schema, visited?: Set<string>): IncludableRelationTree;
+export declare function buildRelationTargets(model: Model, schema: Schema): Record<string, string>;
 export declare function getSortableFieldNames(model: Model, schema: Schema): string[];
 export declare function toModelConstantPrefix(modelName: string): string;

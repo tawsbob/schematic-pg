@@ -3,17 +3,23 @@ import { Hono } from 'hono';
 import type { AppEnv } from 'schematic-pg/api/types';
 import { validateJson, validateParam, validateQuery } from 'schematic-pg/api/middleware/validate';
 import { notFoundResponse } from 'schematic-pg/api/middleware/errors';
-import { buildListQuery } from 'schematic-pg/api/utils/list-query';
-import { omitFields, omitFieldsMany } from 'schematic-pg/api/utils/omit-fields';
+import { buildReadQuery } from 'schematic-pg/api/utils/read-query';
+import { parseIncludeQuery } from 'schematic-pg/api/utils/include-query';
+import { omitFields } from 'schematic-pg/api/utils/omit-fields';
+import { shapeResponse, shapeResponseMany } from 'schematic-pg/api/utils/response-shape';
 import { assertPolicy, mergeWhere, resolvePolicyWhere } from 'schematic-pg/api/auth/policy';
 import {
   UserCreateSchema,
   UserUpdateSchema,
   UserParamSchema,
   UserListQuerySchema,
+  UserGetQuerySchema,
   USER_LIST_QUERY_FIELDS,
+  USER_INCLUDABLE_RELATIONS,
   USER_OMIT_FIELDS,
   USER_SORTABLE_FIELDS,
+  API_OMIT_FIELDS_BY_MODEL,
+  API_RELATION_TARGETS,
 } from '../schemas/validation.js';
 
 const router = new Hono<AppEnv>();
@@ -24,31 +30,37 @@ router.get('/', validateQuery(UserListQuerySchema), async (c) => {
   const policy = assertPolicy('User', auth.role, 'select');
   const policyWhere = resolvePolicyWhere(policy, auth);
   const query = c.req.valid('query');
-  const { where, orderBy, take, skip } = buildListQuery(
+  const { where, orderBy, take, skip, include } = buildReadQuery(
     query,
     USER_LIST_QUERY_FIELDS,
     USER_SORTABLE_FIELDS,
+    USER_INCLUDABLE_RELATIONS,
   );
   const rows = await db.user.findMany({
     where: mergeWhere(where, policyWhere),
     orderBy,
     take,
     skip,
+    include,
   });
-  return c.json(omitFieldsMany(rows, USER_OMIT_FIELDS));
+  return c.json(shapeResponseMany(rows, 'User', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS));
 });
 
-router.get('/:id', validateParam(UserParamSchema), async (c) => {
+router.get('/:id', validateParam(UserParamSchema), validateQuery(UserGetQuerySchema), async (c) => {
   const db = c.get('db');
   const auth = c.get('auth');
   const policy = assertPolicy('User', auth.role, 'select');
   const policyWhere = resolvePolicyWhere(policy, auth);
   const params = c.req.valid('param');
-  const row = await db.user.findUnique(mergeWhere({ id: params.id }, policyWhere));
+  const query = c.req.valid('query');
+  const include = query.include
+    ? parseIncludeQuery(query.include, USER_INCLUDABLE_RELATIONS)
+    : undefined;
+  const row = await db.user.findUnique(mergeWhere({ id: params.id }, policyWhere), { include });
   if (!row) {
     return notFoundResponse(c);
   }
-  return c.json(omitFields(row, USER_OMIT_FIELDS));
+  return c.json(shapeResponse(row, 'User', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS));
 });
 
 router.post('/', validateJson(UserCreateSchema), async (c) => {

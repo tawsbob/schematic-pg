@@ -23,6 +23,7 @@ export class RouteGenerator {
     const whereFromParams = primaryKey.fields.map((field) => `${field}: params.${field}`).join(', ');
     const paramSchemaName = `${this.model.name}ParamSchema`;
     const listQuerySchemaName = `${this.model.name}ListQuerySchema`;
+    const getQuerySchemaName = `${this.model.name}GetQuerySchema`;
     const modelHasPolicies = hasPolicies(this.model);
     const constantPrefix = toModelConstantPrefix(this.model.name);
 
@@ -32,8 +33,10 @@ export class RouteGenerator {
       `import type { AppEnv } from '${PACKAGE_NAME}/api/types';`,
       `import { validateJson, validateParam, validateQuery } from '${PACKAGE_NAME}/api/middleware/validate';`,
       `import { notFoundResponse } from '${PACKAGE_NAME}/api/middleware/errors';`,
-      `import { buildListQuery } from '${PACKAGE_NAME}/api/utils/list-query';`,
-      `import { omitFields, omitFieldsMany } from '${PACKAGE_NAME}/api/utils/omit-fields';`,
+      `import { buildReadQuery } from '${PACKAGE_NAME}/api/utils/read-query';`,
+      `import { parseIncludeQuery } from '${PACKAGE_NAME}/api/utils/include-query';`,
+      `import { omitFields } from '${PACKAGE_NAME}/api/utils/omit-fields';`,
+      `import { shapeResponse, shapeResponseMany } from '${PACKAGE_NAME}/api/utils/response-shape';`,
       ...(modelHasPolicies
         ? [
             `import { assertPolicy, mergeWhere, resolvePolicyWhere } from '${PACKAGE_NAME}/api/auth/policy';`,
@@ -44,9 +47,13 @@ export class RouteGenerator {
       `  ${this.model.name}UpdateSchema,`,
       `  ${paramSchemaName},`,
       `  ${listQuerySchemaName},`,
+      `  ${getQuerySchemaName},`,
       `  ${constantPrefix}_LIST_QUERY_FIELDS,`,
+      `  ${constantPrefix}_INCLUDABLE_RELATIONS,`,
       `  ${constantPrefix}_OMIT_FIELDS,`,
       `  ${constantPrefix}_SORTABLE_FIELDS,`,
+      `  API_OMIT_FIELDS_BY_MODEL,`,
+      `  API_RELATION_TARGETS,`,
       `} from '../schemas/validation.js';`,
       '',
       'const router = new Hono<AppEnv>();',
@@ -57,6 +64,7 @@ export class RouteGenerator {
         clientKey,
         pathParams,
         paramSchemaName,
+        getQuerySchemaName,
         whereFromParams,
         modelHasPolicies,
         constantPrefix,
@@ -87,8 +95,8 @@ export class RouteGenerator {
     ].join('\n');
   }
 
-  private jsonRow(variableName: string, constantPrefix: string, statusCode?: number): string {
-    const payload = `omitFields(${variableName}, ${constantPrefix}_OMIT_FIELDS)`;
+  private jsonRow(variableName: string, modelName: string, constantPrefix: string, statusCode?: number): string {
+    const payload = `shapeResponse(${variableName}, '${modelName}', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS)`;
     if (statusCode === undefined) {
       return `c.json(${payload})`;
     }
@@ -96,8 +104,17 @@ export class RouteGenerator {
     return `c.json(${payload}, ${statusCode})`;
   }
 
-  private jsonRows(variableName: string, constantPrefix: string): string {
-    return `c.json(omitFieldsMany(${variableName}, ${constantPrefix}_OMIT_FIELDS))`;
+  private jsonRows(variableName: string, modelName: string): string {
+    return `c.json(shapeResponseMany(${variableName}, '${modelName}', API_OMIT_FIELDS_BY_MODEL, API_RELATION_TARGETS))`;
+  }
+
+  private mutationJsonRow(variableName: string, constantPrefix: string, statusCode?: number): string {
+    const payload = `omitFields(${variableName}, ${constantPrefix}_OMIT_FIELDS)`;
+    if (statusCode === undefined) {
+      return `c.json(${payload})`;
+    }
+
+    return `c.json(${payload}, ${statusCode})`;
   }
 
   private generateListRoute(
@@ -108,20 +125,26 @@ export class RouteGenerator {
   ): string[] {
     const listQueryBlock = [
       `  const query = c.req.valid('query');`,
-      `  const { where, orderBy, take, skip } = buildListQuery(`,
+      `  const { where, orderBy, take, skip, include } = buildReadQuery(`,
       `    query,`,
       `    ${constantPrefix}_LIST_QUERY_FIELDS,`,
       `    ${constantPrefix}_SORTABLE_FIELDS,`,
+      `    ${constantPrefix}_INCLUDABLE_RELATIONS,`,
       `  );`,
     ];
+    const findManyArgs = ['where', 'orderBy', 'take', 'skip', 'include']
+      .map((key) => `    ${key},`)
+      .join('\n');
 
     if (!modelHasPolicies) {
       return [
         `router.get('/', validateQuery(${listQuerySchemaName}), async (c) => {`,
         '  const db = c.get(\'db\');',
         ...listQueryBlock,
-        `  const rows = await db.${clientKey}.findMany({ where, orderBy, take, skip });`,
-        `  return ${this.jsonRows('rows', constantPrefix)};`,
+        `  const rows = await db.${clientKey}.findMany({`,
+        findManyArgs,
+        '  });',
+        `  return ${this.jsonRows('rows', this.model.name)};`,
         '});',
       ];
     }
@@ -138,8 +161,9 @@ export class RouteGenerator {
       '    orderBy,',
       '    take,',
       '    skip,',
+      '    include,',
       '  });',
-      `  return ${this.jsonRows('rows', constantPrefix)};`,
+      `  return ${this.jsonRows('rows', this.model.name)};`,
       '});',
     ];
   }
@@ -148,36 +172,46 @@ export class RouteGenerator {
     clientKey: string,
     pathParams: string,
     paramSchemaName: string,
+    getQuerySchemaName: string,
     whereFromParams: string,
     modelHasPolicies: boolean,
     constantPrefix: string,
   ): string[] {
+    const includeBlock = [
+      '  const query = c.req.valid(\'query\');',
+      `  const include = query.include`,
+      `    ? parseIncludeQuery(query.include, ${constantPrefix}_INCLUDABLE_RELATIONS)`,
+      '    : undefined;',
+    ];
+
     if (!modelHasPolicies) {
       return [
-        `router.get('/${pathParams}', validateParam(${paramSchemaName}), async (c) => {`,
+        `router.get('/${pathParams}', validateParam(${paramSchemaName}), validateQuery(${getQuerySchemaName}), async (c) => {`,
         '  const db = c.get(\'db\');',
         '  const params = c.req.valid(\'param\');',
-        `  const row = await db.${clientKey}.findUnique({ ${whereFromParams} });`,
+        ...includeBlock,
+        `  const row = await db.${clientKey}.findUnique({ ${whereFromParams} }, { include });`,
         '  if (!row) {',
         '    return notFoundResponse(c);',
         '  }',
-        `  return ${this.jsonRow('row', constantPrefix)};`,
+        `  return ${this.jsonRow('row', this.model.name, constantPrefix)};`,
         '});',
       ];
     }
 
     return [
-      `router.get('/${pathParams}', validateParam(${paramSchemaName}), async (c) => {`,
+      `router.get('/${pathParams}', validateParam(${paramSchemaName}), validateQuery(${getQuerySchemaName}), async (c) => {`,
       '  const db = c.get(\'db\');',
       '  const auth = c.get(\'auth\');',
       `  const policy = assertPolicy('${this.model.name}', auth.role, 'select');`,
       '  const policyWhere = resolvePolicyWhere(policy, auth);',
       '  const params = c.req.valid(\'param\');',
-      `  const row = await db.${clientKey}.findUnique(mergeWhere({ ${whereFromParams} }, policyWhere));`,
+      ...includeBlock,
+      `  const row = await db.${clientKey}.findUnique(mergeWhere({ ${whereFromParams} }, policyWhere), { include });`,
       '  if (!row) {',
       '    return notFoundResponse(c);',
       '  }',
-      `  return ${this.jsonRow('row', constantPrefix)};`,
+      `  return ${this.jsonRow('row', this.model.name, constantPrefix)};`,
       '});',
     ];
   }
@@ -193,7 +227,7 @@ export class RouteGenerator {
         '  const db = c.get(\'db\');',
         '  const body = c.req.valid(\'json\');',
         `  const row = await db.${clientKey}.create(body);`,
-        `  return ${this.jsonRow('row', constantPrefix, 201)};`,
+        `  return ${this.mutationJsonRow('row', constantPrefix, 201)};`,
         '});',
       ];
     }
@@ -205,7 +239,7 @@ export class RouteGenerator {
       `  assertPolicy('${this.model.name}', auth.role, 'insert');`,
       '  const body = c.req.valid(\'json\');',
       `  const row = await db.${clientKey}.create(body);`,
-      `  return ${this.jsonRow('row', constantPrefix, 201)};`,
+      `  return ${this.mutationJsonRow('row', constantPrefix, 201)};`,
       '});',
     ];
   }
@@ -225,7 +259,7 @@ export class RouteGenerator {
         '  const params = c.req.valid(\'param\');',
         '  const body = c.req.valid(\'json\');',
         `  const row = await db.${clientKey}.update({ where: { ${whereFromParams} }, data: body });`,
-        `  return ${this.jsonRow('row', constantPrefix)};`,
+        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
         '});',
       ];
     }
@@ -239,7 +273,7 @@ export class RouteGenerator {
       '  const params = c.req.valid(\'param\');',
       '  const body = c.req.valid(\'json\');',
       `  const row = await db.${clientKey}.update({ where: mergeWhere({ ${whereFromParams} }, policyWhere), data: body });`,
-      `  return ${this.jsonRow('row', constantPrefix)};`,
+      `  return ${this.mutationJsonRow('row', constantPrefix)};`,
       '});',
     ];
   }
@@ -258,7 +292,7 @@ export class RouteGenerator {
         '  const db = c.get(\'db\');',
         '  const params = c.req.valid(\'param\');',
         `  const row = await db.${clientKey}.delete({ ${whereFromParams} });`,
-        `  return ${this.jsonRow('row', constantPrefix)};`,
+        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
         '});',
       ];
     }
@@ -271,7 +305,7 @@ export class RouteGenerator {
       '  const policyWhere = resolvePolicyWhere(policy, auth);',
       '  const params = c.req.valid(\'param\');',
       `  const row = await db.${clientKey}.delete(mergeWhere({ ${whereFromParams} }, policyWhere));`,
-      `  return ${this.jsonRow('row', constantPrefix)};`,
+      `  return ${this.mutationJsonRow('row', constantPrefix)};`,
       '});',
     ];
   }

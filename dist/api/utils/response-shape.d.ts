@@ -1,0 +1,2 @@
+export declare function shapeResponse<T extends Record<string, unknown>>(row: T, modelName: string, omitByModel: Readonly<Record<string, readonly string[]>>, relationTargets: Readonly<Record<string, Readonly<Record<string, string>>>>): T;
+export declare function shapeResponseMany<T extends Record<string, unknown>>(rows: T[], modelName: string, omitByModel: Readonly<Record<string, readonly string[]>>, relationTargets: Readonly<Record<string, Readonly<Record<string, string>>>>): T[];

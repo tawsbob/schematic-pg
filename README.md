@@ -770,8 +770,8 @@ Every router exposes the same CRUD shape. Models with `@policy` attributes enfor
 
 | Method | Path | Handler | Validation |
 |--------|------|---------|------------|
-| `GET` | `/` | `findMany({ where: mergeWhere(queryWhere, policyWhere), orderBy, take, skip })` | Query params |
-| `GET` | `/{pk}` | `findUnique(mergeWhere(pk, policyWhere))` | Path params |
+| `GET` | `/` | `findMany({ where: mergeWhere(queryWhere, policyWhere), orderBy, take, skip, include })` | Query params |
+| `GET` | `/{pk}` | `findUnique(mergeWhere(pk, policyWhere), { include })` | Path params + query params |
 | `POST` | `/` | `create(body)` — policy check only | JSON body |
 | `PUT` | `/{pk}` | `update({ where: mergeWhere(pk, policyWhere), data })` | Path params + JSON body |
 | `DELETE` | `/{pk}` | `delete(mergeWhere(pk, policyWhere))` | Path params |
@@ -793,17 +793,43 @@ Query params use **API field names** (camelCase), not SQL column names:
 | `?limit=20` | `take: 20` (max 100) |
 | `?offset=40` | `skip: 40` |
 | `?sort=-createdAt` | `orderBy: { createdAt: 'desc' }` |
+| `?include=profile,orders` | `include: { profile: true, orders: true }` |
+| `?include=orders.products.product` | nested boolean includes |
 
 On models with `@policy`, user filters are combined with the policy row filter via `mergeWhere` (AND). A USER calling `GET /users?role=ADMIN` still only sees rows allowed by policy.
 
 ```bash
 curl "http://localhost:3000/products?category=books&limit=10"
 curl "http://localhost:3000/users?role=USER&isActive=true" -H "Authorization: Bearer $TOKEN"
+curl "http://localhost:3000/users/USER_ID?include=profile,orders" -H "Authorization: Bearer $TOKEN"
 ```
+
+### Relation includes (`GET /`, `GET /{pk}`)
+
+Load related models via the `include` query param. Paths are comma-separated; use dots for nesting:
+
+```bash
+curl "http://localhost:3000/users?include=profile,orders"
+curl "http://localhost:3000/users/USER_ID?include=orders.products.product"
+```
+
+Each segment must name a relation field on the current model (or nested target model). Unknown relations return `400`. Maximum depth and path count are capped (see `MAX_INCLUDE_DEPTH` / `MAX_INCLUDE_PATHS` in the runtime).
+
+Opt out of HTTP includes on a relation field with `@unincludeable`:
+
+```ts
+orders: Order[] @unincludeable
+```
+
+**v1 limits:**
+
+- Boolean includes only — no nested `where`, `take`, or `skip` via URL (use the DB client or a custom route for that).
+- `@policy` row filters apply to the **root** model only; included relations are not policy-filtered separately.
+- `@omit` fields are stripped recursively on nested included objects in read responses.
 
 ### Response shaping (`@omit`)
 
-Mark sensitive stored fields with `@omit` to exclude them from generated route JSON responses (`GET`, `POST`, `PUT`, `DELETE`). The ORM client still returns full entities.
+Mark sensitive stored fields with `@omit` to exclude them from generated route JSON responses. On read endpoints with `include`, omitted fields are stripped recursively on nested relation objects as well. Mutation responses (`POST`, `PUT`, `DELETE`) strip `@omit` fields on the root model only. The ORM client still returns full entities.
 
 ```ts
 passwordHash: VARCHAR(255) @omit @unfilterable @default("")

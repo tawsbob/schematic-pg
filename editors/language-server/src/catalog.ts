@@ -31,6 +31,7 @@ export const FIELD_ATTRIBUTES = [
   'relation',
   'policy',
   'unfilterable',
+  'unincludeable',
   'omit',
 ] as const;
 
