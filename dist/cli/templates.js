@@ -1,13 +1,5 @@
-import { PACKAGE_NAME } from '../constants.js';
-export const APP_SCHEMA_TEMPLATE = `extensions {
-
-}
-
-enums {
-  
-}
-
-models {
+import { PACKAGE_NAME, PACKAGE_VERSION } from '../constants.js';
+export const APP_SCHEMA_TEMPLATE = `models {
   model User {
     id:        UUID        @id @default(gen_random_uuid())
     email:     VARCHAR(255) @unique
@@ -78,7 +70,7 @@ export function createPackageJsonTemplate(projectName) {
             '@hono/zod-validator': '^0.8.0',
             hono: '^4.12.27',
             pg: '^8.22.0',
-            [PACKAGE_NAME]: '^0.1.0',
+            [PACKAGE_NAME]: `^${PACKAGE_VERSION}`,
             zod: '^4.4.3',
         },
         devDependencies: {
