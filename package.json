@@ -1,5 +1,5 @@
 {
-  "name": "postgrestjs",
+  "name": "schematic-pg",
   "version": "0.1.0",
   "description": "Single-file backend framework for PostgreSQL and Node.js",
   "type": "module",
@@ -14,7 +14,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "postgrestjs": "./dist/cli.js"
+    "schematic-pg": "./dist/cli.js"
   },
   "files": [
     "dist/",
@@ -61,8 +61,8 @@
     "db:diff": "tsx src/cli.ts db:diff",
     "db:migrate": "tsx src/cli.ts db:migrate",
     "db:migrate:status": "tsx src/cli.ts db:migrate:status",
-    "build:lsp": "npm run build --workspace=@postgrest/schema-dsl-language-server",
-    "build:extension": "npm run vscode:prepublish --workspace=postgrest-schema-dsl-vscode && npm run package --workspace=postgrest-schema-dsl-vscode",
+    "build:lsp": "npm run build --workspace=@schematic-pg/schema-dsl-language-server",
+    "build:extension": "npm run vscode:prepublish --workspace=schematic-pg-schema-dsl-vscode && npm run package --workspace=schematic-pg-schema-dsl-vscode",
     "test": "node --import tsx --test $(find src editors/language-server -path '*/__tests__/*.test.ts' ! -name '*.integration.test.ts')",
     "test:integration": "npm run setup:env && docker compose up -d --wait && npm run generate:client && npm run generate:api && JWT_SECRET=integration-test-secret node --import tsx --test --test-concurrency=1 'src/**/__tests__/**/*.integration.test.ts'",
     "docker:up": "docker compose up -d",

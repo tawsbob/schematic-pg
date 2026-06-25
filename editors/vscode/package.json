@@ -1,9 +1,9 @@
 {
-  "name": "postgrest-schema-dsl-vscode",
-  "displayName": "PostgREST Schema DSL",
+  "name": "schematic-pg-schema-dsl-vscode",
+  "displayName": "Schematic PG Schema DSL",
   "description": "Syntax highlighting and language support for .schema files",
   "version": "0.1.0",
-  "publisher": "postgrest",
+  "publisher": "schematic-pg",
   "private": true,
   "engines": {
     "vscode": "^1.85.0"
@@ -21,7 +21,7 @@
       {
         "id": "schema-dsl",
         "aliases": [
-          "PostgREST Schema",
+          "Schematic PG Schema",
           "schema"
         ],
         "extensions": [
@@ -56,7 +56,7 @@
   },
   "scripts": {
     "copy-assets": "node scripts/copy-assets.mjs",
-    "build:lsp": "npm run build --workspace=@postgrest/schema-dsl-language-server",
+    "build:lsp": "npm run build --workspace=@schematic-pg/schema-dsl-language-server",
     "compile": "npm run copy-assets && npm run build:lsp && node esbuild.mjs",
     "vscode:prepublish": "npm run compile",
     "package": "vsce package --no-dependencies"

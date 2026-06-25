@@ -1,3 +1,4 @@
+import { PACKAGE_NAME } from '../constants.js';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -14,7 +15,7 @@ function resolveTargetDir(args) {
     return path.resolve(targetArg ?? '.');
 }
 function resolveProjectName(targetDir) {
-    return path.basename(targetDir) || 'postgrestjs-app';
+    return path.basename(targetDir) || `${PACKAGE_NAME}-app`;
 }
 export async function runInit(args) {
     const targetDir = resolveTargetDir(args);
@@ -50,7 +51,7 @@ export async function runInit(args) {
     }
     console.log('  npm install');
     console.log('  docker compose up -d');
-    console.log('  npx postgrestjs generate');
-    console.log('  npx postgrestjs db:bootstrap');
-    console.log('  npx postgrestjs dev');
+    console.log(`  npx ${PACKAGE_NAME} generate`);
+    console.log(`  npx ${PACKAGE_NAME} db:bootstrap`);
+    console.log(`  npx ${PACKAGE_NAME} dev`);
 }

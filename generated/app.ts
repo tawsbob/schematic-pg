@@ -12,12 +12,12 @@ import logsRouter from './routes/logs.js';
 import productsRouter from './routes/products.js';
 import productOrdersRouter from './routes/product-orders.js';
 import healthRouter from '../src/routes/health.js';
-import { createAuthMiddleware } from 'postgrestjs/api/auth/middleware';
-import { createJwtResolver } from 'postgrestjs/api/auth/jwt-resolver';
-import type { AuthResolver } from 'postgrestjs/api/auth/types';
-import { createDbMiddleware } from 'postgrestjs/api/middleware/db';
-import { handleError } from 'postgrestjs/api/middleware/errors';
-import type { AppEnv } from 'postgrestjs/api/types';
+import { createAuthMiddleware } from 'schematic-pg/api/auth/middleware';
+import { createJwtResolver } from 'schematic-pg/api/auth/jwt-resolver';
+import type { AuthResolver } from 'schematic-pg/api/auth/types';
+import { createDbMiddleware } from 'schematic-pg/api/middleware/db';
+import { handleError } from 'schematic-pg/api/middleware/errors';
+import type { AppEnv } from 'schematic-pg/api/types';
 
 export interface CreateAppOptions {
   pool?: Pool;

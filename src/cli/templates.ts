@@ -1,3 +1,5 @@
+import { PACKAGE_NAME } from '../constants.js';
+
 export const APP_SCHEMA_TEMPLATE = `models {
   model User {
     id:        UUID        @id @default(gen_random_uuid())
@@ -17,7 +19,7 @@ JWT_USER_ID_CLAIM=sub
 export const DOCKER_COMPOSE_TEMPLATE = `services:
   postgres:
     image: postgis/postgis:16-3.4
-    container_name: postgrestjs-postgres
+    container_name: schematic-pg-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -50,7 +52,7 @@ export const TSCONFIG_TEMPLATE = `{
 `;
 
 export const HEALTH_ROUTE_TEMPLATE = `import { Hono } from 'hono';
-import type { AppEnv } from 'postgrestjs/api/types';
+import type { AppEnv } from '${PACKAGE_NAME}/api/types';
 
 const router = new Hono<AppEnv>();
 router.get('/', (c) => c.json({ ok: true }));
@@ -69,17 +71,17 @@ export function createPackageJsonTemplate(projectName: string): string {
         'generated/policies.js': './generated/policies.js',
       },
       scripts: {
-        dev: 'postgrestjs dev',
-        generate: 'postgrestjs generate',
-        'db:bootstrap': 'postgrestjs db:bootstrap',
-        'db:migrate': 'postgrestjs db:migrate',
+        dev: `${PACKAGE_NAME} dev`,
+        generate: `${PACKAGE_NAME} generate`,
+        'db:bootstrap': `${PACKAGE_NAME} db:bootstrap`,
+        'db:migrate': `${PACKAGE_NAME} db:migrate`,
       },
       dependencies: {
         '@hono/node-server': '^2.0.6',
         '@hono/zod-validator': '^0.8.0',
         hono: '^4.12.27',
         pg: '^8.22.0',
-        postgrestjs: '^0.1.0',
+        [PACKAGE_NAME]: '^0.1.0',
         zod: '^4.4.3',
       },
       devDependencies: {

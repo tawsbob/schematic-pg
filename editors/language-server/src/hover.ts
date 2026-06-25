@@ -1,4 +1,4 @@
-import type { Schema } from 'postgrestjs/schema-dsl';
+import type { Schema } from 'schematic-pg/schema-dsl';
 import { Position } from 'vscode-languageserver';
 import type { SchemaIndex } from './schema-index.js';
 import { findDefinition, getEnumValues } from './schema-index.js';

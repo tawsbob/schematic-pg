@@ -1,5 +1,5 @@
 {
-  "name": "@postgrest/schema-dsl-language-server",
+  "name": "@schematic-pg/schema-dsl-language-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "test": "node --import tsx --test '__tests__/**/*.test.ts'"
   },
   "dependencies": {
-    "postgrestjs": "file:../..",
+    "schematic-pg": "file:../..",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"
   },

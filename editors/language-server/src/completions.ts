@@ -1,4 +1,4 @@
-import type { Schema } from 'postgrestjs/schema-dsl';
+import type { Schema } from 'schematic-pg/schema-dsl';
 import { CompletionItem, CompletionItemKind, Position } from 'vscode-languageserver';
 import {
   DEFAULT_FUNCTIONS,

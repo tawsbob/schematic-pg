@@ -4,7 +4,9 @@ import { runDev } from './cli/dev.js';
 import { generateAll, generateApi, generateClient, generateSql } from './cli/generate.js';
 import { runInit } from './cli/init.js';
 
-const USAGE = `Usage: postgrestjs <command> [options]
+import { PACKAGE_NAME } from './constants.js';
+
+const USAGE = `Usage: ${PACKAGE_NAME} <command> [options]
 
 Commands:
   init [dir]                 Scaffold a new project

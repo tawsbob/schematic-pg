@@ -1,6 +1,6 @@
 # Editor Tooling
 
-This folder contains IDE support for the PostgREST Schema DSL (`.schema` files).
+This folder contains IDE support for the Schematic PG Schema DSL (`.schema` files).
 
 ## Packages
 
@@ -32,7 +32,7 @@ npm run build:extension
 Or from the extension package:
 
 ```bash
-npm run compile --workspace=postgrest-schema-dsl-vscode
+npm run compile --workspace=schematic-pg-schema-dsl-vscode
 ```
 
 ### Run in Extension Development Host

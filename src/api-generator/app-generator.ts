@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { PACKAGE_NAME } from '../constants.js';
 import type { Schema } from '../schema-dsl/ast.js';
 import { discoverCustomRoutes } from './custom-route-scanner.js';
 import { getRouteMountEntries } from './route-generator.js';
@@ -45,12 +46,12 @@ export class AppGenerator {
       "import { prettyJSON } from 'hono/pretty-json';",
       "import { serve } from '@hono/node-server';",
       routeImports,
-      "import { createAuthMiddleware } from 'postgrestjs/api/auth/middleware';",
-      "import { createJwtResolver } from 'postgrestjs/api/auth/jwt-resolver';",
-      "import type { AuthResolver } from 'postgrestjs/api/auth/types';",
-      "import { createDbMiddleware } from 'postgrestjs/api/middleware/db';",
-      "import { handleError } from 'postgrestjs/api/middleware/errors';",
-      "import type { AppEnv } from 'postgrestjs/api/types';",
+      `import { createAuthMiddleware } from '${PACKAGE_NAME}/api/auth/middleware';`,
+      `import { createJwtResolver } from '${PACKAGE_NAME}/api/auth/jwt-resolver';`,
+      `import type { AuthResolver } from '${PACKAGE_NAME}/api/auth/types';`,
+      `import { createDbMiddleware } from '${PACKAGE_NAME}/api/middleware/db';`,
+      `import { handleError } from '${PACKAGE_NAME}/api/middleware/errors';`,
+      `import type { AppEnv } from '${PACKAGE_NAME}/api/types';`,
       '',
       'export interface CreateAppOptions {',
       '  pool?: Pool;',

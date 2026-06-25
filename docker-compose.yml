@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgis/postgis:16-3.4
-    container_name: postgrest-schema-postgres
+    container_name: schematic-pg-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"

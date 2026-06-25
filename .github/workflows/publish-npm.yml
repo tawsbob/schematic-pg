@@ -1,4 +1,4 @@
-# Publishes the root `postgrestjs` package to npm when a GitHub release is published.
+# Publishes the root `schematic-pg` package to npm when a GitHub release is published.
 #
 # One-time setup:
 # 1. Create an npm Automation access token at https://www.npmjs.com/settings/~/tokens

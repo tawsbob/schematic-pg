@@ -1,4 +1,4 @@
-# Postgrest.js
+# schematic-pg
 
 > A single-file backend framework for PostgreSQL and Node.js. Define your database schema, ACL policies, and validations in one declarative DSL — then generate the SQL, the API, and the types.
 
@@ -6,7 +6,7 @@
 
 ## Philosophy
 
-Most backend frameworks force you to scatter your truth across migrations, ORM models, Zod schemas, route handlers, and access control lists. postgrest.js inverts that: **your schema definition is the source of truth** for everything — the database, the REST API, and the runtime validations.
+Most backend frameworks force you to scatter your truth across migrations, ORM models, Zod schemas, route handlers, and access control lists. schematic-pg inverts that: **your schema definition is the source of truth** for everything — the database, the REST API, and the runtime validations.
 
 - **One file.** Schema, relations, triggers, indexes, and ACL in a single `.schema` file.
 - **Zero ORM.** We generate raw PostgreSQL and parameterized queries. No hidden query builders, no N+1 surprises.
@@ -194,7 +194,7 @@ models {
 Install the CLI and scaffold a new project:
 
 ```bash
-npx postgrestjs init my-app
+npx schematic-pg init my-app
 cd my-app
 npm install
 ```
@@ -206,13 +206,13 @@ Edit `app.schema`, then generate code and start the API:
 docker compose up -d
 
 # Generate schema.sql + generated/ (db client, routes, policies, Zod schemas)
-npx postgrestjs generate
+npx schematic-pg generate
 
 # Apply DDL to the database and snapshot schema state
-npx postgrestjs db:bootstrap
+npx schematic-pg db:bootstrap
 
 # Regenerate client + API and start the server
-npx postgrestjs dev
+npx schematic-pg dev
 # → http://localhost:3000
 ```
 
@@ -224,7 +224,7 @@ The `init` command creates everything you need to get running:
 | `.env` | `DATABASE_URL`, JWT settings |
 | `docker-compose.yml` | Local PostGIS PostgreSQL on `:5432` |
 | `tsconfig.json` | TypeScript config for `generated/` and `src/routes/` |
-| `package.json` | `postgrestjs` + runtime deps (`hono`, `pg`, `zod`, …) |
+| `package.json` | `schematic-pg` + runtime deps (`hono`, `pg`, `zod`, …) |
 | `src/routes/health.ts` | Example custom route mounted at `/health` |
 
 After `generate`, your project also contains:
@@ -238,7 +238,7 @@ After `generate`, your project also contains:
 | `generated/policies.ts` | ACL metadata from `@policy` |
 | `generated/schemas/validation.ts` | Zod request validators |
 
-Generated code imports the runtime from the `postgrestjs` package (`postgrestjs/api/*`, `postgrestjs/db/*`). You do not copy framework source into your project.
+Generated code imports the runtime from the `schematic-pg` package (`schematic-pg/api/*`, `schematic-pg/db/*`). You do not copy framework source into your project.
 
 ### Environment variables
 
@@ -256,21 +256,21 @@ Set these in `.env` before running `db:bootstrap` or `dev`.
 
 ## CLI Reference
 
-The `postgrestjs` binary is the primary interface. Each command accepts an optional path to a schema file (defaults to `app.schema` in the current directory).
+The `schematic-pg` binary is the primary interface. Each command accepts an optional path to a schema file (defaults to `app.schema` in the current directory).
 
 ### Project setup
 
 ```bash
-postgrestjs init [dir]     # Scaffold a new project (default: current directory)
+schematic-pg init [dir]     # Scaffold a new project (default: current directory)
 ```
 
 ### Code generation
 
 ```bash
-postgrestjs generate [schema]        # schema.sql + db client + API (all three)
-postgrestjs generate:sql [schema]    # SQL DDL to stdout
-postgrestjs generate:client [schema]   # generated/db*.ts only
-postgrestjs generate:api [schema]      # generated/app.ts, routes/, policies, schemas
+schematic-pg generate [schema]        # schema.sql + db client + API (all three)
+schematic-pg generate:sql [schema]    # SQL DDL to stdout
+schematic-pg generate:client [schema]   # generated/db*.ts only
+schematic-pg generate:api [schema]      # generated/app.ts, routes/, policies, schemas
 ```
 
 Run `generate:client` before `generate:api` when using the split commands — routes depend on `generated/db.ts`.
@@ -278,25 +278,25 @@ Run `generate:client` before `generate:api` when using the split commands — ro
 ### Development server
 
 ```bash
-postgrestjs dev [schema]   # generate:client + generate:api, then start generated/app.ts
+schematic-pg dev [schema]   # generate:client + generate:api, then start generated/app.ts
 ```
 
 Equivalent npm scripts in a project created by `init`:
 
 ```bash
-npm run dev        # postgrestjs dev
-npm run generate   # postgrestjs generate
+npm run dev        # schematic-pg dev
+npm run generate   # schematic-pg generate
 ```
 
 ### Database commands
 
 ```bash
-postgrestjs db:ping [schema]              # Test DATABASE_URL connection (SELECT 1)
-postgrestjs db:bootstrap [schema]         # Apply DDL from schema + write .schema-state snapshot
-postgrestjs db:diff [schema]              # Print pending schema changes (snapshot vs app.schema)
-postgrestjs db:diff --name add_users      # Write a migration file under migrations/
-postgrestjs db:migrate [schema]           # Apply pending migration files
-postgrestjs db:migrate:status [schema]    # Show snapshot + migration file status
+schematic-pg db:ping [schema]              # Test DATABASE_URL connection (SELECT 1)
+schematic-pg db:bootstrap [schema]         # Apply DDL from schema + write .schema-state snapshot
+schematic-pg db:diff [schema]              # Print pending schema changes (snapshot vs app.schema)
+schematic-pg db:diff --name add_users      # Write a migration file under migrations/
+schematic-pg db:migrate [schema]           # Apply pending migration files
+schematic-pg db:migrate:status [schema]    # Show snapshot + migration file status
 ```
 
 `db:bootstrap` is the recommended first-time setup. Use `db:diff` / `db:migrate` when evolving an existing database.
@@ -310,7 +310,7 @@ psql $DATABASE_URL -f schema.sql
 ### Help
 
 ```bash
-postgrestjs --help
+schematic-pg --help
 ```
 
 ---
@@ -321,7 +321,7 @@ Contributors working on the framework itself clone the repo and use npm scripts 
 
 ```bash
 cp .env.example .env          # configure DATABASE_URL
-npm run build                 # compile src/ → dist/ (required for postgrestjs/* imports)
+npm run build                 # compile src/ → dist/ (required for schematic-pg/* imports)
 npm run docker:up             # PostGIS-enabled PostgreSQL on :5432
 npm run generate              # write schema.sql from app.schema
 npm run generate:client       # write generated/db*.ts
@@ -341,7 +341,7 @@ A type-safe query layer generated from your schema AST. The API mirrors Prisma e
 ### Generate
 
 ```bash
-npx postgrestjs generate:client
+npx schematic-pg generate:client
 # or: npm run generate:client   (inside a scaffolded project)
 ```
 
@@ -473,7 +473,7 @@ PostgreSQL errors are mapped to typed exceptions:
 | `DatabaseError` | other | Generic wrapper with `code`, `detail`, `constraint` |
 
 ```typescript
-import { UniqueConstraintError } from 'postgrestjs/db/errors';
+import { UniqueConstraintError } from 'schematic-pg/db/errors';
 
 try {
   await db.user.create({ email: 'taken@b.com', name: 'X', balance: 0 });
@@ -486,10 +486,10 @@ try {
 
 ### Runtime architecture
 
-Generated code is a thin wrapper. The query engine ships inside the `postgrestjs` package (`postgrestjs/db/*`). In this repository, the source lives under `src/db/`:
+Generated code is a thin wrapper. The query engine ships inside the `schematic-pg` package (`schematic-pg/db/*`). In this repository, the source lives under `src/db/`:
 
 ```
-postgrestjs/dist/db/        # Published runtime (import as postgrestjs/db/*)
+schematic-pg/dist/db/        # Published runtime (import as schematic-pg/db/*)
 ├── query-builder.ts        # INSERT / SELECT / UPDATE / DELETE / COUNT
 ├── where-translator.ts     # WhereInput → SQL + params
 ├── model-client.ts         # createModelClient factory
@@ -523,11 +523,11 @@ A Hono-based HTTP layer generated from your schema AST. Each model gets a router
 ### Generate
 
 ```bash
-npx postgrestjs generate:api
+npx schematic-pg generate:api
 # or: npm run generate:api
 ```
 
-Requires `generate:client` first (routes call `createDbClient` from `generated/db.ts`). Use `npx postgrestjs generate` to run both.
+Requires `generate:client` first (routes call `createDbClient` from `generated/db.ts`). Use `npx schematic-pg generate` to run both.
 
 Outputs:
 
@@ -542,7 +542,7 @@ Outputs:
 ### Start the server
 
 ```bash
-npx postgrestjs dev
+npx schematic-pg dev
 # or: npm run dev
 # → regenerates client + API, then starts http://localhost:3000
 ```
@@ -582,7 +582,7 @@ Models with composite primary keys (`@@id(fields: [...])`) expose one path segme
 
 ### Custom routes
 
-Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks, or other app-specific handlers, add hand-written Hono routers under `src/routes/`. Running `postgrestjs generate:api` (or `postgrestjs dev`) discovers these files and wires them into `generated/app.ts` — same global middleware (`db`, `auth`, error handling) as schema-generated routes.
+Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks, or other app-specific handlers, add hand-written Hono routers under `src/routes/`. Running `schematic-pg generate:api` (or `schematic-pg dev`) discovers these files and wires them into `generated/app.ts` — same global middleware (`db`, `auth`, error handling) as schema-generated routes.
 
 **Convention**
 
@@ -591,7 +591,7 @@ Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks
 | Location | `src/routes/**/*.ts` |
 | Export | `export default router` where `router` is `Hono<AppEnv>` |
 | Mount path | File path relative to `src/routes/`, without extension |
-| Regenerate | `postgrestjs generate:api` or `postgrestjs dev` after adding or renaming files |
+| Regenerate | `schematic-pg generate:api` or `schematic-pg dev` after adding or renaming files |
 
 **Path mapping**
 
@@ -604,7 +604,7 @@ Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks
 
 ```typescript
 import { Hono } from 'hono';
-import type { AppEnv } from 'postgrestjs/api/types';
+import type { AppEnv } from 'schematic-pg/api/types';
 
 const router = new Hono<AppEnv>();
 
@@ -613,7 +613,7 @@ router.get('/', (c) => c.json({ ok: true }));
 export default router;
 ```
 
-After `postgrestjs generate:api`, `generated/app.ts` includes:
+After `schematic-pg generate:api`, `generated/app.ts` includes:
 
 ```typescript
 import healthRouter from '../src/routes/health.js';
@@ -745,10 +745,10 @@ app.route('/health', healthRouter);
 
 ### Runtime architecture
 
-Generated routes and schemas are thin wrappers. The HTTP runtime ships inside the `postgrestjs` package (`postgrestjs/api/*`). In this repository, the source lives under `src/api/`:
+Generated routes and schemas are thin wrappers. The HTTP runtime ships inside the `schematic-pg` package (`schematic-pg/api/*`). In this repository, the source lives under `src/api/`:
 
 ```
-postgrestjs/dist/api/       # Published runtime (import as postgrestjs/api/*)
+schematic-pg/dist/api/       # Published runtime (import as schematic-pg/api/*)
 ├── types.ts                # Hono AppEnv (db + auth in context)
 ├── auth/
 │   ├── jwt-resolver.ts     # Default Bearer JWT resolver (HS256)
@@ -861,7 +861,7 @@ Set `JWT_SECRET` in `.env` when using the default resolver.
 Different systems resolve identity differently. Pass a custom `AuthResolver` to the middleware:
 
 ```typescript
-import { createAuthMiddleware } from 'postgrestjs/api/auth/middleware';
+import { createAuthMiddleware } from 'schematic-pg/api/auth/middleware';
 
 app.use(createAuthMiddleware(async (c) => {
   const role = c.req.header('X-Role');
@@ -902,7 +902,7 @@ Complex multi-clause SQL in `where` is not supported yet — keep policies to a 
 
 ### Generated policy metadata
 
-`postgrestjs generate:api` emits `generated/policies.ts`:
+`schematic-pg generate:api` emits `generated/policies.ts`:
 
 ```typescript
 export const POLICIES: Record<string, NormalizedPolicy[]> = {
@@ -931,7 +931,7 @@ These scenarios are covered by `npm run test:integration` — see [`src/api/__te
 
 ## Project Structure
 
-After `postgrestjs init` and `postgrestjs generate`, a typical application looks like this:
+After `schematic-pg init` and `schematic-pg generate`, a typical application looks like this:
 
 ```
 my-app/
@@ -940,7 +940,7 @@ my-app/
 ├── .env                    # DATABASE_URL, JWT_* settings
 ├── docker-compose.yml      # Local PostgreSQL (optional)
 ├── tsconfig.json
-├── package.json            # postgrestjs + hono + pg + zod
+├── package.json            # schematic-pg + hono + pg + zod
 ├── generated/
 │   ├── db.ts               # createDbClient(pool) factory
 │   ├── db-types.ts         # Generated model + input interfaces
@@ -958,7 +958,7 @@ my-app/
         └── health.ts       # Custom route → GET /health
 ```
 
-Framework runtime (query builder, auth middleware, validation) is **not** copied into your project — it is imported from `node_modules/postgrestjs` at runtime. Only `generated/` and `src/routes/` contain project-specific code.
+Framework runtime (query builder, auth middleware, validation) is **not** copied into your project — it is imported from `node_modules/schematic-pg` at runtime. Only `generated/` and `src/routes/` contain project-specific code.
 
 ### This repository (framework source)
 
@@ -968,10 +968,10 @@ postgrest.js/
 │   ├── schema-dsl/         # Lexer, parser, AST
 │   ├── sql-generator/      # DDL + migration planner
 │   ├── db/                 # Query builder + client runtime
-│   ├── api/                # Hono runtime (published as postgrestjs/api/*)
+│   ├── api/                # Hono runtime (published as schematic-pg/api/*)
 │   ├── api-generator/      # AST → routes, Zod, policies, app
 │   ├── cli/                # init templates + command helpers
-│   └── cli.ts              # postgrestjs CLI entry point
+│   └── cli.ts              # schematic-pg CLI entry point
 ├── dist/                   # Compiled output (npm publish target)
 ├── generated/              # Sample output from app.schema (this repo)
 ├── app.schema              # Sample schema
@@ -980,9 +980,9 @@ postgrest.js/
 
 ---
 
-## Why postgrest.js?
+## Why schematic-pg?
 
-| Concern | ORM Approach | postgrest.js Approach |
+| Concern | ORM Approach | schematic-pg Approach |
 |---------|-----------|----------------------|
 | Schema truth | Migrations + models + Zod + routes | One `.schema` file |
 | Query visibility | Hidden behind ORM methods | Raw, parameterized SQL |
@@ -996,7 +996,7 @@ postgrest.js/
 
 ## Roadmap
 
-- [x] npm package + CLI (`postgrestjs init`, `generate`, `dev`, `db:*`)
+- [x] npm package + CLI (`schematic-pg init`, `generate`, `dev`, `db:*`)
 - [x] Hand-written lexer & recursive-descent parser
 - [x] SQL DDL generator (full regeneration)
 - [x] Type-safe database client generator (`createDbClient`, parameterized query builder)

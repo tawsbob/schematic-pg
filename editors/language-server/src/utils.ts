@@ -1,4 +1,4 @@
-import type { SourceLocation } from 'postgrestjs/schema-dsl';
+import type { SourceLocation } from 'schematic-pg/schema-dsl';
 import { Position, Range } from 'vscode-languageserver';
 
 export function toRange(loc: SourceLocation): Range {
