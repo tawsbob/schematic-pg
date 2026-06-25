@@ -4,6 +4,8 @@ export declare class RouteGenerator {
     private readonly schema;
     constructor(model: Model, schema: Schema);
     generate(): string;
+    private jsonRow;
+    private jsonRows;
     private generateListRoute;
     private generateGetRoute;
     private generateCreateRoute;

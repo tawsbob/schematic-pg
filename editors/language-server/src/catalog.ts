@@ -30,6 +30,8 @@ export const FIELD_ATTRIBUTES = [
   'range',
   'relation',
   'policy',
+  'unfilterable',
+  'omit',
 ] as const;
 
 export const MODEL_DIRECTIVES = ['index', 'trigger', 'id'] as const;

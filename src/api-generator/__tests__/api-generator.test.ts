@@ -28,6 +28,24 @@ describe('ZodSchemaGenerator', () => {
     assert.match(output, /export const UserParamSchema = z\.object\(/);
     assert.match(output, /export const ProductOrderParamSchema = z\.object\(/);
   });
+
+  it('generates list query schemas with default filterable fields and omit metadata', () => {
+    const output = generateValidationSchemas(schema);
+
+    assert.match(output, /export const UserListQuerySchema = z/);
+    assert.match(output, /email_contains: z\.coerce\.string\(\)\.optional\(\)/);
+    assert.match(output, /role_in: z\.coerce\.string\(\)\.optional\(\)/);
+    assert.match(output, /export const USER_OMIT_FIELDS = \["passwordHash"\] as const;/);
+    assert.match(output, /export type UserResponse = Omit<User, 'passwordHash'>;/);
+    const userQueryFields =
+      output.match(/export const USER_LIST_QUERY_FIELDS = (\[[\s\S]*?\]) as const;/)?.[1] ?? '';
+
+    assert.doesNotMatch(userQueryFields, /"name": "id"/);
+    assert.doesNotMatch(userQueryFields, /"name": "passwordHash"/);
+    assert.doesNotMatch(userQueryFields, /"name": "updatedAt"/);
+    assert.match(output, /export const PRODUCT_OMIT_FIELDS = \[\] as const;/);
+    assert.match(output, /export type ProductResponse = Product;/);
+  });
 });
 
 describe('RouteGenerator', () => {
@@ -77,6 +95,23 @@ describe('RouteGenerator', () => {
     assert.match(users!, /mergeWhere\(\{ id: params\.id \}, policyWhere\)/);
     assert.doesNotMatch(logs!, /assertPolicy/);
     assert.doesNotMatch(logs!, /resolvePolicyWhere/);
+  });
+
+  it('generates list routes with query filters and omit wrappers on all handlers', () => {
+    const routes = generateRouteFiles(schema);
+    const users = routes.get('users.ts')!;
+    const products = routes.get('products.ts')!;
+
+    assert.match(users, /validateQuery\(UserListQuerySchema\)/);
+    assert.match(users, /buildListQuery\(/);
+    assert.match(users, /mergeWhere\(where, policyWhere\)/);
+    assert.match(users, /omitFieldsMany\(rows, USER_OMIT_FIELDS\)/);
+    assert.match(users, /omitFields\(row, USER_OMIT_FIELDS\)/);
+    assert.match(users, /c\.json\(omitFields\(row, USER_OMIT_FIELDS\), 201\)/);
+
+    assert.match(products, /validateQuery\(ProductListQuerySchema\)/);
+    assert.match(products, /omitFieldsMany\(rows, PRODUCT_OMIT_FIELDS\)/);
+    assert.doesNotMatch(products, /mergeWhere\(where, policyWhere\)/);
   });
 
   it('maps route mount entries for all models', () => {

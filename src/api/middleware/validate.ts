@@ -21,4 +21,8 @@ export function validateParam<T extends ZodSchema>(schema: T) {
   return zValidator('param', schema, validationHook);
 }
 
+export function validateQuery<T extends ZodSchema>(schema: T) {
+  return zValidator('query', schema, validationHook);
+}
+
 export type ValidationTarget = keyof ValidationTargets;

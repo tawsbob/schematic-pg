@@ -4,6 +4,8 @@ export declare class ZodSchemaGenerator {
     constructor(schema: Schema);
     generate(): string;
     private generateModelSchemas;
+    private generateListQuerySchemas;
+    private generateListQueryFieldLines;
     private generateObjectField;
     private generateParamField;
     private toParamZodType;

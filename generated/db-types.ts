@@ -14,6 +14,7 @@ export interface User {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date | null;
+  passwordHash: string | null;
 }
 
 export interface UserCreateInput {
@@ -25,6 +26,7 @@ export interface UserCreateInput {
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date | null;
+  passwordHash?: string | null;
 }
 
 export interface UserUpdateInput {
@@ -36,6 +38,7 @@ export interface UserUpdateInput {
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date | null;
+  passwordHash?: string | null;
 }
 
 export interface UserWhereInput {
@@ -48,6 +51,7 @@ export interface UserWhereInput {
   isActive?: boolean;
   createdAt?: Date | { equals: Date };
   updatedAt?: Date | null | { equals: Date | null };
+  passwordHash?: string | null | { equals: string | null } | { contains: string } | { startsWith: string } | { endsWith: string };
   AND?: UserWhereInput[];
   OR?: UserWhereInput[];
   NOT?: UserWhereInput;
@@ -63,6 +67,7 @@ export interface UserOrderByInput {
   isActive?: 'asc' | 'desc';
   createdAt?: 'asc' | 'desc';
   updatedAt?: 'asc' | 'desc';
+  passwordHash?: 'asc' | 'desc';
 }
 
 

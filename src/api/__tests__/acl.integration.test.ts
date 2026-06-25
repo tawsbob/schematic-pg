@@ -21,14 +21,19 @@ interface RequestOptions {
   method?: string;
   token?: string;
   body?: Record<string, unknown>;
+  query?: Record<string, string>;
 }
 
 async function request(
   app: Hono<AppEnv>,
   path: string,
-  { method = 'GET', token, body }: RequestOptions = {},
+  { method = 'GET', token, body, query }: RequestOptions = {},
 ): Promise<Response> {
-  return app.request(path, {
+  const url = query
+    ? `${path}?${new URLSearchParams(query).toString()}`
+    : path;
+
+  return app.request(url, {
     method,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -203,6 +208,101 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
       const response = await request(app, '/logs');
 
       assert.equal(response.status, 200);
+    });
+  });
+
+  describe('query filters and response omit', () => {
+    it('omits passwordHash from GET /users/:id responses', async () => {
+      const response = await request(app, `/users/${users.alice.id}`, { token: aliceToken });
+
+      assert.equal(response.status, 200);
+      const row = (await response.json()) as Record<string, unknown>;
+      assert.equal('passwordHash' in row, false);
+    });
+
+    it('omits passwordHash from POST /users responses', async () => {
+      const response = await request(app, '/users', {
+        method: 'POST',
+        token: aliceToken,
+        body: {
+          email: 'omit-test@b.com',
+          name: 'Omit Test',
+          balance: 0,
+          passwordHash: 'secret-value',
+        },
+      });
+
+      assert.equal(response.status, 201);
+      const row = (await response.json()) as Record<string, unknown>;
+      assert.equal('passwordHash' in row, false);
+    });
+
+    it('filters products by category query param', async () => {
+      const createAlpha = await request(app, '/products', {
+        method: 'POST',
+        body: {
+          name: 'Alpha',
+          description: 'First',
+          price: '10.00',
+          stock: 1,
+          category: 'books',
+          tags: ['a'],
+          metadata: { tier: 'a' },
+        },
+      });
+      assert.equal(createAlpha.status, 201);
+
+      const createBeta = await request(app, '/products', {
+        method: 'POST',
+        body: {
+          name: 'Beta',
+          description: 'Second',
+          price: '20.00',
+          stock: 2,
+          category: 'games',
+          tags: ['b'],
+          metadata: { tier: 'b' },
+        },
+      });
+      assert.equal(createBeta.status, 201);
+
+      const response = await request(app, '/products', { query: { category: 'books' } });
+
+      assert.equal(response.status, 200);
+      const rows = (await response.json()) as Array<{ category: string; name: string }>;
+      assert.ok(rows.length >= 1);
+      assert.ok(rows.every((row) => row.category === 'books'));
+      assert.ok(rows.some((row) => row.name === 'Alpha'));
+      assert.ok(rows.every((row) => row.name !== 'Beta'));
+    });
+
+    it('applies user filters within policy scope on GET /users', async () => {
+      const matching = await request(app, '/users', {
+        token: aliceToken,
+        query: { role: 'USER' },
+      });
+
+      assert.equal(matching.status, 200);
+      const matchingRows = (await matching.json()) as Array<{ id: string }>;
+      assert.equal(matchingRows.length, 1);
+      assert.equal(matchingRows[0]!.id, users.alice.id);
+
+      const nonMatching = await request(app, '/users', {
+        token: aliceToken,
+        query: { role: 'ADMIN' },
+      });
+
+      assert.equal(nonMatching.status, 200);
+      const nonMatchingRows = (await nonMatching.json()) as Array<{ id: string }>;
+      assert.equal(nonMatchingRows.length, 0);
+    });
+
+    it('returns 400 for invalid sort query params', async () => {
+      const response = await request(app, '/products', {
+        query: { sort: 'not-a-field' },
+      });
+
+      assert.equal(response.status, 400);
     });
   });
 });

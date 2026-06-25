@@ -49,10 +49,10 @@ describe('Integration — app.schema', () => {
     ]);
   });
 
-  it('User model has 11 fields', () => {
+  it('User model has 12 fields', () => {
     const user = schema.models.find((m) => m.name === 'User');
     assert.ok(user);
-    assert.equal(user!.fields.length, 11);
+    assert.equal(user!.fields.length, 12);
   });
 
   it('User model has 2 @policy model attributes', () => {

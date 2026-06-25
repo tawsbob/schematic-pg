@@ -742,13 +742,46 @@ Every router exposes the same CRUD shape. Models with `@policy` attributes enfor
 
 | Method | Path | Handler | Validation |
 |--------|------|---------|------------|
-| `GET` | `/` | `findMany({ where: policyWhere })` | — |
+| `GET` | `/` | `findMany({ where: mergeWhere(queryWhere, policyWhere), orderBy, take, skip })` | Query params |
 | `GET` | `/{pk}` | `findUnique(mergeWhere(pk, policyWhere))` | Path params |
 | `POST` | `/` | `create(body)` — policy check only | JSON body |
 | `PUT` | `/{pk}` | `update({ where: mergeWhere(pk, policyWhere), data })` | Path params + JSON body |
 | `DELETE` | `/{pk}` | `delete(mergeWhere(pk, policyWhere))` | Path params |
 
-`POST` returns `201 Created`. Missing records on `GET` return `404`.
+`POST` returns `201 Created`. Missing records on `GET` return `404`. All handlers strip `@omit` fields from JSON responses before returning.
+
+### Query filters (`GET /`)
+
+All stored scalar fields are URL-filterable by default. Opt out with `@unfilterable` on a field. Fields marked `@omit` are never filterable.
+
+Query params use **API field names** (camelCase), not SQL column names:
+
+| Param | Maps to |
+|-------|---------|
+| `?role=ADMIN` | `{ role: 'ADMIN' }` |
+| `?email_contains=@` | `{ email: { contains: '@' } }` |
+| `?balance_gte=100` | `{ balance: { gte: 100 } }` |
+| `?role_in=ADMIN,USER` | `{ role: { in: ['ADMIN', 'USER'] } }` |
+| `?limit=20` | `take: 20` (max 100) |
+| `?offset=40` | `skip: 40` |
+| `?sort=-createdAt` | `orderBy: { createdAt: 'desc' }` |
+
+On models with `@policy`, user filters are combined with the policy row filter via `mergeWhere` (AND). A USER calling `GET /users?role=ADMIN` still only sees rows allowed by policy.
+
+```bash
+curl "http://localhost:3000/products?category=books&limit=10"
+curl "http://localhost:3000/users?role=USER&isActive=true" -H "Authorization: Bearer $TOKEN"
+```
+
+### Response shaping (`@omit`)
+
+Mark sensitive stored fields with `@omit` to exclude them from generated route JSON responses (`GET`, `POST`, `PUT`, `DELETE`). The ORM client still returns full entities.
+
+```ts
+passwordHash: VARCHAR(255) @omit @unfilterable @default("")
+```
+
+Generated types include `{Model}Response` (for example `UserResponse = Omit<User, 'passwordHash'>`) in `generated/schemas/validation.ts`.
 
 ### Validation
 
@@ -779,6 +812,9 @@ Fields with `@default` or optional (`?`) types are optional on create. Update sc
 ```bash
 # Health check (custom route from src/routes/health.ts)
 curl http://localhost:3000/health
+
+# List users with filters
+curl "http://localhost:3000/users?role=USER&limit=10"
 
 # List users
 curl http://localhost:3000/users
@@ -868,8 +904,6 @@ your-project/src/routes/    # Hand-written custom Hono routers (auto-imported)
 ```
 
 The generators live in this repo under `src/api-generator/` and are invoked by the CLI at build time.
-
-URL query-string filters for `findMany` (e.g. `?role=ADMIN`) are planned for a future release.
 
 ---
 

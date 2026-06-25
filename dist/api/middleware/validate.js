@@ -11,3 +11,6 @@ export function validateJson(schema) {
 export function validateParam(schema) {
     return zValidator('param', schema, validationHook);
 }
+export function validateQuery(schema) {
+    return zValidator('query', schema, validationHook);
+}

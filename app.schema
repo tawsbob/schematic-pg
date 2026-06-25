@@ -12,15 +12,16 @@ enums {
 models {
 
   model User {
-    id:         UUID        @id @default(gen_random_uuid())
-    email:      VARCHAR(255) @unique @regex(pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", message: "Invalid email address")
-    name:       VARCHAR(150)
-    role:       UserRole    @default(USER)
-    age:        SMALLINT? @range(min: 1, max: 120, message: "Age must be between 1 and 120")
-    balance:    INTEGER
-    isActive:   BOOLEAN     @default(true)
-    createdAt:  TIMESTAMP   @default(now())
-    updatedAt:  TIMESTAMP?
+    id:           UUID        @id @default(gen_random_uuid()) @unfilterable
+    email:        VARCHAR(255) @unique @regex(pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", message: "Invalid email address")
+    name:         VARCHAR(150)
+    role:         UserRole    @default(USER)
+    age:          SMALLINT? @range(min: 1, max: 120, message: "Age must be between 1 and 120")
+    balance:      INTEGER
+    isActive:     BOOLEAN     @default(true)
+    createdAt:    TIMESTAMP   @default(now())
+    updatedAt:    TIMESTAMP?  @unfilterable
+    passwordHash: VARCHAR(255)? @omit @unfilterable
 
     profile:    Profile?    @relation(name: "UserProfile")
     orders:     Order[]
@@ -91,7 +92,7 @@ models {
     stock:       INTEGER
     category:    VARCHAR(100)
     tags:        TEXT[]
-    metadata:    JSONB
+    metadata:    JSONB       @unfilterable
     createdAt:   TIMESTAMP   @default(now())
     updatedAt:   TIMESTAMP?
 
