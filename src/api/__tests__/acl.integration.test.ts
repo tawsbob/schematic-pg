@@ -304,5 +304,45 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
 
       assert.equal(response.status, 400);
     });
+
+    it('parses boolean query filters for isActive', async () => {
+      const activeResponse = await request(app, '/users', {
+        token: adminToken,
+        query: { isActive: 'true' },
+      });
+
+      assert.equal(activeResponse.status, 200);
+      const activeRows = (await activeResponse.json()) as Array<{ id: string; isActive: boolean }>;
+      assert.ok(activeRows.length >= 1);
+      assert.ok(activeRows.every((row) => row.isActive === true));
+      assert.ok(activeRows.some((row) => row.id === users.alice.id));
+
+      const inactiveResponse = await request(app, '/users', {
+        token: adminToken,
+        query: { isActive: 'false' },
+      });
+
+      assert.equal(inactiveResponse.status, 200);
+      const inactiveRows = (await inactiveResponse.json()) as Array<{ id: string; isActive: boolean }>;
+      assert.ok(inactiveRows.length >= 1);
+      assert.ok(inactiveRows.every((row) => row.isActive === false));
+      assert.ok(inactiveRows.some((row) => row.id === users.bob.id));
+
+      const scopedResponse = await request(app, '/users', {
+        token: aliceToken,
+        query: { isActive: 'false' },
+      });
+
+      assert.equal(scopedResponse.status, 200);
+      const scopedRows = (await scopedResponse.json()) as Array<{ id: string }>;
+      assert.equal(scopedRows.length, 0);
+
+      const invalidResponse = await request(app, '/users', {
+        token: adminToken,
+        query: { isActive: 'not-a-bool' },
+      });
+
+      assert.equal(invalidResponse.status, 400);
+    });
   });
 });

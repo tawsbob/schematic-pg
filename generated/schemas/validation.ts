@@ -134,7 +134,10 @@ export const UserListQuerySchema = z
     balance_gte: z.coerce.number().int().optional(),
     balance_lt: z.coerce.number().int().optional(),
     balance_lte: z.coerce.number().int().optional(),
-    isActive: z.boolean().optional(),
+    isActive: z.preprocess(
+    (value) => (typeof value === 'string' ? value.toLowerCase() : value),
+    z.union([z.boolean(), z.enum(['true', 'false'])]).transform((value) => value === true || value === 'true'),
+  ).optional(),
     createdAt: z.coerce.date().optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
     offset: z.coerce.number().int().min(0).optional(),

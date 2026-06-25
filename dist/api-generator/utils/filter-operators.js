@@ -54,6 +54,12 @@ export function queryParamKey(fieldName, operator) {
     }
     return `${fieldName}_${operator}`;
 }
+export function toQueryBooleanZodType() {
+    return `z.preprocess(
+    (value) => (typeof value === 'string' ? value.toLowerCase() : value),
+    z.union([z.boolean(), z.enum(['true', 'false'])]).transform((value) => value === true || value === 'true'),
+  )`;
+}
 export function toFilterZodType(type, field, schema, operator, coerce = false) {
     const prefix = coerce ? 'z.coerce.' : 'z.';
     const enumType = schema.enums.find((enumDef) => enumDef.name === type.name);
@@ -77,7 +83,7 @@ export function toFilterZodType(type, field, schema, operator, coerce = false) {
         case 'SMALLINT':
             return `${prefix}number().int()`;
         case 'BOOLEAN':
-            return `${prefix}boolean()`;
+            return toQueryBooleanZodType();
         case 'TIMESTAMP':
             return 'z.coerce.date()';
         case 'DECIMAL':

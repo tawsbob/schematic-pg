@@ -1,11 +1,10 @@
 import { PACKAGE_NAME, PACKAGE_VERSION } from '../constants.js';
-export const APP_SCHEMA_TEMPLATE = `
-extensions {
-  
+export const APP_SCHEMA_TEMPLATE = `extensions {
+
 }
 
 enums {
-  
+
 }
 
 models {

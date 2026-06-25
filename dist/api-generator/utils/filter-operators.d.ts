@@ -11,4 +11,5 @@ export declare function getFilterFieldKind(field: Field, schema: Schema): Filter
 export declare function getFilterOperators(kind: FilterFieldKind): FilterOperator[];
 export declare function buildFilterFieldMeta(field: Field, schema: Schema): FilterFieldMeta;
 export declare function queryParamKey(fieldName: string, operator: FilterOperator): string;
+export declare function toQueryBooleanZodType(): string;
 export declare function toFilterZodType(type: TypeExpr, field: Field, schema: Schema, operator: FilterOperator, coerce?: boolean): string;

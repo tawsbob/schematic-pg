@@ -90,6 +90,13 @@ export function queryParamKey(fieldName: string, operator: FilterOperator): stri
   return `${fieldName}_${operator}`;
 }
 
+export function toQueryBooleanZodType(): string {
+  return `z.preprocess(
+    (value) => (typeof value === 'string' ? value.toLowerCase() : value),
+    z.union([z.boolean(), z.enum(['true', 'false'])]).transform((value) => value === true || value === 'true'),
+  )`;
+}
+
 export function toFilterZodType(
   type: TypeExpr,
   field: Field,
@@ -122,7 +129,7 @@ export function toFilterZodType(
     case 'SMALLINT':
       return `${prefix}number().int()`;
     case 'BOOLEAN':
-      return `${prefix}boolean()`;
+      return toQueryBooleanZodType();
     case 'TIMESTAMP':
       return 'z.coerce.date()';
     case 'DECIMAL':

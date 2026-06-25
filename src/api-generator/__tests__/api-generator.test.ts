@@ -45,6 +45,14 @@ describe('ZodSchemaGenerator', () => {
     assert.doesNotMatch(userQueryFields, /"name": "updatedAt"/);
     assert.match(output, /export const PRODUCT_OMIT_FIELDS = \[\] as const;/);
     assert.match(output, /export type ProductResponse = Product;/);
+
+    const userListQuerySchema =
+      output.match(/export const UserListQuerySchema = z[\s\S]*?}\);/)?.[0] ?? '';
+    assert.doesNotMatch(userListQuerySchema, /isActive: z\.boolean\(\)\.optional\(\)/);
+    assert.match(
+      userListQuerySchema,
+      /isActive: z\.preprocess\([\s\S]*?z\.union\(\[z\.boolean\(\), z\.enum\(\['true', 'false'\]\)\]\)/,
+    );
   });
 });
 

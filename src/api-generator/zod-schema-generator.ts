@@ -130,8 +130,7 @@ export class ZodSchemaGenerator {
 
     for (const operator of meta.operators) {
       const key = queryParamKey(field.name, operator as FilterOperator);
-      const useCoerce = operator !== 'equals' || field.type.name !== 'BOOLEAN';
-      const zodType = toFilterZodType(field.type, field, this.schema, operator as FilterOperator, useCoerce);
+      const zodType = toFilterZodType(field.type, field, this.schema, operator as FilterOperator, true);
       lines.push(`${key}: ${zodType}.optional(),`);
     }
 
