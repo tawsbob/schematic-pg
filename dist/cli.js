@@ -7,7 +7,7 @@ import { PACKAGE_NAME } from './constants.js';
 const USAGE = `Usage: ${PACKAGE_NAME} <command> [options]
 
 Commands:
-  init [dir]                 Scaffold a new project
+  init [dir] [--skip-install] Scaffold a new project
   generate [schema]          Generate schema.sql, db client, and API
   generate:sql [schema]      Generate SQL DDL to stdout
   generate:client [schema]   Generate db client files

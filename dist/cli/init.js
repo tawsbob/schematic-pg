@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { PACKAGE_NAME } from '../constants.js';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
@@ -17,7 +18,25 @@ function resolveTargetDir(args) {
 function resolveProjectName(targetDir) {
     return path.basename(targetDir) || `${PACKAGE_NAME}-app`;
 }
+function runNpmInstall(cwd) {
+    return new Promise((resolve, reject) => {
+        const child = spawn('npm', ['install'], {
+            cwd,
+            stdio: 'inherit',
+            shell: process.platform === 'win32',
+        });
+        child.on('error', reject);
+        child.on('close', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(`npm install failed with exit code ${code}`));
+        });
+    });
+}
 export async function runInit(args) {
+    const skipInstall = args.includes('--skip-install');
     const targetDir = resolveTargetDir(args);
     const projectName = resolveProjectName(targetDir);
     if (targetDir !== process.cwd() && existsSync(targetDir)) {
@@ -45,11 +64,17 @@ export async function runInit(args) {
     else {
         console.log('Skipped existing file: package.json');
     }
+    if (!skipInstall) {
+        console.log('\nRunning npm install...');
+        await runNpmInstall(targetDir);
+    }
     console.log('\nNext steps:');
     if (targetDir !== process.cwd()) {
         console.log(`  cd ${targetDir}`);
     }
-    console.log('  npm install');
+    if (skipInstall) {
+        console.log('  npm install');
+    }
     console.log('  docker compose up -d');
     console.log(`  npx ${PACKAGE_NAME} generate`);
     console.log(`  npx ${PACKAGE_NAME} db:bootstrap`);

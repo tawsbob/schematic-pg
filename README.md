@@ -196,7 +196,6 @@ Install the CLI and scaffold a new project:
 ```bash
 npx schematic-pg init my-app
 cd my-app
-npm install
 ```
 
 Edit `app.schema`, then generate code and start the API:
@@ -261,7 +260,7 @@ The `schematic-pg` binary is the primary interface. Each command accepts an opti
 ### Project setup
 
 ```bash
-schematic-pg init [dir]     # Scaffold a new project (default: current directory)
+schematic-pg init [dir] [--skip-install]  # Scaffold a new project (runs npm install by default)
 ```
 
 ### Code generation
