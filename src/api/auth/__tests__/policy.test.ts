@@ -3,8 +3,23 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { ForbiddenError } from '../errors.js';
-import { assertPolicy, mergeWhere, resolvePolicyWhere } from '../policy.js';
+import {
+  assertPolicy,
+  configurePolicies,
+  mergeWhere,
+  resolvePolicyWhere,
+  type NormalizedPolicy,
+} from '../policy.js';
 import type { AuthContext } from '../types.js';
+
+const TEST_POLICIES: Record<string, NormalizedPolicy[]> = {
+  User: [
+    { role: 'USER', operations: ['select', 'insert', 'update'], where: 'id = {{auth.user.id}}' },
+    { role: 'ADMIN', operations: 'all' },
+  ],
+};
+
+configurePolicies(TEST_POLICIES);
 
 const userAuth: AuthContext = {
   role: 'USER',

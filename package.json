@@ -1,6 +1,6 @@
 {
   "name": "schematic-pg",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Single-file backend framework for PostgreSQL and Node.js",
   "type": "module",
   "license": "MIT",
@@ -25,10 +25,6 @@
     "editors/vscode",
     "editors/language-server"
   ],
-  "imports": {
-    "generated/db.js": "./generated/db.js",
-    "generated/policies.js": "./generated/policies.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

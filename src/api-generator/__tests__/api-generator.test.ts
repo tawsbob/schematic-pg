@@ -93,6 +93,7 @@ describe('PolicyGenerator', () => {
   it('generates policy metadata from app.schema', () => {
     const output = generatePoliciesFile(schema);
 
+    assert.match(output, /import type \{ NormalizedPolicy \} from 'schematic-pg\/api\/auth\/policy'/);
     assert.match(output, /export const POLICIES: Record<string, NormalizedPolicy\[\]> = \{/);
     assert.match(output, /role: 'USER', operations: \['select', 'insert', 'update'\]/);
     assert.match(output, /where: "id = \{\{auth\.user\.id\}\}"/);
@@ -107,6 +108,11 @@ describe('AppGenerator', () => {
     assert.match(output, /import \{ Hono \} from 'hono'/);
     assert.match(output, /import type \{ AppEnv \} from 'schematic-pg\/api\/types'/);
     assert.match(output, /import \{ createAuthMiddleware \} from 'schematic-pg\/api\/auth\/middleware'/);
+    assert.match(output, /import \{ createDbClient \} from '\.\/db\.js'/);
+    assert.match(output, /import \{ POLICIES \} from '\.\/policies\.js'/);
+    assert.match(output, /import \{ configurePolicies \} from 'schematic-pg\/api\/auth\/policy'/);
+    assert.match(output, /configurePolicies\(POLICIES\)/);
+    assert.match(output, /app\.use\(createDbMiddleware\(\{ pool: options\.pool, createDbClient \}\)\)/);
     assert.match(output, /export function createApp\(options: CreateAppOptions = \{\}\): Hono<AppEnv>/);
     assert.match(output, /app\.use\(createAuthMiddleware\(options\.authResolver \?\? createJwtResolver\(\)\)\)/);
     assert.match(output, /import \{ logger \} from 'hono\/logger'/);

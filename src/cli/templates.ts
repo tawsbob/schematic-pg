@@ -66,10 +66,6 @@ export function createPackageJsonTemplate(projectName: string): string {
       version: '0.1.0',
       private: true,
       type: 'module',
-      imports: {
-        'generated/db.js': './generated/db.js',
-        'generated/policies.js': './generated/policies.js',
-      },
       scripts: {
         dev: `${PACKAGE_NAME} dev`,
         generate: `${PACKAGE_NAME} generate`,

@@ -1,22 +1,29 @@
 import type { WhereInput } from '../../db/where-translator.js';
-import { POLICIES, type NormalizedPolicy, type PolicyOperation } from 'generated/policies.js';
 import { ForbiddenError } from './errors.js';
+import type { NormalizedPolicy, PolicyOperation } from './policy-types.js';
 import { interpolateTemplate } from './template.js';
 import type { AuthContext } from './types.js';
 import { PUBLIC_ROLE } from './types.js';
 
-const SIMPLE_WHERE_PATTERN = /^(\w+)\s*(=|!=|<>|>=|<=|>|<)\s*(.+)$/;
-
+export type { NormalizedPolicy, PolicyOperation } from './policy-types.js';
 export { ForbiddenError, UnauthorizedError } from './errors.js';
 
-export function assertPolicy(model: string, role: string, operation: PolicyOperation): NormalizedPolicy {
-  const policies = POLICIES[model];
+const SIMPLE_WHERE_PATTERN = /^(\w+)\s*(=|!=|<>|>=|<=|>|<)\s*(.+)$/;
 
-  if (!policies || policies.length === 0) {
+let policies: Record<string, NormalizedPolicy[]> = {};
+
+export function configurePolicies(next: Record<string, NormalizedPolicy[]>): void {
+  policies = next;
+}
+
+export function assertPolicy(model: string, role: string, operation: PolicyOperation): NormalizedPolicy {
+  const modelPolicies = policies[model];
+
+  if (!modelPolicies || modelPolicies.length === 0) {
     throw new ForbiddenError(`No policies configured for model "${model}"`);
   }
 
-  const policy = findPolicyForRole(policies, role);
+  const policy = findPolicyForRole(modelPolicies, role);
 
   if (!policy) {
     throw new ForbiddenError(`Role "${role}" is not allowed to ${operation} ${model}`);
@@ -53,15 +60,15 @@ export function mergeWhere(
   return { AND: [primary, policyWhere] };
 }
 
-function findPolicyForRole(policies: NormalizedPolicy[], role: string): NormalizedPolicy | undefined {
-  const directMatch = policies.find((policy) => policy.role === role);
+function findPolicyForRole(modelPolicies: NormalizedPolicy[], role: string): NormalizedPolicy | undefined {
+  const directMatch = modelPolicies.find((policy) => policy.role === role);
 
   if (directMatch) {
     return directMatch;
   }
 
   if (role !== PUBLIC_ROLE) {
-    return policies.find((policy) => policy.role === PUBLIC_ROLE);
+    return modelPolicies.find((policy) => policy.role === PUBLIC_ROLE);
   }
 
   return undefined;

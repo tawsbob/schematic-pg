@@ -12,12 +12,17 @@ import logsRouter from './routes/logs.js';
 import productsRouter from './routes/products.js';
 import productOrdersRouter from './routes/product-orders.js';
 import healthRouter from '../src/routes/health.js';
+import { createDbClient } from './db.js';
+import { POLICIES } from './policies.js';
+import { configurePolicies } from 'schematic-pg/api/auth/policy';
 import { createAuthMiddleware } from 'schematic-pg/api/auth/middleware';
 import { createJwtResolver } from 'schematic-pg/api/auth/jwt-resolver';
 import type { AuthResolver } from 'schematic-pg/api/auth/types';
 import { createDbMiddleware } from 'schematic-pg/api/middleware/db';
 import { handleError } from 'schematic-pg/api/middleware/errors';
 import type { AppEnv } from 'schematic-pg/api/types';
+
+configurePolicies(POLICIES);
 
 export interface CreateAppOptions {
   pool?: Pool;
@@ -28,7 +33,7 @@ export function createApp(options: CreateAppOptions = {}): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
   app.use(logger());
   app.use(prettyJSON());
-  app.use(createDbMiddleware({ pool: options.pool }));
+  app.use(createDbMiddleware({ pool: options.pool, createDbClient }));
   app.use(createAuthMiddleware(options.authResolver ?? createJwtResolver()));
   app.onError(handleError);
 

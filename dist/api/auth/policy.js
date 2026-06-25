@@ -1,15 +1,18 @@
-import { POLICIES } from 'generated/policies.js';
 import { ForbiddenError } from './errors.js';
 import { interpolateTemplate } from './template.js';
 import { PUBLIC_ROLE } from './types.js';
-const SIMPLE_WHERE_PATTERN = /^(\w+)\s*(=|!=|<>|>=|<=|>|<)\s*(.+)$/;
 export { ForbiddenError, UnauthorizedError } from './errors.js';
+const SIMPLE_WHERE_PATTERN = /^(\w+)\s*(=|!=|<>|>=|<=|>|<)\s*(.+)$/;
+let policies = {};
+export function configurePolicies(next) {
+    policies = next;
+}
 export function assertPolicy(model, role, operation) {
-    const policies = POLICIES[model];
-    if (!policies || policies.length === 0) {
+    const modelPolicies = policies[model];
+    if (!modelPolicies || modelPolicies.length === 0) {
         throw new ForbiddenError(`No policies configured for model "${model}"`);
     }
-    const policy = findPolicyForRole(policies, role);
+    const policy = findPolicyForRole(modelPolicies, role);
     if (!policy) {
         throw new ForbiddenError(`Role "${role}" is not allowed to ${operation} ${model}`);
     }
@@ -34,13 +37,13 @@ export function mergeWhere(primary, policyWhere) {
     }
     return { AND: [primary, policyWhere] };
 }
-function findPolicyForRole(policies, role) {
-    const directMatch = policies.find((policy) => policy.role === role);
+function findPolicyForRole(modelPolicies, role) {
+    const directMatch = modelPolicies.find((policy) => policy.role === role);
     if (directMatch) {
         return directMatch;
     }
     if (role !== PUBLIC_ROLE) {
-        return policies.find((policy) => policy.role === PUBLIC_ROLE);
+        return modelPolicies.find((policy) => policy.role === PUBLIC_ROLE);
     }
     return undefined;
 }

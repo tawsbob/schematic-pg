@@ -1,11 +1,5 @@
 import { PACKAGE_NAME } from '../constants.js';
-export const APP_SCHEMA_TEMPLATE = `extensions {
-}
-
-enums {
-}
-
-models {
+export const APP_SCHEMA_TEMPLATE = `models {
   model User {
     id:        UUID        @id @default(gen_random_uuid())
     email:     VARCHAR(255) @unique
@@ -65,10 +59,6 @@ export function createPackageJsonTemplate(projectName) {
         version: '0.1.0',
         private: true,
         type: 'module',
-        imports: {
-            'generated/db.js': './generated/db.js',
-            'generated/policies.js': './generated/policies.js',
-        },
         scripts: {
             dev: `${PACKAGE_NAME} dev`,
             generate: `${PACKAGE_NAME} generate`,
