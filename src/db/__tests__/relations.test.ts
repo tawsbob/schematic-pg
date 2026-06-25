@@ -32,7 +32,7 @@ describe('buildRelations', () => {
     assert.equal(profile.targetModel, 'Profile');
     assert.equal(profile.localKey, 'id');
     assert.equal(profile.foreignKey, 'userId');
-    assert.equal(profile.relationName, 'UserProfile');
+    assert.equal(profile.relationName, undefined);
   });
 
   it('builds belongsTo relations from FK side', () => {

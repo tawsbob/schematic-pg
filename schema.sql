@@ -39,7 +39,8 @@ CREATE TABLE "user" (
   balance INTEGER NOT NULL,
   is_active BOOLEAN DEFAULT true NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE
+  updated_at TIMESTAMP WITH TIME ZONE,
+  password_hash VARCHAR(255)
 );
 
 CREATE TABLE profile (

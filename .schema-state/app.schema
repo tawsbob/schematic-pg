@@ -23,7 +23,7 @@ models {
     updatedAt:    TIMESTAMP?  @unfilterable
     passwordHash: VARCHAR(255)? @omit @unfilterable
 
-    profile:    Profile?    @relation(name: "UserProfile")
+    profile:    Profile?
     orders:     Order[]
 
     @policy(role: USER, allow: [select, insert, update], where: "id = {{auth.user.id}}")
@@ -54,7 +54,6 @@ models {
     location: POINT
 
     user:     User        @relation(
-      name: "UserProfile",
       fields: [userId],
       references: [id],
       onDelete: CASCADE,

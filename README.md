@@ -58,7 +58,7 @@ models {
     createdAt: TIMESTAMP   @default(now())
     updatedAt: TIMESTAMP?
 
-    profile:   Profile?    @relation(name: "UserProfile")
+    profile:   Profile?
     orders:    Order[]
 
     @policy(role: USER, allow: [select, insert, update], where: "id = {{auth.user.id}}")
@@ -88,7 +88,6 @@ models {
     location: POINT
 
     user:     User        @relation(
-      name: "UserProfile",
       fields: [userId],
       references: [id],
       onDelete: CASCADE,
@@ -154,6 +153,62 @@ models {
 
 }
 ```
+
+### Relations (`@relation`)
+
+Relation fields point at another model (`Profile?`, `Order[]`). The side that owns the foreign-key column must declare `@relation` with `fields` and `references`:
+
+```ts
+model User {
+  profile: Profile?   // inverse — no @relation needed
+  orders:  Order[]
+}
+
+model Profile {
+  userId: UUID @unique
+  user:   User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: CASCADE,   // optional
+    onUpdate: SET_NULL   // optional
+  )
+}
+
+model Order {
+  userId: UUID
+  user:   User @relation(fields: [userId], references: [id])
+}
+```
+
+| Argument | Required | Side | Purpose |
+|----------|----------|------|---------|
+| `fields` | Yes (FK side) | FK owner | Local column(s) on this model |
+| `references` | Yes (FK side) | FK owner | Target column(s) on the related model |
+| `onDelete` | No | FK side | PostgreSQL `ON DELETE` action (`CASCADE`, `SET NULL`, …) |
+| `onUpdate` | No | FK side | PostgreSQL `ON UPDATE` action |
+| `name` | No | Both (must match) | Disambiguates multiple relations between the same two models |
+
+**FK owner vs inverse.** Put `fields` and `references` on the model that stores the foreign key (`Profile.userId` → `user` on `Profile`). The other side (`User.profile`) is inferred automatically — list fields become `hasMany`, optional scalars become `hasOne` / `belongsTo` on the FK side.
+
+**`name` is only for disambiguation.** When a single link exists between two models (like `User` ↔ `Profile`), you do not need `name` on either side. Use matching `name` values only when two models relate more than once:
+
+```ts
+model User {
+  writtenPosts: Post[] @relation(name: "PostAuthor")
+  editedPosts:  Post[] @relation(name: "PostEditor")
+}
+
+model Post {
+  authorId: UUID
+  editorId: UUID?
+  author: User @relation(name: "PostAuthor", fields: [authorId], references: [id])
+  editor: User? @relation(name: "PostEditor", fields: [editorId], references: [id])
+}
+```
+
+If either side declares `name`, the other side must use the same `name` (or omit `@relation` entirely on the inverse when no `name` is used anywhere).
+
+**Runtime keys.** `include` and API relation paths use the **field name** (`profile`, `orders`, `user`) — not the optional `name` argument. `name` is never used for SQL constraint names; foreign keys are named from table and column names.
 
 ---
 

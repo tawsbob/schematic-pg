@@ -513,8 +513,7 @@ export const userModelMeta = {
       "targetModel": "Profile",
       "localKey": "id",
       "foreignKey": "userId",
-      "unique": true,
-      "relationName": "UserProfile"
+      "unique": true
     },
     {
       "name": "orders",
@@ -783,8 +782,7 @@ export const profileModelMeta = {
       "targetModel": "User",
       "localKey": "userId",
       "foreignKey": "id",
-      "unique": true,
-      "relationName": "UserProfile"
+      "unique": true
     }
   ]
 } as const;
@@ -803,9 +801,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 61,
+          "line": 60,
           "col": 18,
-          "endLine": 61,
+          "endLine": 60,
           "endCol": 22
         }
       },
@@ -825,9 +823,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 62,
+          "line": 61,
           "col": 18,
-          "endLine": 62,
+          "endLine": 61,
           "endCol": 22
         }
       },
@@ -847,9 +845,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "OrderStatus",
         "loc": {
-          "line": 63,
+          "line": 62,
           "col": 18,
-          "endLine": 63,
+          "endLine": 62,
           "endCol": 29
         }
       },
@@ -879,9 +877,9 @@ export const orderModelMeta = {
           }
         ],
         "loc": {
-          "line": 64,
+          "line": 63,
           "col": 18,
-          "endLine": 64,
+          "endLine": 63,
           "endCol": 32
         }
       },
@@ -901,9 +899,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 65,
+          "line": 64,
           "col": 18,
-          "endLine": 65,
+          "endLine": 64,
           "endCol": 23
         }
       },
@@ -923,9 +921,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 66,
+          "line": 65,
           "col": 18,
-          "endLine": 66,
+          "endLine": 65,
           "endCol": 27
         }
       },
@@ -946,9 +944,9 @@ export const orderModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 67,
+          "line": 66,
           "col": 18,
-          "endLine": 67,
+          "endLine": 66,
           "endCol": 28
         }
       },
@@ -970,9 +968,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 61,
+          "line": 60,
           "col": 18,
-          "endLine": 61,
+          "endLine": 60,
           "endCol": 22
         }
       },
@@ -992,9 +990,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 62,
+          "line": 61,
           "col": 18,
-          "endLine": 62,
+          "endLine": 61,
           "endCol": 22
         }
       },
@@ -1014,9 +1012,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "OrderStatus",
         "loc": {
-          "line": 63,
+          "line": 62,
           "col": 18,
-          "endLine": 63,
+          "endLine": 62,
           "endCol": 29
         }
       },
@@ -1046,9 +1044,9 @@ export const orderModelMeta = {
           }
         ],
         "loc": {
-          "line": 64,
+          "line": 63,
           "col": 18,
-          "endLine": 64,
+          "endLine": 63,
           "endCol": 32
         }
       },
@@ -1068,9 +1066,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 65,
+          "line": 64,
           "col": 18,
-          "endLine": 65,
+          "endLine": 64,
           "endCol": 23
         }
       },
@@ -1090,9 +1088,9 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 66,
+          "line": 65,
           "col": 18,
-          "endLine": 66,
+          "endLine": 65,
           "endCol": 27
         }
       },
@@ -1113,9 +1111,9 @@ export const orderModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 67,
+          "line": 66,
           "col": 18,
-          "endLine": 67,
+          "endLine": 66,
           "endCol": 28
         }
       },
@@ -1172,9 +1170,9 @@ export const logModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 77,
+          "line": 76,
           "col": 16,
-          "endLine": 77,
+          "endLine": 76,
           "endCol": 20
         }
       },
@@ -1194,9 +1192,9 @@ export const logModelMeta = {
         "kind": "TypeExpr",
         "name": "TEXT",
         "loc": {
-          "line": 78,
+          "line": 77,
           "col": 16,
-          "endLine": 78,
+          "endLine": 77,
           "endCol": 20
         }
       },
@@ -1216,9 +1214,9 @@ export const logModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 79,
+          "line": 78,
           "col": 16,
-          "endLine": 79,
+          "endLine": 78,
           "endCol": 25
         }
       },
@@ -1240,9 +1238,9 @@ export const logModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 77,
+          "line": 76,
           "col": 16,
-          "endLine": 77,
+          "endLine": 76,
           "endCol": 20
         }
       },
@@ -1262,9 +1260,9 @@ export const logModelMeta = {
         "kind": "TypeExpr",
         "name": "TEXT",
         "loc": {
-          "line": 78,
+          "line": 77,
           "col": 16,
-          "endLine": 78,
+          "endLine": 77,
           "endCol": 20
         }
       },
@@ -1284,9 +1282,9 @@ export const logModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 79,
+          "line": 78,
           "col": 16,
-          "endLine": 79,
+          "endLine": 78,
           "endCol": 25
         }
       },
@@ -1322,9 +1320,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 83,
+          "line": 82,
           "col": 18,
-          "endLine": 83,
+          "endLine": 82,
           "endCol": 22
         }
       },
@@ -1350,9 +1348,9 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 84,
+          "line": 83,
           "col": 18,
-          "endLine": 84,
+          "endLine": 83,
           "endCol": 30
         }
       },
@@ -1372,9 +1370,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TEXT",
         "loc": {
-          "line": 85,
+          "line": 84,
           "col": 18,
-          "endLine": 85,
+          "endLine": 84,
           "endCol": 22
         }
       },
@@ -1404,9 +1402,9 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 86,
+          "line": 85,
           "col": 18,
-          "endLine": 86,
+          "endLine": 85,
           "endCol": 32
         }
       },
@@ -1426,9 +1424,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 87,
+          "line": 86,
           "col": 18,
-          "endLine": 87,
+          "endLine": 86,
           "endCol": 25
         }
       },
@@ -1454,9 +1452,9 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 88,
+          "line": 87,
           "col": 18,
-          "endLine": 88,
+          "endLine": 87,
           "endCol": 30
         }
       },
@@ -1477,9 +1475,9 @@ export const productModelMeta = {
         "name": "TEXT",
         "array": true,
         "loc": {
-          "line": 89,
+          "line": 88,
           "col": 18,
-          "endLine": 89,
+          "endLine": 88,
           "endCol": 24
         }
       },
@@ -1499,9 +1497,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 90,
+          "line": 89,
           "col": 18,
-          "endLine": 90,
+          "endLine": 89,
           "endCol": 23
         }
       },
@@ -1521,9 +1519,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 91,
+          "line": 90,
           "col": 18,
-          "endLine": 91,
+          "endLine": 90,
           "endCol": 27
         }
       },
@@ -1544,9 +1542,9 @@ export const productModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 92,
+          "line": 91,
           "col": 18,
-          "endLine": 92,
+          "endLine": 91,
           "endCol": 28
         }
       },
@@ -1568,9 +1566,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 83,
+          "line": 82,
           "col": 18,
-          "endLine": 83,
+          "endLine": 82,
           "endCol": 22
         }
       },
@@ -1596,9 +1594,9 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 84,
+          "line": 83,
           "col": 18,
-          "endLine": 84,
+          "endLine": 83,
           "endCol": 30
         }
       },
@@ -1618,9 +1616,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TEXT",
         "loc": {
-          "line": 85,
+          "line": 84,
           "col": 18,
-          "endLine": 85,
+          "endLine": 84,
           "endCol": 22
         }
       },
@@ -1650,9 +1648,9 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 86,
+          "line": 85,
           "col": 18,
-          "endLine": 86,
+          "endLine": 85,
           "endCol": 32
         }
       },
@@ -1672,9 +1670,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 87,
+          "line": 86,
           "col": 18,
-          "endLine": 87,
+          "endLine": 86,
           "endCol": 25
         }
       },
@@ -1700,9 +1698,9 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 88,
+          "line": 87,
           "col": 18,
-          "endLine": 88,
+          "endLine": 87,
           "endCol": 30
         }
       },
@@ -1723,9 +1721,9 @@ export const productModelMeta = {
         "name": "TEXT",
         "array": true,
         "loc": {
-          "line": 89,
+          "line": 88,
           "col": 18,
-          "endLine": 89,
+          "endLine": 88,
           "endCol": 24
         }
       },
@@ -1745,9 +1743,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 90,
+          "line": 89,
           "col": 18,
-          "endLine": 90,
+          "endLine": 89,
           "endCol": 23
         }
       },
@@ -1767,9 +1765,9 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 91,
+          "line": 90,
           "col": 18,
-          "endLine": 91,
+          "endLine": 90,
           "endCol": 27
         }
       },
@@ -1790,9 +1788,9 @@ export const productModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 92,
+          "line": 91,
           "col": 18,
-          "endLine": 92,
+          "endLine": 91,
           "endCol": 28
         }
       },
@@ -1845,9 +1843,9 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "SERIAL",
         "loc": {
-          "line": 112,
+          "line": 111,
           "col": 16,
-          "endLine": 112,
+          "endLine": 111,
           "endCol": 22
         }
       },
@@ -1863,6 +1861,28 @@ export const productOrderModelMeta = {
     {
       "name": "orderId",
       "columnName": "order_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "line": 112,
+          "col": 16,
+          "endLine": 112,
+          "endCol": 20
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": true,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "productId",
+      "columnName": "product_id",
       "type": {
         "kind": "TypeExpr",
         "name": "UUID",
@@ -1883,37 +1903,15 @@ export const productOrderModelMeta = {
       "isBoolean": false
     },
     {
-      "name": "productId",
-      "columnName": "product_id",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UUID",
-        "loc": {
-          "line": 114,
-          "col": 16,
-          "endLine": 114,
-          "endCol": 20
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": true,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
       "name": "quantity",
       "columnName": "quantity",
       "type": {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 115,
+          "line": 114,
           "col": 16,
-          "endLine": 115,
+          "endLine": 114,
           "endCol": 23
         }
       },
@@ -1943,9 +1941,9 @@ export const productOrderModelMeta = {
           }
         ],
         "loc": {
-          "line": 116,
+          "line": 115,
           "col": 16,
-          "endLine": 116,
+          "endLine": 115,
           "endCol": 30
         }
       },
@@ -1967,9 +1965,9 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "SERIAL",
         "loc": {
-          "line": 112,
+          "line": 111,
           "col": 16,
-          "endLine": 112,
+          "endLine": 111,
           "endCol": 22
         }
       },
@@ -1989,9 +1987,9 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 113,
+          "line": 112,
           "col": 16,
-          "endLine": 113,
+          "endLine": 112,
           "endCol": 20
         }
       },
@@ -2011,9 +2009,9 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 114,
+          "line": 113,
           "col": 16,
-          "endLine": 114,
+          "endLine": 113,
           "endCol": 20
         }
       },
@@ -2033,9 +2031,9 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 115,
+          "line": 114,
           "col": 16,
-          "endLine": 115,
+          "endLine": 114,
           "endCol": 23
         }
       },
@@ -2065,9 +2063,9 @@ export const productOrderModelMeta = {
           }
         ],
         "loc": {
-          "line": 116,
+          "line": 115,
           "col": 16,
-          "endLine": 116,
+          "endLine": 115,
           "endCol": 30
         }
       },

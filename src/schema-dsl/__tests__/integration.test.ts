@@ -67,14 +67,13 @@ describe('Integration — app.schema', () => {
     assert.equal(user.directives.filter((d) => d.name === 'trigger').length, 1);
   });
 
-  it('Profile user field has @relation with 5 kv pairs', () => {
+  it('Profile user field has @relation with fields, references, onDelete, onUpdate', () => {
     const profile = schema.models.find((m) => m.name === 'Profile')!;
     const userField = getField(profile, 'user');
     const relation = getAttr(userField, 'relation');
     const kv = assertKeyValueArgs(relation.args);
     const keys = kv.pairs.map((p) => p.key).sort();
-    assert.deepEqual(keys, ['fields', 'name', 'onDelete', 'onUpdate', 'references']);
-    assert.equal((getKvPair(kv, 'name').value as { value: string }).value, 'UserProfile');
+    assert.deepEqual(keys, ['fields', 'onDelete', 'onUpdate', 'references']);
     assert.equal((getKvPair(kv, 'onDelete').value as { name: string }).name, 'CASCADE');
     assert.equal((getKvPair(kv, 'onUpdate').value as { name: string }).name, 'SET_NULL');
   });
