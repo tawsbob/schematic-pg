@@ -1,9 +1,10 @@
 # Publishes the root `schematic-pg` package to npm when a GitHub release is published.
 #
-# One-time setup:
-# 1. Create an npm Automation access token at https://www.npmjs.com/settings/~/tokens
-# 2. Add it as a repository secret named NPM_TOKEN:
-#    GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+# One-time setup (npm Trusted Publisher / OIDC):
+# 1. On npm: schematic-pg → Settings → Trusted Publisher → GitHub Actions
+# 2. Set owner tawsbob, repository postgrest.js, workflow publish-npm.yml
+# 3. Leave environment blank (this workflow does not use GitHub Environments)
+# 4. After the first successful OIDC publish, delete the NPM_TOKEN repository secret
 #
 # Per release:
 # 1. Bump "version" in package.json and commit
@@ -21,13 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
           cache: npm
 
@@ -47,5 +49,3 @@ jobs:
       - run: npm test
 
       - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
