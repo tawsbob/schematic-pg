@@ -108,7 +108,11 @@ export async function runInit(args) {
     console.log('  docker compose up -d --wait');
     console.log(`  npx ${PACKAGE_NAME} dev   # generate + bootstrap + server + schema watch`);
     console.log('');
-    console.log('  # split steps (dev already includes generate, bootstrap, and watch):');
+    console.log('  # production:');
+    console.log(`  npx ${PACKAGE_NAME} generate`);
+    console.log(`  npx ${PACKAGE_NAME} start   # migrate DB + run server`);
+    console.log('');
+    console.log('  # split dev steps (dev already includes generate, bootstrap, and watch):');
     console.log(`  npx ${PACKAGE_NAME} generate`);
     console.log(`  npx ${PACKAGE_NAME} db:bootstrap`);
     console.log(`  npx ${PACKAGE_NAME} dev --no-watch`);

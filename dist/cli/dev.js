@@ -1,11 +1,10 @@
-import { spawn } from 'node:child_process';
 import { watch } from 'node:fs';
 import path from 'node:path';
 import { runDbBootstrap } from './db.js';
 import { generateAll } from './generate.js';
 import { DEFAULT_OUTPUT_DIR, resolveSchemaPath } from './paths.js';
+import { startAppServer, stopAppServer, waitForAppServerExit } from './server.js';
 const WATCH_DEBOUNCE_MS = 300;
-const SERVER_STOP_TIMEOUT_MS = 5000;
 function parseDevArgs(args) {
     let schemaPath = resolveSchemaPath();
     let watchSchema = true;
@@ -29,36 +28,6 @@ function createDebouncer(fn, ms) {
         }, ms);
     };
 }
-function startServer(appPath) {
-    return spawn(process.execPath, ['--import', 'tsx', appPath], {
-        stdio: 'inherit',
-        cwd: process.cwd(),
-    });
-}
-function stopServer(serverProcess) {
-    if (!serverProcess || serverProcess.exitCode !== null || serverProcess.killed) {
-        return Promise.resolve();
-    }
-    return new Promise((resolve) => {
-        serverProcess.once('exit', () => resolve());
-        if (process.platform === 'win32') {
-            serverProcess.kill();
-        }
-        else {
-            serverProcess.kill('SIGTERM');
-        }
-        setTimeout(() => {
-            if (serverProcess.exitCode === null && !serverProcess.killed) {
-                serverProcess.kill('SIGKILL');
-            }
-        }, SERVER_STOP_TIMEOUT_MS);
-    });
-}
-function waitForServerExit(serverProcess) {
-    return new Promise((resolve) => {
-        serverProcess.once('exit', () => resolve());
-    });
-}
 export async function runDev(args = []) {
     const { schemaPath, watchSchema } = parseDevArgs(args);
     const appPath = path.resolve(DEFAULT_OUTPUT_DIR, 'app.ts');
@@ -74,8 +43,8 @@ export async function runDev(args = []) {
         try {
             await generateAll(schemaPath);
             await runDbBootstrap(schemaPath);
-            await stopServer(serverProcess);
-            serverProcess = startServer(appPath);
+            await stopAppServer(serverProcess);
+            serverProcess = startAppServer(appPath);
             serverProcess.on('exit', (code, signal) => {
                 if (restarting || shuttingDown) {
                     return;
@@ -119,7 +88,7 @@ export async function runDev(args = []) {
             return;
         }
         shuttingDown = true;
-        await stopServer(serverProcess);
+        await stopAppServer(serverProcess);
     }
     process.once('SIGINT', () => {
         void shutdown().finally(() => {
@@ -134,7 +103,7 @@ export async function runDev(args = []) {
     await syncAndServe();
     if (!watchSchema) {
         if (serverProcess) {
-            await waitForServerExit(serverProcess);
+            await waitForAppServerExit(serverProcess);
         }
         return;
     }

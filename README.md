@@ -322,7 +322,7 @@ Generated code imports the runtime from the `schematic-pg` package (`schematic-p
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
 
-Set these in `.env` before running `dev` or `db:bootstrap`.
+Set these in `.env` before running `dev`, `start`, or `db:bootstrap`.
 
 ---
 
@@ -367,7 +367,53 @@ Equivalent npm scripts in a project created by `init`:
 ```bash
 make dev           # docker compose up -d --wait + schematic-pg dev
 npm run dev        # schematic-pg dev
+npm run start      # schematic-pg start (production)
 npm run generate   # schematic-pg generate
+```
+
+### Production server
+
+```bash
+schematic-pg start [schema] [--no-migrate]
+```
+
+`start` runs the app in production mode — no code generation, no schema watching:
+
+1. Verifies `generated/app.ts` exists (run `generate` in your build step if missing)
+2. Waits for PostgreSQL to accept connections
+3. Applies pending migration files (default; skip with `--no-migrate`)
+4. Starts `generated/app.ts` with `NODE_ENV=production` until exit
+
+The optional `[schema]` argument is only used for migration snapshot resolution (same as `db:migrate`).
+
+| Step | `dev` | `start` |
+|------|-------|---------|
+| Generate code | Yes | No |
+| DB bootstrap | Yes | No |
+| Apply pending migrations | No | Yes (default) |
+| Wait for Postgres | Yes (via bootstrap) | Yes |
+| Schema file watch | Yes (default) | No |
+| `NODE_ENV` | unset | `production` |
+
+Example deploy flow:
+
+```bash
+npx schematic-pg generate          # build step in CI
+npx schematic-pg start             # migrate DB + run server
+# or: npm run start
+```
+
+Pass `--no-migrate` when migrations are applied separately (e.g. in a release job):
+
+```bash
+npx schematic-pg db:migrate
+npx schematic-pg start --no-migrate
+```
+
+Equivalent npm scripts in a project created by `init`:
+
+```bash
+npm run start      # schematic-pg start
 ```
 
 ### Database commands
@@ -410,6 +456,7 @@ npm run generate:client       # write generated/db*.ts
 npm run generate:api          # write generated/app.ts, routes/, schemas/
 npm run db:bootstrap          # apply DDL + snapshot schema state
 npm run dev:api               # regenerate client + API and start server on :3000
+npm run start                 # production server (migrate + run generated/app.ts)
 npm test                      # unit tests
 npm run test:integration      # Docker + generate + DB client + ACL integration tests
 ```
@@ -731,7 +778,15 @@ npx schematic-pg dev
 # → regenerates client + API, then starts http://localhost:3000
 ```
 
-Or run the generated entry point directly after generation:
+For production (no regenerate, no schema watch):
+
+```bash
+npx schematic-pg start
+# or: npm run start
+# → waits for DB, applies pending migrations, starts http://localhost:3000
+```
+
+Or run the generated entry point directly after generation (skips migration wait):
 
 ```bash
 npx tsx generated/app.ts
@@ -1240,7 +1295,7 @@ postgrest.js/
 
 ## Roadmap
 
-- [x] npm package + CLI (`schematic-pg init`, `generate`, `dev`, `db:*`)
+- [x] npm package + CLI (`schematic-pg init`, `generate`, `dev`, `start`, `db:*`)
 - [x] Hand-written lexer & recursive-descent parser
 - [x] SQL DDL generator (full regeneration)
 - [x] Type-safe database client generator (`createDbClient`, parameterized query builder)

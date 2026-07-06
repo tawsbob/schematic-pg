@@ -92,6 +92,7 @@ export function createPackageJsonTemplate(projectName: string): string {
       type: 'module',
       scripts: {
         dev: `${PACKAGE_NAME} dev`,
+        start: `${PACKAGE_NAME} start`,
         generate: `${PACKAGE_NAME} generate`,
         'db:bootstrap': `${PACKAGE_NAME} db:bootstrap`,
         'db:migrate': `${PACKAGE_NAME} db:migrate`,

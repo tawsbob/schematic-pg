@@ -1,12 +1,12 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { type ChildProcess } from 'node:child_process';
 import { watch } from 'node:fs';
 import path from 'node:path';
 import { runDbBootstrap } from './db.js';
 import { generateAll } from './generate.js';
 import { DEFAULT_OUTPUT_DIR, resolveSchemaPath } from './paths.js';
+import { startAppServer, stopAppServer, waitForAppServerExit } from './server.js';
 
 const WATCH_DEBOUNCE_MS = 300;
-const SERVER_STOP_TIMEOUT_MS = 5000;
 
 type DevOptions = {
   schemaPath: string;
@@ -42,41 +42,6 @@ function createDebouncer(fn: () => Promise<void>, ms: number): () => void {
   };
 }
 
-function startServer(appPath: string): ChildProcess {
-  return spawn(process.execPath, ['--import', 'tsx', appPath], {
-    stdio: 'inherit',
-    cwd: process.cwd(),
-  });
-}
-
-function stopServer(serverProcess: ChildProcess | null): Promise<void> {
-  if (!serverProcess || serverProcess.exitCode !== null || serverProcess.killed) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    serverProcess.once('exit', () => resolve());
-
-    if (process.platform === 'win32') {
-      serverProcess.kill();
-    } else {
-      serverProcess.kill('SIGTERM');
-    }
-
-    setTimeout(() => {
-      if (serverProcess.exitCode === null && !serverProcess.killed) {
-        serverProcess.kill('SIGKILL');
-      }
-    }, SERVER_STOP_TIMEOUT_MS);
-  });
-}
-
-function waitForServerExit(serverProcess: ChildProcess): Promise<void> {
-  return new Promise((resolve) => {
-    serverProcess.once('exit', () => resolve());
-  });
-}
-
 export async function runDev(args: string[] = []): Promise<void> {
   const { schemaPath, watchSchema } = parseDevArgs(args);
   const appPath = path.resolve(DEFAULT_OUTPUT_DIR, 'app.ts');
@@ -96,8 +61,8 @@ export async function runDev(args: string[] = []): Promise<void> {
     try {
       await generateAll(schemaPath);
       await runDbBootstrap(schemaPath);
-      await stopServer(serverProcess);
-      serverProcess = startServer(appPath);
+      await stopAppServer(serverProcess);
+      serverProcess = startAppServer(appPath);
 
       serverProcess.on('exit', (code, signal) => {
         if (restarting || shuttingDown) {
@@ -147,7 +112,7 @@ export async function runDev(args: string[] = []): Promise<void> {
     }
 
     shuttingDown = true;
-    await stopServer(serverProcess);
+    await stopAppServer(serverProcess);
   }
 
   process.once('SIGINT', () => {
@@ -166,7 +131,7 @@ export async function runDev(args: string[] = []): Promise<void> {
 
   if (!watchSchema) {
     if (serverProcess) {
-      await waitForServerExit(serverProcess);
+      await waitForAppServerExit(serverProcess);
     }
     return;
   }

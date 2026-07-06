@@ -1,6 +1,6 @@
 {
   "name": "schematic-pg",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Single-file backend framework for PostgreSQL and Node.js",
   "type": "module",
   "license": "MIT",
@@ -51,6 +51,7 @@
     "generate:client": "tsx src/cli.ts generate:client",
     "generate:api": "tsx src/cli.ts generate:api",
     "dev:api": "tsx src/cli.ts dev",
+    "start": "tsx src/cli.ts start",
     "setup:env": "test -f .env || cp .env.example .env",
     "db:ping": "tsx src/cli.ts db:ping",
     "db:bootstrap": "tsx src/cli.ts db:bootstrap",

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { runDbBootstrap, runDbDiff, runDbMigrate, runDbPing } from './cli/db.js';
 import { runDev } from './cli/dev.js';
+import { runStart } from './cli/start.js';
 import { generateAll, generateApi, generateClient, generateSql } from './cli/generate.js';
 import { runInit } from './cli/init.js';
 import { PACKAGE_NAME } from './constants.js';
@@ -13,6 +14,7 @@ Commands:
   generate:client [schema]   Generate db client files
   generate:api [schema]      Generate API files
   dev [schema] [--no-watch]  Generate, bootstrap DB, start server, watch schema
+  start [schema] [--no-migrate]  Run production server (migrate DB, no generate/watch)
   db:ping                    Test database connection
   db:bootstrap [schema]      Apply DDL and snapshot schema state
   db:diff [schema]           Show schema diff (--name <name> to write migration)
@@ -51,6 +53,9 @@ async function main() {
                 break;
             case 'dev':
                 await runDev(args);
+                break;
+            case 'start':
+                await runStart(args);
                 break;
             case 'db:ping':
                 await runDbPing();
