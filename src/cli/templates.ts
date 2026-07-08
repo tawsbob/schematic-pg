@@ -1,4 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { PACKAGE_NAME, PACKAGE_VERSION } from '../constants.js';
+
+const templatesDir = path.dirname(fileURLToPath(import.meta.url));
+
+export const AGENTS_TEMPLATE = readFileSync(
+  path.join(templatesDir, 'templates', 'agents.md'),
+  'utf8',
+);
 
 export const APP_SCHEMA_TEMPLATE = `extensions {
 

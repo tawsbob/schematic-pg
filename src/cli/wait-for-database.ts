@@ -20,7 +20,7 @@ export async function pingDatabase(
 
 export async function waitForDatabase(options: WaitForDatabaseOptions = {}): Promise<void> {
   const maxAttempts = options.maxAttempts ?? 30;
-  const intervalMs = options.intervalMs ?? 1000;
+  const intervalMs = options.intervalMs ?? 3000;
   const sleep =
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const ownClient = options.client ? null : new DatabaseClient();

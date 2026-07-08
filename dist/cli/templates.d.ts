@@ -1,3 +1,4 @@
+export declare const AGENTS_TEMPLATE: string;
 export declare const APP_SCHEMA_TEMPLATE = "extensions {\n\n}\n\nenums {\n\n}\n\nmodels {\n  model User {\n    id:        UUID        @id @default(gen_random_uuid())\n    email:     VARCHAR(255) @unique\n    name:      VARCHAR(150)\n    createdAt: TIMESTAMP   @default(now())\n  }\n}\n";
 export declare const ENV_TEMPLATE = "DATABASE_URL=postgresql://postgrest:postgrest@localhost:5432/postgrest\nJWT_SECRET=\nJWT_ROLE_CLAIM=role\nJWT_USER_ID_CLAIM=sub\n";
 export declare const GITIGNORE_TEMPLATE = "node_modules/\ndist/\n.env\ndocker_data/\n.DS_Store\n*.log\nnpm-debug.log*\n";

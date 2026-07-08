@@ -48,7 +48,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && mkdir -p dist/cli/templates && cp src/cli/templates/agents.md dist/cli/templates/",
     "parse": "tsx src/schema-dsl/cli.ts",
     "tokenize": "tsx src/schema-dsl/cli.ts --tokens",
     "generate": "tsx src/cli.ts generate",

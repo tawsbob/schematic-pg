@@ -292,6 +292,7 @@ The `init` command creates everything you need to get running:
 
 | File / directory | Purpose |
 |------------------|---------|
+| `AGENTS.md` | Agent-oriented guide for working with schematic-pg in this project |
 | `app.schema` | Starter schema (one `User` model) — edit this |
 | `.env` | `DATABASE_URL`, JWT settings |
 | `docker-compose.yml` | Local PostGIS PostgreSQL on `:5432` |
@@ -1418,8 +1419,6 @@ postgrest.js/
 - [ ] Type generation for frontend consumption
 - [ ] Tree-sitter grammar for editor support
 - [x] VS Code extension with syntax highlighting and language server
-- [ ] URL query-string filters for `findMany` (e.g. `?role=ADMIN`)
-
 ---
 
 ## License

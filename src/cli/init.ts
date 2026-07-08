@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  AGENTS_TEMPLATE,
   APP_SCHEMA_TEMPLATE,
   createPackageJsonTemplate,
   DOCKER_COMPOSE_TEMPLATE,
@@ -15,6 +16,7 @@ import {
 } from './templates.js';
 
 const INIT_FILES = [
+  { relativePath: 'AGENTS.md', content: AGENTS_TEMPLATE },
   { relativePath: 'app.schema', content: APP_SCHEMA_TEMPLATE },
   { relativePath: '.env', content: ENV_TEMPLATE },
   { relativePath: '.gitignore', content: GITIGNORE_TEMPLATE },
