@@ -22,7 +22,7 @@ Most backend frameworks force you to scatter your truth across migrations, ORM m
 
 - **Declarative Schema DSL** — PostgreSQL-native types, enums, extensions, indexes, and triggers
 - **Automatic SQL Generation** — idempotent DDL with snake_case naming conventions
-- **Type-safe Database Client** — Prisma-like query API over parameterized raw SQL (`pg` Pool, no ORM), with nested `include` eager-loading and `db.$transaction()` for atomic multi-model writes
+- **Type-safe Database Client** — Prisma-like query API over parameterized raw SQL (`pg` Pool, no ORM), with nested `include` eager-loading, `db.$transaction()` for atomic multi-model writes, and a parameterized `$queryRaw` / `$executeRaw` escape hatch
 - **Type-safe REST API** — Hono routes with generated Zod validation
 - **Custom routes** — Hand-written Hono routers in `src/routes/` auto-imported into the generated app
 - **Lifecycle hooks** — Before/after create, update, and delete with Express-style `next()` cancel semantics; scaffold via `hooks:add`
@@ -638,6 +638,53 @@ try {
 ```
 
 Under the hood, queries go through a minimal `Queryable` interface satisfied by both `pg` `Pool` (autocommit, default client) and `PoolClient` (inside `$transaction`). The runtime helper `runInTransaction` lives in `schematic-pg/db/transaction`.
+
+### Raw queries (`$queryRaw` / `$executeRaw`)
+
+An escape hatch for SQL the query API can't express — window functions, CTEs, PostGIS, full-text search, custom aggregates. Both methods live on the top-level client **and** on the `tx` client inside `$transaction`.
+
+```typescript
+// Read rows
+const rows = await db.$queryRaw<{ id: string; email: string }>(
+  'SELECT id, email FROM "user" WHERE email = $1',
+  ['a@b.com'],
+);
+
+// Run a statement, get the affected row count
+const affected = await db.$executeRaw(
+  'UPDATE "user" SET name = $1 WHERE role = $2',
+  ['Renamed', 'ADMIN'],
+);
+
+// Inside a transaction — runs on the same connection as the model calls
+await db.$transaction(async (tx) => {
+  const order = await tx.order.create({ /* … */ });
+  const [row] = await tx.$queryRaw<{ total: string }>(
+    'SELECT sum(price) AS total FROM "product_order" WHERE order_id = $1',
+    [order.id],
+  );
+  // …
+});
+```
+
+| Method | Signature | Returns |
+|--------|-----------|---------|
+| `$queryRaw` | `(sql: string, params?: unknown[])` | `Promise<T[]>` — the result rows |
+| `$executeRaw` | `(sql: string, params?: unknown[])` | `Promise<number>` — affected row count |
+
+**Security — always parameterize.** Values MUST go through the positional `params` array (`$1`, `$2`, …). **Never** interpolate user input into the `sql` string — that reintroduces SQL injection. There is deliberately no tagged-template (`` sql`…` ``) helper, because interpolation-based builders make the unsafe path look safe.
+
+```typescript
+// ✅ safe — value is a bound parameter
+await db.$queryRaw('SELECT * FROM "user" WHERE email = $1', [email]);
+
+// ❌ NEVER do this — string interpolation is injectable
+await db.$queryRaw(`SELECT * FROM "user" WHERE email = '${email}'`);
+```
+
+**Rows are returned UNMAPPED.** Unlike the model client, raw results are handed back exactly as `pg` produces them: `snake_case` column names and the driver's default type coercion. There is no `snake_case → camelCase` renaming and no schema-driven type mapping (a raw query has no single owning model). Alias columns yourself if you want specific names.
+
+Errors surface as the same typed `DatabaseError` subclasses (`UniqueConstraintError`, `ForeignKeyConstraintError`, …) as the rest of the client. The runtime helper `createRawClient` lives in `schematic-pg/db/raw`.
 
 ### Eager loading (`include`)
 
@@ -1480,6 +1527,7 @@ postgrest.js/
 - [x] Lifecycle hooks (`src/hooks/` before/after create-update-delete, `hooks:add` CLI)
 - [x] Relation `include` in DB client (nested eager-loading, split + json_agg strategies)
 - [x] Database client transactions (`db.$transaction`, `Queryable` executor seam)
+- [x] Parameterized raw-query escape hatch (`db.$queryRaw`, `db.$executeRaw`, tx-scoped)
 - [ ] Type generation for frontend consumption
 - [ ] Tree-sitter grammar for editor support
 - [x] VS Code extension with syntax highlighting and language server

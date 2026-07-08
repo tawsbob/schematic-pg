@@ -38,6 +38,8 @@ describe('DbClientGenerator', () => {
     assert.match(files.dbClient, /\$transaction<T>\(fn: \(tx: TxClient\) => Promise<T>\)/);
     assert.match(files.dbClient, /return runInTransaction\(pool, \(client\) => fn\(buildModels\(client\)\)\);/);
     assert.match(files.dbClient, /\.\.\.buildModels\(pool\),/);
+    assert.match(files.dbClient, /import \{ createRawClient \} from 'schematic-pg\/db\/raw';/);
+    assert.match(files.dbClient, /\.\.\.createRawClient\(executor\),/);
     assert.match(files.modelMeta, /export const userModelMeta =/);
     assert.match(files.modelMeta, /"relations"/);
     assert.match(files.modelMeta, /"quotedTableName": "\\"user\\""/);

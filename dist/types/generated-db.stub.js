@@ -1,3 +1,10 @@
 export function createDbClient(_pool) {
-    return {};
+    return {
+        async $queryRaw() {
+            return [];
+        },
+        async $executeRaw() {
+            return 0;
+        },
+    };
 }

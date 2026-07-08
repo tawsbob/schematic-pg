@@ -484,4 +484,72 @@ describe('db client integration (Docker)', { concurrency: 1 }, () => {
       });
     });
   });
+
+  describe('$queryRaw / $executeRaw', () => {
+    it('$queryRaw runs a literal query', async () => {
+      const rows = await db.$queryRaw<{ one: number }>('SELECT 1 as one');
+      assert.deepEqual(rows, [{ one: 1 }]);
+    });
+
+    it('$queryRaw returns raw snake_case columns for parameterized queries', async () => {
+      const rows = await db.$queryRaw<{ id: string; email: string }>(
+        'SELECT id, email, created_at FROM "user" WHERE email = $1',
+        [users.admin.email],
+      );
+
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]!.id, users.admin.id);
+      assert.equal(rows[0]!.email, users.admin.email);
+      assert.ok('created_at' in rows[0]!);
+    });
+
+    it('$executeRaw returns the affected row count', async () => {
+      const count = await db.$executeRaw(
+        'UPDATE "user" SET name = $1 WHERE role = $2',
+        ['Raw Update', 'ADMIN'],
+      );
+      assert.equal(count, 1);
+
+      const [row] = await db.$queryRaw<{ name: string }>(
+        'SELECT name FROM "user" WHERE id = $1',
+        [users.admin.id],
+      );
+      assert.equal(row!.name, 'Raw Update');
+    });
+
+    it('runs on the transaction connection and reads uncommitted writes', async () => {
+      await db.$transaction(async (tx) => {
+        const created = await tx.order.create({
+          userId: users.admin.id,
+          totalAmount: '7.00',
+          items: { sku: 'raw-tx' },
+        });
+
+        const rows = await tx.$queryRaw<{ id: string }>(
+          'SELECT id FROM "order" WHERE id = $1',
+          [created.id],
+        );
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0]!.id, created.id);
+      });
+    });
+
+    it('rolls back raw writes when the transaction throws', async () => {
+      const marker = randomUUID();
+
+      await assert.rejects(
+        db.$transaction(async (tx) => {
+          await tx.$executeRaw('INSERT INTO "log" (message) VALUES ($1)', [marker]);
+          throw new Error('raw rollback boom');
+        }),
+        /raw rollback boom/,
+      );
+
+      const rows = await db.$queryRaw<{ id: string }>(
+        'SELECT id FROM "log" WHERE message = $1',
+        [marker],
+      );
+      assert.equal(rows.length, 0);
+    });
+  });
 });

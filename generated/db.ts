@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { createModelClient } from 'schematic-pg/db/model-client';
 import { hydrateModelMeta } from 'schematic-pg/db/model-meta';
 import type { Queryable } from 'schematic-pg/db/queryable';
+import { createRawClient } from 'schematic-pg/db/raw';
 import { runInTransaction } from 'schematic-pg/db/transaction';
 import type {
   User,
@@ -74,6 +75,7 @@ function buildModels(executor: Queryable) {
     log: createModelClient<Log, LogCreateInput, LogUpdateInput, LogWhereInput, LogOrderByInput>(logMeta, executor, modelRegistry),
     product: createModelClient<Product, ProductCreateInput, ProductUpdateInput, ProductWhereInput, ProductOrderByInput>(productMeta, executor, modelRegistry),
     productOrder: createModelClient<ProductOrder, ProductOrderCreateInput, ProductOrderUpdateInput, ProductOrderWhereInput, ProductOrderOrderByInput>(productOrderMeta, executor, modelRegistry),
+    ...createRawClient(executor),
   };
 }
 
