@@ -66,6 +66,7 @@ export async function runInit(args) {
     }
     await mkdir(targetDir, { recursive: true });
     await mkdir(path.join(targetDir, 'src/routes'), { recursive: true });
+    await mkdir(path.join(targetDir, 'src/hooks'), { recursive: true });
     for (const file of INIT_FILES) {
         const filePath = path.join(targetDir, file.relativePath);
         if (existsSync(filePath)) {

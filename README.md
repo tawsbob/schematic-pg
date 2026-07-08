@@ -25,6 +25,7 @@ Most backend frameworks force you to scatter your truth across migrations, ORM m
 - **Type-safe Database Client** — Prisma-like query API over parameterized raw SQL (`pg` Pool, no ORM), with nested `include` eager-loading
 - **Type-safe REST API** — Hono routes with generated Zod validation
 - **Custom routes** — Hand-written Hono routers in `src/routes/` auto-imported into the generated app
+- **Lifecycle hooks** — Before/after create, update, and delete with Express-style `next()` cancel semantics; scaffold via `hooks:add`
 - **Inline ACL** — Row-level and role-based access control via `@policy` directives, enforced at runtime in generated routes
 - **Validation Rules** — `@regex` and `@range` constraints that flow into generated Zod request validators (with custom error messages from the schema)
 - **Migration Ready** — Full regeneration today, diff-based migrations tomorrow
@@ -346,6 +347,14 @@ schematic-pg generate:api [schema]      # generated/app.ts, routes/, policies, s
 ```
 
 Run `generate:client` before `generate:api` when using the split commands — routes depend on `generated/db.ts`.
+
+### Lifecycle hooks scaffolding
+
+```bash
+schematic-pg hooks:add [schema] [--model ModelName]
+```
+
+Reads `app.schema`, prompts for a model (or accepts `--model`), and writes `src/hooks/{Model}.ts` with all six lifecycle hooks pre-filled. Delete any hooks you do not need, then run `generate:api` to wire them into POST/PUT/DELETE routes. Existing hook files are never overwritten.
 
 ### Development server
 
@@ -874,6 +883,102 @@ router.get('/me', async (c) => {
 
 **Do not edit** `generated/app.ts` manually for custom routes — add files under `src/routes/` and regenerate.
 
+### Lifecycle hooks
+
+Run business logic before or after write operations (POST, PUT, DELETE) without editing generated route files. Hooks live under `src/hooks/` and are discovered when you run `schematic-pg generate:api` (or `schematic-pg dev`).
+
+**Convention**
+
+| Rule | Example |
+|------|---------|
+| Location | `src/hooks/{Model}.ts` (PascalCase model name) |
+| Export | `export default defineHooks(...)` |
+| Scaffold | `schematic-pg hooks:add` (interactive model picker) |
+| Regenerate | `schematic-pg generate:api` or `schematic-pg dev` after adding or editing hooks |
+
+**Request flow**
+
+```
+validate → assertPolicy → beforeHooks (can cancel) → db.create/update/delete → afterHooks → response
+```
+
+Before-hooks run after policy checks — unauthorized requests never execute hook logic. After-hooks see the DB result and can mutate `ctx.result` before the response is sent.
+
+**`next()` contract**
+
+| Action | Effect |
+|--------|--------|
+| `await next()` | Proceed to the next hook, or to the DB operation when all hooks call `next()` |
+| `return ctx.abort(status, message)` | Cancel; return that JSON error response; DB untouched |
+| `return ctx.json(body, status)` | Cancel with a custom response body |
+| Return without calling `next()` | Cancel with default `409` |
+| `throw` | Cancel; mapped by global error handler |
+
+**Scaffold a hook file**
+
+```bash
+schematic-pg hooks:add          # interactive — pick a model
+schematic-pg hooks:add --model User
+# edit src/hooks/User.ts — delete unused hooks
+schematic-pg generate:api
+```
+
+**Example** — `src/hooks/User.ts`:
+
+```typescript
+import { defineHooks } from 'schematic-pg/api/hooks';
+import type { User, UserCreateInput, UserUpdateInput } from '../../generated/db-types.js';
+
+export default defineHooks<User, UserCreateInput, UserUpdateInput>({
+  async beforeCreate(ctx, next) {
+    ctx.data.email = ctx.data.email.toLowerCase();
+    if (ctx.data.balance < 0) {
+      return ctx.abort(422, 'balance must be >= 0');
+    }
+    await next();
+  },
+
+  async afterCreate(ctx) {
+    await ctx.db.log.create({
+      level: 'info',
+      message: `User created: ${ctx.result.id}`,
+    });
+  },
+
+  async beforeDelete(ctx, next) {
+    if (ctx.auth.role !== 'ADMIN') {
+      return ctx.abort(403, 'Only admins can delete users');
+    }
+    await next();
+  },
+});
+```
+
+After `schematic-pg generate:api`, `generated/routes/users.ts` wraps POST/PUT/DELETE with hook calls, and `generated/app.ts` loads the registry:
+
+```typescript
+import { HOOKS } from './hooks.js';
+import { configureHooks } from 'schematic-pg/api/hooks';
+// ...
+configureHooks(HOOKS);
+```
+
+**Hook context**
+
+| Field | beforeCreate / beforeUpdate | beforeDelete | after* |
+|-------|----------------------------|--------------|--------|
+| `ctx.data` | Create/update payload (mutable) | — | — |
+| `ctx.params` | Route params (`:id`, composite PK fields) | Route params | Route params |
+| `ctx.result` | — | — | DB row (mutable) |
+| `ctx.auth` | JWT auth context | JWT auth context | JWT auth context |
+| `ctx.db` | Generated DB client | Generated DB client | Generated DB client |
+| `ctx.abort(status, msg)` | Cancel with JSON error | Cancel with JSON error | — |
+| `ctx.json(body, status)` | Cancel with custom body | Cancel with custom body | — |
+
+**Skipped files** — The scanner ignores `*.test.ts`, `*.d.ts`, and any file whose name starts with `_`.
+
+**Do not edit** generated route hook wiring manually — add or edit files under `src/hooks/` and regenerate.
+
 ### Endpoints
 
 Every router exposes the same CRUD shape. Models with `@policy` attributes enforce role checks and row-level filters on every handler; models without policies behave as open endpoints.
@@ -1246,6 +1351,7 @@ my-app/
 │   ├── db-model-meta.ts    # Runtime column metadata
 │   ├── app.ts              # Hono entry point (starts server on :3000)
 │   ├── policies.ts         # Generated ACL metadata from @policy
+│   ├── hooks.ts            # Registry of src/hooks/* (wired at startup)
 │   ├── routes/
 │   │   ├── users.ts
 │   │   ├── profiles.ts
@@ -1253,11 +1359,13 @@ my-app/
 │   └── schemas/
 │       └── validation.ts   # Generated Zod schemas
 └── src/
-    └── routes/
-        └── health.ts       # Custom route → GET /health
+    ├── routes/
+    │   └── health.ts       # Custom route → GET /health
+    └── hooks/
+        └── User.ts         # Lifecycle hooks → POST/PUT/DELETE /users
 ```
 
-Framework runtime (query builder, auth middleware, validation) is **not** copied into your project — it is imported from `node_modules/schematic-pg` at runtime. Only `generated/` and `src/routes/` contain project-specific code.
+Framework runtime (query builder, auth middleware, validation, hook registry) is **not** copied into your project — it is imported from `node_modules/schematic-pg` at runtime. Only `generated/`, `src/routes/`, and `src/hooks/` contain project-specific code.
 
 ### This repository (framework source)
 
@@ -1305,6 +1413,7 @@ postgrest.js/
 - [x] Row-level policy injection (`WHERE` clause from `where:` templates)
 - [x] JWT authentication (default Bearer resolver, pluggable `AuthResolver`)
 - [x] Custom routes (`src/routes/` auto-imported into generated app)
+- [x] Lifecycle hooks (`src/hooks/` before/after create-update-delete, `hooks:add` CLI)
 - [x] Relation `include` in DB client (nested eager-loading, split + json_agg strategies)
 - [ ] Type generation for frontend consumption
 - [ ] Tree-sitter grammar for editor support

@@ -6,3 +6,4 @@ export declare const TSCONFIG_TEMPLATE = "{\n  \"compilerOptions\": {\n    \"tar
 export declare const MAKEFILE_TEMPLATE = ".PHONY: dev\n\ndev:\n\tdocker compose up -d --wait\n\tnpx schematic-pg dev\n";
 export declare const HEALTH_ROUTE_TEMPLATE = "import { Hono } from 'hono';\nimport type { AppEnv } from 'schematic-pg/api/types';\n\nconst router = new Hono<AppEnv>();\nrouter.get('/', (c) => c.json({ ok: true }));\nexport default router;\n";
 export declare function createPackageJsonTemplate(projectName: string): string;
+export declare function createHookFileTemplate(modelName: string): string;

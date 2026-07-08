@@ -102,3 +102,38 @@ export function createPackageJsonTemplate(projectName) {
         },
     }, null, 2);
 }
+export function createHookFileTemplate(modelName) {
+    return `import { defineHooks } from '${PACKAGE_NAME}/api/hooks';
+import type { ${modelName}, ${modelName}CreateInput, ${modelName}UpdateInput } from '../../generated/db-types.js';
+
+export default defineHooks<${modelName}, ${modelName}CreateInput, ${modelName}UpdateInput>({
+  async beforeCreate(ctx, next) {
+    // ctx.data is the create payload (mutable). Call await next() to proceed.
+    // Cancel without calling next(): return ctx.abort(422, 'reason');
+    await next();
+  },
+
+  async afterCreate(ctx) {
+    // ctx.result is the created row. Use ctx.db / ctx.auth for side effects.
+  },
+
+  async beforeUpdate(ctx, next) {
+    // ctx.params — route params (e.g. id). ctx.data — update payload (mutable).
+    await next();
+  },
+
+  async afterUpdate(ctx) {
+    // ctx.result is the updated row.
+  },
+
+  async beforeDelete(ctx, next) {
+    // ctx.params — route params. No ctx.data on delete.
+    await next();
+  },
+
+  async afterDelete(ctx) {
+    // ctx.result is the deleted row.
+  },
+});
+`;
+}
