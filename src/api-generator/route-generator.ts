@@ -10,6 +10,7 @@ export class RouteGenerator {
   constructor(
     private readonly model: Model,
     private readonly schema: Schema,
+    private readonly modelsWithHooks: ReadonlySet<string> = new Set(),
   ) {}
 
   generate(): string {
@@ -25,6 +26,7 @@ export class RouteGenerator {
     const listQuerySchemaName = `${this.model.name}ListQuerySchema`;
     const getQuerySchemaName = `${this.model.name}GetQuerySchema`;
     const modelHasPolicies = hasPolicies(this.model);
+    const modelHasHooks = this.modelsWithHooks.has(this.model.name);
     const constantPrefix = toModelConstantPrefix(this.model.name);
 
     return [
@@ -40,6 +42,11 @@ export class RouteGenerator {
       ...(modelHasPolicies
         ? [
             `import { assertPolicy, mergeWhere, resolvePolicyWhere } from '${PACKAGE_NAME}/api/auth/policy';`,
+          ]
+        : []),
+      ...(modelHasHooks
+        ? [
+            `import { cancelledResponse, createHookContext, runAfterHooks, runBeforeHooks } from '${PACKAGE_NAME}/api/hooks';`,
           ]
         : []),
       `import {`,
@@ -70,7 +77,7 @@ export class RouteGenerator {
         constantPrefix,
       ),
       '',
-      ...this.generateCreateRoute(clientKey, modelHasPolicies, constantPrefix),
+      ...this.generateCreateRoute(clientKey, modelHasPolicies, modelHasHooks, constantPrefix),
       '',
       ...this.generateUpdateRoute(
         clientKey,
@@ -78,6 +85,7 @@ export class RouteGenerator {
         paramSchemaName,
         whereFromParams,
         modelHasPolicies,
+        modelHasHooks,
         constantPrefix,
       ),
       '',
@@ -87,6 +95,7 @@ export class RouteGenerator {
         paramSchemaName,
         whereFromParams,
         modelHasPolicies,
+        modelHasHooks,
         constantPrefix,
       ),
       '',
@@ -219,29 +228,43 @@ export class RouteGenerator {
   private generateCreateRoute(
     clientKey: string,
     modelHasPolicies: boolean,
+    modelHasHooks: boolean,
     constantPrefix: string,
   ): string[] {
-    if (!modelHasPolicies) {
-      return [
-        `router.post('/', validateJson(${this.model.name}CreateSchema), async (c) => {`,
-        '  const db = c.get(\'db\');',
-        '  const body = c.req.valid(\'json\');',
-        `  const row = await db.${clientKey}.create(body);`,
-        `  return ${this.mutationJsonRow('row', constantPrefix, 201)};`,
-        '});',
-      ];
-    }
-
-    return [
+    const lines = [
       `router.post('/', validateJson(${this.model.name}CreateSchema), async (c) => {`,
       '  const db = c.get(\'db\');',
-      '  const auth = c.get(\'auth\');',
-      `  assertPolicy('${this.model.name}', auth.role, 'insert');`,
-      '  const body = c.req.valid(\'json\');',
-      `  const row = await db.${clientKey}.create(body);`,
-      `  return ${this.mutationJsonRow('row', constantPrefix, 201)};`,
-      '});',
     ];
+
+    if (modelHasPolicies || modelHasHooks) {
+      lines.push('  const auth = c.get(\'auth\');');
+    }
+
+    if (modelHasPolicies) {
+      lines.push(`  assertPolicy('${this.model.name}', auth.role, 'insert');`);
+    }
+
+    lines.push('  const body = c.req.valid(\'json\');');
+
+    if (modelHasHooks) {
+      lines.push(
+        `  const hookCtx = createHookContext({ c, db, auth, model: '${this.model.name}', operation: 'create', data: body });`,
+        `  const gate = await runBeforeHooks('${this.model.name}', 'create', hookCtx);`,
+        '  if (!gate.proceed) return gate.response ?? cancelledResponse(c);',
+        `  const row = await db.${clientKey}.create(hookCtx.data);`,
+        '  hookCtx.result = row;',
+        `  await runAfterHooks('${this.model.name}', 'create', hookCtx);`,
+        `  return ${this.mutationJsonRow('hookCtx.result', constantPrefix, 201)};`,
+      );
+    } else {
+      lines.push(
+        `  const row = await db.${clientKey}.create(body);`,
+        `  return ${this.mutationJsonRow('row', constantPrefix, 201)};`,
+      );
+    }
+
+    lines.push('});');
+    return lines;
   }
 
   private generateUpdateRoute(
@@ -250,32 +273,66 @@ export class RouteGenerator {
     paramSchemaName: string,
     whereFromParams: string,
     modelHasPolicies: boolean,
+    modelHasHooks: boolean,
     constantPrefix: string,
   ): string[] {
-    if (!modelHasPolicies) {
-      return [
-        `router.put('/${pathParams}', validateParam(${paramSchemaName}), validateJson(${this.model.name}UpdateSchema), async (c) => {`,
-        '  const db = c.get(\'db\');',
-        '  const params = c.req.valid(\'param\');',
-        '  const body = c.req.valid(\'json\');',
-        `  const row = await db.${clientKey}.update({ where: { ${whereFromParams} }, data: body });`,
-        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
-        '});',
-      ];
-    }
-
-    return [
+    const lines = [
       `router.put('/${pathParams}', validateParam(${paramSchemaName}), validateJson(${this.model.name}UpdateSchema), async (c) => {`,
       '  const db = c.get(\'db\');',
-      '  const auth = c.get(\'auth\');',
-      `  const policy = assertPolicy('${this.model.name}', auth.role, 'update');`,
-      '  const policyWhere = resolvePolicyWhere(policy, auth);',
+    ];
+
+    if (modelHasPolicies || modelHasHooks) {
+      lines.push('  const auth = c.get(\'auth\');');
+    }
+
+    if (modelHasPolicies) {
+      lines.push(
+        `  const policy = assertPolicy('${this.model.name}', auth.role, 'update');`,
+        '  const policyWhere = resolvePolicyWhere(policy, auth);',
+      );
+    }
+
+    lines.push(
       '  const params = c.req.valid(\'param\');',
       '  const body = c.req.valid(\'json\');',
-      `  const row = await db.${clientKey}.update({ where: mergeWhere({ ${whereFromParams} }, policyWhere), data: body });`,
-      `  return ${this.mutationJsonRow('row', constantPrefix)};`,
-      '});',
-    ];
+    );
+
+    if (modelHasHooks) {
+      lines.push(
+        `  const hookCtx = createHookContext({ c, db, auth, model: '${this.model.name}', operation: 'update', data: body, params });`,
+        `  const gate = await runBeforeHooks('${this.model.name}', 'update', hookCtx);`,
+        '  if (!gate.proceed) return gate.response ?? cancelledResponse(c);',
+      );
+
+      if (modelHasPolicies) {
+        lines.push(
+          `  const row = await db.${clientKey}.update({ where: mergeWhere({ ${whereFromParams} }, policyWhere), data: hookCtx.data });`,
+        );
+      } else {
+        lines.push(
+          `  const row = await db.${clientKey}.update({ where: { ${whereFromParams} }, data: hookCtx.data });`,
+        );
+      }
+
+      lines.push(
+        '  hookCtx.result = row;',
+        `  await runAfterHooks('${this.model.name}', 'update', hookCtx);`,
+        `  return ${this.mutationJsonRow('hookCtx.result', constantPrefix)};`,
+      );
+    } else if (modelHasPolicies) {
+      lines.push(
+        `  const row = await db.${clientKey}.update({ where: mergeWhere({ ${whereFromParams} }, policyWhere), data: body });`,
+        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
+      );
+    } else {
+      lines.push(
+        `  const row = await db.${clientKey}.update({ where: { ${whereFromParams} }, data: body });`,
+        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
+      );
+    }
+
+    lines.push('});');
+    return lines;
   }
 
   private generateDeleteRoute(
@@ -284,30 +341,61 @@ export class RouteGenerator {
     paramSchemaName: string,
     whereFromParams: string,
     modelHasPolicies: boolean,
+    modelHasHooks: boolean,
     constantPrefix: string,
   ): string[] {
-    if (!modelHasPolicies) {
-      return [
-        `router.delete('/${pathParams}', validateParam(${paramSchemaName}), async (c) => {`,
-        '  const db = c.get(\'db\');',
-        '  const params = c.req.valid(\'param\');',
-        `  const row = await db.${clientKey}.delete({ ${whereFromParams} });`,
-        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
-        '});',
-      ];
-    }
-
-    return [
+    const lines = [
       `router.delete('/${pathParams}', validateParam(${paramSchemaName}), async (c) => {`,
       '  const db = c.get(\'db\');',
-      '  const auth = c.get(\'auth\');',
-      `  const policy = assertPolicy('${this.model.name}', auth.role, 'delete');`,
-      '  const policyWhere = resolvePolicyWhere(policy, auth);',
-      '  const params = c.req.valid(\'param\');',
-      `  const row = await db.${clientKey}.delete(mergeWhere({ ${whereFromParams} }, policyWhere));`,
-      `  return ${this.mutationJsonRow('row', constantPrefix)};`,
-      '});',
     ];
+
+    if (modelHasPolicies || modelHasHooks) {
+      lines.push('  const auth = c.get(\'auth\');');
+    }
+
+    if (modelHasPolicies) {
+      lines.push(
+        `  const policy = assertPolicy('${this.model.name}', auth.role, 'delete');`,
+        '  const policyWhere = resolvePolicyWhere(policy, auth);',
+      );
+    }
+
+    lines.push('  const params = c.req.valid(\'param\');');
+
+    if (modelHasHooks) {
+      lines.push(
+        `  const hookCtx = createHookContext({ c, db, auth, model: '${this.model.name}', operation: 'delete', params });`,
+        `  const gate = await runBeforeHooks('${this.model.name}', 'delete', hookCtx);`,
+        '  if (!gate.proceed) return gate.response ?? cancelledResponse(c);',
+      );
+
+      if (modelHasPolicies) {
+        lines.push(
+          `  const row = await db.${clientKey}.delete(mergeWhere({ ${whereFromParams} }, policyWhere));`,
+        );
+      } else {
+        lines.push(`  const row = await db.${clientKey}.delete({ ${whereFromParams} });`);
+      }
+
+      lines.push(
+        '  hookCtx.result = row;',
+        `  await runAfterHooks('${this.model.name}', 'delete', hookCtx);`,
+        `  return ${this.mutationJsonRow('hookCtx.result', constantPrefix)};`,
+      );
+    } else if (modelHasPolicies) {
+      lines.push(
+        `  const row = await db.${clientKey}.delete(mergeWhere({ ${whereFromParams} }, policyWhere));`,
+        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
+      );
+    } else {
+      lines.push(
+        `  const row = await db.${clientKey}.delete({ ${whereFromParams} });`,
+        `  return ${this.mutationJsonRow('row', constantPrefix)};`,
+      );
+    }
+
+    lines.push('});');
+    return lines;
   }
 
   getRouteFileName(): string {
@@ -319,11 +407,14 @@ export class RouteGenerator {
   }
 }
 
-export function generateRouteFiles(schema: Schema): Map<string, string> {
+export function generateRouteFiles(
+  schema: Schema,
+  modelsWithHooks: ReadonlySet<string> = new Set(),
+): Map<string, string> {
   const files = new Map<string, string>();
 
   for (const model of schema.models) {
-    const generator = new RouteGenerator(model, schema);
+    const generator = new RouteGenerator(model, schema, modelsWithHooks);
     files.set(generator.getRouteFileName(), generator.generate());
   }
 

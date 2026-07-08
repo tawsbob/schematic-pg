@@ -8,6 +8,8 @@ import { Hono } from 'hono';
 import { parse } from '../../schema-dsl/index.js';
 import type { AppEnv } from '../../api/types.js';
 import { generateAppFile } from '../app-generator.js';
+import { generateHooksFile } from '../hooks-generator.js';
+import { discoverHooks } from '../hook-scanner.js';
 import { generatePoliciesFile } from '../policy-generator.js';
 import { generateRouteFiles, getRouteMountEntries } from '../route-generator.js';
 import { generateValidationSchemas } from '../zod-schema-generator.js';
@@ -16,6 +18,7 @@ const schemaSource = readFileSync(path.resolve('app.schema'), 'utf8');
 const schema = parse(schemaSource);
 const missingCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/missing-routes');
 const fixtureCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/custom-routes');
+const fixtureHooksDir = path.resolve('src/api-generator/__tests__/fixtures/hooks');
 
 describe('ZodSchemaGenerator', () => {
   it('generates create schemas with regex and range messages from app.schema', () => {
@@ -138,6 +141,24 @@ describe('RouteGenerator', () => {
       ['users', 'profiles', 'orders', 'logs', 'products', 'product-orders'],
     );
   });
+
+  it('injects lifecycle hook wiring only for models with hook files', () => {
+    const { modelsWithHooks } = discoverHooks(fixtureHooksDir, schema);
+    const routes = generateRouteFiles(schema, modelsWithHooks);
+    const users = routes.get('users.ts')!;
+    const products = routes.get('products.ts')!;
+
+    assert.match(users, /import \{ cancelledResponse, createHookContext, runAfterHooks, runBeforeHooks \}/);
+    assert.match(users, /const hookCtx = createHookContext\(\{ c, db, auth, model: 'User', operation: 'create', data: body \}\)/);
+    assert.match(users, /const gate = await runBeforeHooks\('User', 'create', hookCtx\)/);
+    assert.match(users, /if \(!gate\.proceed\) return gate\.response \?\? cancelledResponse\(c\)/);
+    assert.match(users, /await db\.user\.create\(hookCtx\.data\)/);
+    assert.match(users, /await runAfterHooks\('User', 'update', hookCtx\)/);
+    assert.match(users, /await runAfterHooks\('User', 'delete', hookCtx\)/);
+
+    assert.doesNotMatch(products, /runBeforeHooks/);
+    assert.doesNotMatch(products, /runAfterHooks/);
+  });
 });
 
 describe('PolicyGenerator', () => {
@@ -152,6 +173,17 @@ describe('PolicyGenerator', () => {
   });
 });
 
+describe('HooksGenerator', () => {
+  it('generates hook registry metadata from discovered hook files', () => {
+    const { entries } = discoverHooks(fixtureHooksDir, schema);
+    const output = generateHooksFile(entries);
+
+    assert.match(output, /import userHooks from '\.\.\/src\/hooks\/User\.js';/);
+    assert.match(output, /export const HOOKS = \{/);
+    assert.match(output, /User: userHooks,/);
+  });
+});
+
 describe('AppGenerator', () => {
   it('generates app entry with createApp export and conditional serve', () => {
     const output = generateAppFile(schema, { customRoutesDir: missingCustomRoutesDir });
@@ -161,8 +193,11 @@ describe('AppGenerator', () => {
     assert.match(output, /import \{ createAuthMiddleware \} from 'schematic-pg\/api\/auth\/middleware'/);
     assert.match(output, /import \{ createDbClient \} from '\.\/db\.js'/);
     assert.match(output, /import \{ POLICIES \} from '\.\/policies\.js'/);
+    assert.match(output, /import \{ HOOKS \} from '\.\/hooks\.js'/);
     assert.match(output, /import \{ configurePolicies \} from 'schematic-pg\/api\/auth\/policy'/);
+    assert.match(output, /import \{ configureHooks \} from 'schematic-pg\/api\/hooks'/);
     assert.match(output, /configurePolicies\(POLICIES\)/);
+    assert.match(output, /configureHooks\(HOOKS\)/);
     assert.match(output, /app\.use\(createDbMiddleware\(\{ pool: options\.pool, createDbClient \}\)\)/);
     assert.match(output, /export function createApp\(options: CreateAppOptions = \{\}\): Hono<AppEnv>/);
     assert.match(output, /app\.use\(createAuthMiddleware\(options\.authResolver \?\? createJwtResolver\(\)\)\)/);

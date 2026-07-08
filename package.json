@@ -1,6 +1,6 @@
 {
   "name": "schematic-pg",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Single-file backend framework for PostgreSQL and Node.js",
   "type": "module",
   "license": "MIT",
@@ -33,6 +33,10 @@
     "./schema-dsl": {
       "types": "./dist/schema-dsl/index.d.ts",
       "import": "./dist/schema-dsl/index.js"
+    },
+    "./api/hooks": {
+      "types": "./dist/api/hooks/index.d.ts",
+      "import": "./dist/api/hooks/index.js"
     },
     "./api/*": {
       "types": "./dist/api/*.d.ts",

@@ -1,4 +1,4 @@
-- [x] Docker Compose File With PostgreSQL (with the volume mapped to a local folder /docker_data/postgres)
+- [x] Docker Compose File With PostgreSQL (with the volume mapped to a local folder /docker_data/postgres)x`
 - [x] Generate the database client (.env DATABASE_URL)
 - [x] Generate a database from scratch.
 - [x] generate a migration with a difference for each entity type to verify that it is working
