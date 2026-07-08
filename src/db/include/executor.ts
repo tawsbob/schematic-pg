@@ -1,6 +1,7 @@
-import type { Pool, QueryResultRow } from 'pg';
+import type { QueryResultRow } from 'pg';
 import { mapPgError } from '../errors.js';
 import type { ModelMeta } from '../model-meta.js';
+import type { Queryable } from '../queryable.js';
 import { mapRows } from '../row-mapper.js';
 import { WhereTranslator } from '../where-translator.js';
 import { dedupeKeys, extractParentKeys, stitch } from './hydrator.js';
@@ -9,7 +10,7 @@ import type { LoadNode } from './planner.js';
 export async function loadIncludes(
   parentRows: Record<string, unknown>[],
   plan: LoadNode,
-  pool: Pool,
+  executor: Queryable,
 ): Promise<void> {
   for (const childPlan of plan.children) {
     const relation = childPlan.relation;
@@ -23,8 +24,8 @@ export async function loadIncludes(
       continue;
     }
 
-    const childRows = await fetchRelationRows(childPlan, parentKeys, pool);
-    await loadIncludes(childRows, childPlan, pool);
+    const childRows = await fetchRelationRows(childPlan, parentKeys, executor);
+    await loadIncludes(childRows, childPlan, executor);
     stitch(parentRows, childRows, relation);
   }
 }
@@ -41,7 +42,7 @@ function assignEmptyRelation(
 async function fetchRelationRows(
   node: LoadNode,
   parentKeys: unknown[],
-  pool: Pool,
+  executor: Queryable,
 ): Promise<Record<string, unknown>[]> {
   const relation = node.relation;
   if (!relation) {
@@ -49,7 +50,7 @@ async function fetchRelationRows(
   }
 
   const query = buildRelationSelect(node, parentKeys);
-  const rows = await executeQuery(pool, query.sql, query.params, node.model);
+  const rows = await executeQuery(executor, query.sql, query.params, node.model);
   return mapRows<Record<string, unknown>>(rows, node.model);
 }
 
@@ -117,13 +118,13 @@ function buildOrderByClause(plan: LoadNode): string {
 }
 
 async function executeQuery(
-  pool: Pool,
+  executor: Queryable,
   sql: string,
   params: unknown[],
   model: ModelMeta,
 ): Promise<QueryResultRow[]> {
   try {
-    const result = await pool.query<QueryResultRow>(sql, params);
+    const result = await executor.query<QueryResultRow>(sql, params);
     return result.rows;
   } catch (error) {
     throw mapPgError(error, model.name, model.columnToField);

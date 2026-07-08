@@ -1,8 +1,9 @@
-import type { Pool, QueryResultRow } from 'pg';
+import type { QueryResultRow } from 'pg';
 import { mapPgError } from '../errors.js';
 import type { ModelMeta } from '../model-meta.js';
 import type { FindArgs, SqlQuery } from '../query-builder.js';
 import { QueryBuilder } from '../query-builder.js';
+import type { Queryable } from '../queryable.js';
 import { mapRow } from '../row-mapper.js';
 import type { LoadNode } from './planner.js';
 
@@ -12,10 +13,10 @@ export async function fetchRootWithJsonAgg<T extends Record<string, unknown>>(
   model: ModelMeta,
   plan: LoadNode,
   args: FindArgs,
-  pool: Pool,
+  executor: Queryable,
 ): Promise<T[]> {
   const query = buildJsonAggRootQuery(model, plan, args);
-  const rows = await executeQuery(pool, query.sql, query.params, model);
+  const rows = await executeQuery(executor, query.sql, query.params, model);
   return rows.map((row) => hydrateJsonAggRow<T>(row, model, plan));
 }
 
@@ -149,13 +150,13 @@ function hydrateJsonObject(
 }
 
 async function executeQuery(
-  pool: Pool,
+  executor: Queryable,
   sql: string,
   params: unknown[],
   model: ModelMeta,
 ): Promise<QueryResultRow[]> {
   try {
-    const result = await pool.query<QueryResultRow>(sql, params);
+    const result = await executor.query<QueryResultRow>(sql, params);
     return result.rows;
   } catch (error) {
     throw mapPgError(error, model.name, model.columnToField);

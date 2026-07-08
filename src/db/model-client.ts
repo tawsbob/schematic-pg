@@ -1,9 +1,10 @@
-import type { Pool, QueryResultRow } from 'pg';
+import type { QueryResultRow } from 'pg';
 import { mapPgError } from './errors.js';
 import { fetchWithIncludes } from './include/load.js';
 import type { IncludeInput, IncludeOptions } from './include/types.js';
 import type { ModelMeta } from './model-meta.js';
 import { QueryBuilder, type FindArgs } from './query-builder.js';
+import type { Queryable } from './queryable.js';
 import { mapRow, mapRows } from './row-mapper.js';
 import type { WhereInput } from './where-translator.js';
 
@@ -35,14 +36,14 @@ export interface ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy> {
 
 export function createModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>(
   model: ModelMeta,
-  pool: Pool,
+  executor: Queryable,
   registry?: ModelRegistry,
 ): ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy> {
   const builder = new QueryBuilder(model);
 
   async function execute<T extends QueryResultRow>(sql: string, params: unknown[]): Promise<T[]> {
     try {
-      const result = await pool.query<T>(sql, params);
+      const result = await executor.query<T>(sql, params);
       return result.rows;
     } catch (error) {
       throw mapPgError(error, model.name, model.columnToField);
@@ -53,7 +54,7 @@ export function createModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>(
     const findArgs = toFindArgs(args);
 
     if (args.include && registry) {
-      return fetchWithIncludes<T & Record<string, unknown>>(model, registry, pool, {
+      return fetchWithIncludes<T & Record<string, unknown>>(model, registry, executor, {
         ...findArgs,
         include: args.include,
       }, {

@@ -2,9 +2,9 @@ import { mapPgError } from '../errors.js';
 import { QueryBuilder } from '../query-builder.js';
 import { mapRow } from '../row-mapper.js';
 const ROOT_ALIAS = 'root';
-export async function fetchRootWithJsonAgg(model, plan, args, pool) {
+export async function fetchRootWithJsonAgg(model, plan, args, executor) {
     const query = buildJsonAggRootQuery(model, plan, args);
-    const rows = await executeQuery(pool, query.sql, query.params, model);
+    const rows = await executeQuery(executor, query.sql, query.params, model);
     return rows.map((row) => hydrateJsonAggRow(row, model, plan));
 }
 function buildJsonAggRootQuery(model, plan, args) {
@@ -90,9 +90,9 @@ function hydrateJsonObject(value, plan) {
     }
     return mapped;
 }
-async function executeQuery(pool, sql, params, model) {
+async function executeQuery(executor, sql, params, model) {
     try {
-        const result = await pool.query(sql, params);
+        const result = await executor.query(sql, params);
         return result.rows;
     }
     catch (error) {

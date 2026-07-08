@@ -1,8 +1,9 @@
-import type { Pool, QueryResultRow } from 'pg';
+import type { QueryResultRow } from 'pg';
 import { mapPgError } from '../errors.js';
 import type { ModelMeta } from '../model-meta.js';
 import type { FindArgs } from '../query-builder.js';
 import { QueryBuilder } from '../query-builder.js';
+import type { Queryable } from '../queryable.js';
 import { mapRows } from '../row-mapper.js';
 import { loadIncludes } from './executor.js';
 import { fetchRootWithJsonAgg } from './json-agg.js';
@@ -12,7 +13,7 @@ import type { IncludeInput, IncludeOptions } from './types.js';
 export async function fetchWithIncludes<T extends Record<string, unknown>>(
   model: ModelMeta,
   registry: Map<string, ModelMeta>,
-  pool: Pool,
+  executor: Queryable,
   rootArgs: FindArgs & { include?: IncludeInput },
   options: IncludeOptions = {},
 ): Promise<T[]> {
@@ -27,19 +28,19 @@ export async function fetchWithIncludes<T extends Record<string, unknown>>(
   plan.skip = rootArgs.skip;
 
   if (plan.strategy === 'join') {
-    return fetchRootWithJsonAgg<T>(model, plan, rootArgs, pool);
+    return fetchRootWithJsonAgg<T>(model, plan, rootArgs, executor);
   }
 
-  const rows = await executeRootSelect(model, pool, rootArgs);
+  const rows = await executeRootSelect(model, executor, rootArgs);
   const mapped = mapRows<T>(rows, model);
-  await loadIncludes(mapped, plan, pool);
+  await loadIncludes(mapped, plan, executor);
   return mapped;
 }
 
 export async function attachIncludes<T extends Record<string, unknown>>(
   model: ModelMeta,
   registry: Map<string, ModelMeta>,
-  pool: Pool,
+  executor: Queryable,
   rootRows: T[],
   include: IncludeInput,
   rootArgs: FindArgs,
@@ -55,20 +56,20 @@ export async function attachIncludes<T extends Record<string, unknown>>(
   plan.take = rootArgs.take;
   plan.skip = rootArgs.skip;
 
-  await loadIncludes(rootRows, plan, pool);
+  await loadIncludes(rootRows, plan, executor);
   return rootRows;
 }
 
 async function executeRootSelect(
   model: ModelMeta,
-  pool: Pool,
+  executor: Queryable,
   args: FindArgs,
 ): Promise<QueryResultRow[]> {
   const builder = new QueryBuilder(model);
   const query = builder.select(args);
 
   try {
-    const result = await pool.query<QueryResultRow>(query.sql, query.params);
+    const result = await executor.query<QueryResultRow>(query.sql, query.params);
     return result.rows;
   } catch (error) {
     throw mapPgError(error, model.name, model.columnToField);

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { after, before, describe, it } from 'node:test';
 import { Pool } from 'pg';
 import { createDbClient } from '../../../generated/db.js';
-import { ForeignKeyConstraintError, UniqueConstraintError } from '../errors.js';
+import { ForeignKeyConstraintError, UniqueConstraintError } from 'schematic-pg/db/errors';
 import {
   assertDockerPostgres,
   assertGeneratedArtifacts,
@@ -353,6 +353,135 @@ describe('db client integration (Docker)', { concurrency: 1 }, () => {
       });
 
       assert.equal(result.count, 1);
+    });
+  });
+
+  describe('$transaction', () => {
+    async function createProduct(stock: number): Promise<{ id: string; stock: number }> {
+      return db.product.create({
+        name: 'Tx Product',
+        description: 'A product used by transaction tests',
+        price: '9.99',
+        stock,
+        category: 'tools',
+        tags: ['tx'],
+        metadata: { origin: 'tx-test' },
+      });
+    }
+
+    it('commits every write when the callback resolves', async () => {
+      const product = await createProduct(10);
+
+      const order = await db.$transaction(async (tx) => {
+        const created = await tx.order.create({
+          userId: users.admin.id,
+          totalAmount: '19.99',
+          items: { sku: 'tx-commit' },
+        });
+
+        await tx.productOrder.create({
+          orderId: created.id,
+          productId: product.id,
+          quantity: 2,
+          price: '9.99',
+        });
+
+        await tx.product.update({
+          where: { id: product.id },
+          data: { stock: 8 },
+        });
+
+        return created;
+      });
+
+      const savedOrder = await db.order.findUnique({ id: order.id });
+      assert.ok(savedOrder);
+
+      const savedProductOrder = await db.productOrder.findFirst({
+        where: { orderId: order.id },
+      });
+      assert.ok(savedProductOrder);
+      assert.equal(savedProductOrder.quantity, 2);
+
+      const savedProduct = await db.product.findUnique({ id: product.id });
+      assert.ok(savedProduct);
+      assert.equal(savedProduct.stock, 8);
+    });
+
+    it('rolls back every write when the callback throws', async () => {
+      const product = await createProduct(20);
+      let createdOrderId: string | undefined;
+
+      await assert.rejects(
+        db.$transaction(async (tx) => {
+          const created = await tx.order.create({
+            userId: users.admin.id,
+            totalAmount: '5.00',
+            items: { sku: 'tx-rollback' },
+          });
+          createdOrderId = created.id;
+
+          await tx.product.update({
+            where: { id: product.id },
+            data: { stock: 5 },
+          });
+
+          throw new Error('rollback boom');
+        }),
+        /rollback boom/,
+      );
+
+      assert.ok(createdOrderId);
+      const goneOrder = await db.order.findUnique({ id: createdOrderId });
+      assert.equal(goneOrder, null);
+
+      const savedProduct = await db.product.findUnique({ id: product.id });
+      assert.ok(savedProduct);
+      assert.equal(savedProduct.stock, 20);
+    });
+
+    it('rolls back and propagates the typed error on a constraint violation', async () => {
+      let createdOrderId: string | undefined;
+
+      await assert.rejects(
+        db.$transaction(async (tx) => {
+          const created = await tx.order.create({
+            userId: users.admin.id,
+            totalAmount: '1.00',
+            items: { sku: 'tx-constraint' },
+          });
+          createdOrderId = created.id;
+
+          await tx.user.create({
+            email: 'admin@b.com',
+            name: 'Duplicate In Tx',
+            balance: 0,
+          });
+        }),
+        (error: unknown) => {
+          assert.ok(error instanceof UniqueConstraintError);
+          assert.ok(error.fields.includes('email'));
+          return true;
+        },
+      );
+
+      assert.ok(createdOrderId);
+      const goneOrder = await db.order.findUnique({ id: createdOrderId });
+      assert.equal(goneOrder, null);
+    });
+
+    it('sees its own uncommitted writes within the same transaction', async () => {
+      await db.$transaction(async (tx) => {
+        const created = await tx.order.create({
+          userId: users.admin.id,
+          totalAmount: '2.00',
+          items: { sku: 'tx-isolation' },
+        });
+
+        const found = await tx.order.findUnique({ id: created.id });
+        assert.ok(found);
+        assert.equal(found.id, created.id);
+      });
     });
   });
 });

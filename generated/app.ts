@@ -14,7 +14,9 @@ import productOrdersRouter from './routes/product-orders.js';
 import healthRouter from '../src/routes/health.js';
 import { createDbClient } from './db.js';
 import { POLICIES } from './policies.js';
+import { HOOKS } from './hooks.js';
 import { configurePolicies } from 'schematic-pg/api/auth/policy';
+import { configureHooks } from 'schematic-pg/api/hooks';
 import { createAuthMiddleware } from 'schematic-pg/api/auth/middleware';
 import { createJwtResolver } from 'schematic-pg/api/auth/jwt-resolver';
 import type { AuthResolver } from 'schematic-pg/api/auth/types';
@@ -23,6 +25,7 @@ import { handleError } from 'schematic-pg/api/middleware/errors';
 import type { AppEnv } from 'schematic-pg/api/types';
 
 configurePolicies(POLICIES);
+configureHooks(HOOKS);
 
 export interface CreateAppOptions {
   pool?: Pool;

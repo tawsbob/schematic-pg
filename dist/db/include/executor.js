@@ -2,7 +2,7 @@ import { mapPgError } from '../errors.js';
 import { mapRows } from '../row-mapper.js';
 import { WhereTranslator } from '../where-translator.js';
 import { dedupeKeys, extractParentKeys, stitch } from './hydrator.js';
-export async function loadIncludes(parentRows, plan, pool) {
+export async function loadIncludes(parentRows, plan, executor) {
     for (const childPlan of plan.children) {
         const relation = childPlan.relation;
         if (!relation) {
@@ -13,8 +13,8 @@ export async function loadIncludes(parentRows, plan, pool) {
             assignEmptyRelation(parentRows, relation);
             continue;
         }
-        const childRows = await fetchRelationRows(childPlan, parentKeys, pool);
-        await loadIncludes(childRows, childPlan, pool);
+        const childRows = await fetchRelationRows(childPlan, parentKeys, executor);
+        await loadIncludes(childRows, childPlan, executor);
         stitch(parentRows, childRows, relation);
     }
 }
@@ -23,13 +23,13 @@ function assignEmptyRelation(parentRows, relation) {
         parent[relation.name] = relation.unique ? null : [];
     }
 }
-async function fetchRelationRows(node, parentKeys, pool) {
+async function fetchRelationRows(node, parentKeys, executor) {
     const relation = node.relation;
     if (!relation) {
         return [];
     }
     const query = buildRelationSelect(node, parentKeys);
-    const rows = await executeQuery(pool, query.sql, query.params, node.model);
+    const rows = await executeQuery(executor, query.sql, query.params, node.model);
     return mapRows(rows, node.model);
 }
 function buildRelationSelect(node, parentKeys) {
@@ -79,9 +79,9 @@ function buildOrderByClause(plan) {
     }
     return parts.length > 0 ? `ORDER BY ${parts.join(', ')}` : '';
 }
-async function executeQuery(pool, sql, params, model) {
+async function executeQuery(executor, sql, params, model) {
     try {
-        const result = await pool.query(sql, params);
+        const result = await executor.query(sql, params);
         return result.rows;
     }
     catch (error) {

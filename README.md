@@ -22,7 +22,7 @@ Most backend frameworks force you to scatter your truth across migrations, ORM m
 
 - **Declarative Schema DSL** — PostgreSQL-native types, enums, extensions, indexes, and triggers
 - **Automatic SQL Generation** — idempotent DDL with snake_case naming conventions
-- **Type-safe Database Client** — Prisma-like query API over parameterized raw SQL (`pg` Pool, no ORM), with nested `include` eager-loading
+- **Type-safe Database Client** — Prisma-like query API over parameterized raw SQL (`pg` Pool, no ORM), with nested `include` eager-loading and `db.$transaction()` for atomic multi-model writes
 - **Type-safe REST API** — Hono routes with generated Zod validation
 - **Custom routes** — Hand-written Hono routers in `src/routes/` auto-imported into the generated app
 - **Lifecycle hooks** — Before/after create, update, and delete with Express-style `next()` cancel semantics; scaffold via `hooks:add`
@@ -238,7 +238,7 @@ If either side declares `name`, the other side must use the same `name` (or omit
 
 1. **Parse** — The hand-written lexer and recursive-descent parser turn your `.schema` file into a typed AST.
 2. **Generate SQL** — The DDL generator emits idempotent PostgreSQL: extensions, enums, tables, foreign keys, indexes, and triggers. All identifiers are automatically converted to `snake_case`.
-3. **Generate DB client** — The client generator emits TypeScript interfaces (including `{Model}Include` types), relation metadata, and a `createDbClient(pool)` factory with per-model CRUD methods and nested `include` eager-loading. All SQL uses `$1`, `$2`, … placeholders — user input is never interpolated.
+3. **Generate DB client** — The client generator emits TypeScript interfaces (including `{Model}Include` types), relation metadata, and a `createDbClient(pool)` factory with per-model CRUD methods, nested `include` eager-loading, and `$transaction` for atomic multi-model writes. All SQL uses `$1`, `$2`, … placeholders — user input is never interpolated.
 4. **Generate API** — The route generator emits Hono routers with:
    - Zod-validated request bodies and path params (driven by `@regex` and `@range`)
    - Full CRUD handlers backed by the generated DB client
@@ -475,7 +475,7 @@ npm run test:integration      # Docker + generate + DB client + ACL integration 
 
 ## Database Client
 
-A type-safe query layer generated from your schema AST. The API mirrors Prisma ergonomics (`db.user.create`, `db.user.findMany`, …) but every query is built as parameterized raw SQL against a `pg` `Pool` — no ORM, no query-builder library.
+A type-safe query layer generated from your schema AST. The API mirrors Prisma ergonomics (`db.user.create`, `db.user.findMany`, `db.$transaction`, …) but every query is built as parameterized raw SQL against a `pg` `Pool` — no ORM, no query-builder library.
 
 ### Generate
 
@@ -490,7 +490,7 @@ Outputs:
 |------|---------|
 | `generated/db-types.ts` | Per-model interfaces: `User`, `UserCreateInput`, `UserWhereInput`, `UserInclude`, enum unions |
 | `generated/db-model-meta.ts` | Serialized field/column and relation metadata consumed at runtime |
-| `generated/db.ts` | `createDbClient(pool)` factory wiring all models |
+| `generated/db.ts` | `createDbClient(pool)` factory wiring all models and `$transaction` |
 
 ### Usage
 
@@ -577,6 +577,67 @@ Each model in `app.schema` becomes a camelCase property on the client (`User` �
 | `deleteMany({ where })` | `DELETE … WHERE … RETURNING *` |
 
 Mutations return the full row (`RETURNING *`). Rows are mapped from `snake_case` columns to `camelCase` TypeScript fields.
+
+The client also exposes a top-level `$transaction` method (see below).
+
+### Transactions
+
+Run multiple model operations in a single PostgreSQL transaction. The callback receives a transaction-scoped client (`tx`) with the same per-model API as `db`, but bound to one `PoolClient` for the duration of the callback.
+
+```typescript
+const order = await db.$transaction(async (tx) => {
+  const created = await tx.order.create({
+    userId: user.id,
+    totalAmount: '19.99',
+    items: { sku: 'book' },
+  });
+
+  await tx.productOrder.create({
+    orderId: created.id,
+    productId: product.id,
+    quantity: 2,
+    price: '9.99',
+  });
+
+  await tx.product.update({
+    where: { id: product.id },
+    data: { stock: newStock },
+  });
+
+  return created; // committed when the callback resolves
+});
+```
+
+**Semantics:**
+
+| Behavior | Detail |
+|----------|--------|
+| Commit | Callback resolves → `COMMIT` |
+| Rollback | Callback throws → `ROLLBACK`, original error rethrown |
+| Constraint errors | `UniqueConstraintError`, `ForeignKeyConstraintError`, etc. still propagate and roll back earlier writes in the same transaction |
+| Read-your-writes | Queries inside `tx` (including `findUnique` / `include`) use the same connection and see uncommitted rows before commit |
+| Return value | Whatever the callback returns is passed through after commit |
+
+The generated `TxClient` type is the transaction-scoped client (all model clients, no nested `$transaction`). Calling `$transaction` inside a transaction callback is unsupported in v1.
+
+Import typed errors from the package entry the generated client uses at runtime:
+
+```typescript
+import { UniqueConstraintError } from 'schematic-pg/db/errors';
+
+try {
+  await db.$transaction(async (tx) => {
+    await tx.order.create({ /* … */ });
+    await tx.user.create({ email: 'taken@b.com', name: 'X', balance: 0 });
+  });
+} catch (error) {
+  if (error instanceof UniqueConstraintError) {
+    console.log(error.fields); // earlier writes in the tx were rolled back
+  }
+}
+```
+
+Under the hood, queries go through a minimal `Queryable` interface satisfied by both `pg` `Pool` (autocommit, default client) and `PoolClient` (inside `$transaction`). The runtime helper `runInTransaction` lives in `schematic-pg/db/transaction`.
 
 ### Eager loading (`include`)
 
@@ -731,6 +792,8 @@ Generated code is a thin wrapper. The query engine ships inside the `schematic-p
 
 ```
 schematic-pg/dist/db/        # Published runtime (import as schematic-pg/db/*)
+├── queryable.ts            # Queryable seam (Pool | PoolClient)
+├── transaction.ts          # runInTransaction (BEGIN / COMMIT / ROLLBACK)
 ├── query-builder.ts        # INSERT / SELECT / UPDATE / DELETE / COUNT
 ├── where-translator.ts     # WhereInput → SQL + params
 ├── model-client.ts         # createModelClient factory
@@ -750,7 +813,7 @@ npm run test:integration
 
 This resets the `public` schema, bootstraps from `app.schema`, seeds test data, and exercises:
 
-- **DB client** — CRUD, filters, nested `include` eager-loading, and error handling ([`src/db/__tests__/db-client.integration.test.ts`](src/db/__tests__/db-client.integration.test.ts))
+- **DB client** — CRUD, filters, nested `include` eager-loading, `$transaction` (commit, rollback, constraint errors), and error handling ([`src/db/__tests__/db-client.integration.test.ts`](src/db/__tests__/db-client.integration.test.ts))
 - **ACL over HTTP** — role checks, row-level filters, JWT auth, and open endpoints ([`src/api/__tests__/acl.integration.test.ts`](src/api/__tests__/acl.integration.test.ts))
 
 Tests run in-process via Hono `app.request()` against the exported `createApp()` factory from `generated/app.ts`.
@@ -1347,7 +1410,7 @@ my-app/
 ├── tsconfig.json
 ├── package.json            # schematic-pg + hono + pg + zod
 ├── generated/
-│   ├── db.ts               # createDbClient(pool) factory
+│   ├── db.ts               # createDbClient(pool) factory + $transaction
 │   ├── db-types.ts         # Generated model + input interfaces
 │   ├── db-model-meta.ts    # Runtime column metadata
 │   ├── app.ts              # Hono entry point (starts server on :3000)
@@ -1407,7 +1470,7 @@ postgrest.js/
 - [x] npm package + CLI (`schematic-pg init`, `generate`, `dev`, `start`, `db:*`)
 - [x] Hand-written lexer & recursive-descent parser
 - [x] SQL DDL generator (full regeneration)
-- [x] Type-safe database client generator (`createDbClient`, parameterized query builder)
+- [x] Type-safe database client generator (`createDbClient`, `$transaction`, parameterized query builder)
 - [x] Diff-based migration planner
 - [x] Hono route generator with Zod validation
 - [x] Static ACL middleware generation (`@policy` → `assertPolicy` in routes)
@@ -1416,6 +1479,7 @@ postgrest.js/
 - [x] Custom routes (`src/routes/` auto-imported into generated app)
 - [x] Lifecycle hooks (`src/hooks/` before/after create-update-delete, `hooks:add` CLI)
 - [x] Relation `include` in DB client (nested eager-loading, split + json_agg strategies)
+- [x] Database client transactions (`db.$transaction`, `Queryable` executor seam)
 - [ ] Type generation for frontend consumption
 - [ ] Tree-sitter grammar for editor support
 - [x] VS Code extension with syntax highlighting and language server

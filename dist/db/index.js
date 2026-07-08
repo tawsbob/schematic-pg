@@ -4,6 +4,7 @@ export { getDatabaseUrl } from './config.js';
 export { QueryBuilder } from './query-builder.js';
 export { WhereTranslator } from './where-translator.js';
 export { createModelClient } from './model-client.js';
+export { runInTransaction } from './transaction.js';
 export { TypeGenerator, generateDbTypes } from './type-generator.js';
 export { DbClientGenerator, generateDbClientFiles } from './db-client-generator.js';
 export { buildModelMeta, buildModelMetaSnapshot, hydrateModelMeta } from './model-meta.js';

@@ -31,10 +31,12 @@ export class DbClientGenerator {
             "import type { Pool } from 'pg';",
             `import { createModelClient } from '${PACKAGE_NAME}/db/model-client';`,
             `import { hydrateModelMeta } from '${PACKAGE_NAME}/db/model-meta';`,
+            `import type { Queryable } from '${PACKAGE_NAME}/db/queryable';`,
+            `import { runInTransaction } from '${PACKAGE_NAME}/db/transaction';`,
             `import type {\n  ${imports},\n} from './db-types.js';`,
             `import {\n  ${this.schema.models.map((model) => `${getClientExportName(model.name)}ModelMeta`).join(',\n  ')},\n} from './db-model-meta.js';`,
             '',
-            'export function createDbClient(pool: Pool) {',
+            'function buildModels(executor: Queryable) {',
             ...metaHydrations,
             `  const modelRegistry = new Map([`,
             ...registryEntries.map((entry) => `    ${entry},`),
@@ -42,6 +44,20 @@ export class DbClientGenerator {
             '',
             '  return {',
             clientEntries.map((entry) => `    ${entry},`).join('\n'),
+            '  };',
+            '}',
+            '',
+            '/** All model clients scoped to a single transaction. Nested `$transaction` is unsupported. */',
+            'export type TxClient = ReturnType<typeof buildModels>;',
+            '',
+            'export function createDbClient(pool: Pool) {',
+            '  async function $transaction<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {',
+            '    return runInTransaction(pool, (client) => fn(buildModels(client)));',
+            '  }',
+            '',
+            '  return {',
+            '    ...buildModels(pool),',
+            '    $transaction,',
             '  };',
             '}',
             '',
@@ -65,7 +81,7 @@ export class DbClientGenerator {
     }
     generateClientEntry(modelName) {
         const clientKey = getClientExportName(modelName);
-        return `${clientKey}: createModelClient<${modelName}, ${modelName}CreateInput, ${modelName}UpdateInput, ${modelName}WhereInput, ${modelName}OrderByInput>(${clientKey}Meta, pool, modelRegistry)`;
+        return `${clientKey}: createModelClient<${modelName}, ${modelName}CreateInput, ${modelName}UpdateInput, ${modelName}WhereInput, ${modelName}OrderByInput>(${clientKey}Meta, executor, modelRegistry)`;
     }
 }
 export function generateDbClientFiles(schema) {

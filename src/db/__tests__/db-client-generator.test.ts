@@ -31,8 +31,13 @@ describe('DbClientGenerator', () => {
     assert.match(files.dbTypes, /export interface UserCreateInput \{/);
     assert.match(files.dbTypes, /export interface UserInclude \{/);
     assert.match(files.dbClient, /export function createDbClient\(pool: Pool\)/);
+    assert.match(files.dbClient, /function buildModels\(executor: Queryable\)/);
     assert.match(files.dbClient, /user: createModelClient<User, UserCreateInput/);
     assert.match(files.dbClient, /const modelRegistry = new Map/);
+    assert.match(files.dbClient, /export type TxClient = ReturnType<typeof buildModels>;/);
+    assert.match(files.dbClient, /\$transaction<T>\(fn: \(tx: TxClient\) => Promise<T>\)/);
+    assert.match(files.dbClient, /return runInTransaction\(pool, \(client\) => fn\(buildModels\(client\)\)\);/);
+    assert.match(files.dbClient, /\.\.\.buildModels\(pool\),/);
     assert.match(files.modelMeta, /export const userModelMeta =/);
     assert.match(files.modelMeta, /"relations"/);
     assert.match(files.modelMeta, /"quotedTableName": "\\"user\\""/);

@@ -2,6 +2,8 @@
 import type { Pool } from 'pg';
 import { createModelClient } from 'schematic-pg/db/model-client';
 import { hydrateModelMeta } from 'schematic-pg/db/model-meta';
+import type { Queryable } from 'schematic-pg/db/queryable';
+import { runInTransaction } from 'schematic-pg/db/transaction';
 import type {
   User,
   UserCreateInput,
@@ -49,7 +51,7 @@ import {
   productOrderModelMeta,
 } from './db-model-meta.js';
 
-export function createDbClient(pool: Pool) {
+function buildModels(executor: Queryable) {
   const userMeta = hydrateModelMeta(userModelMeta);
   const profileMeta = hydrateModelMeta(profileModelMeta);
   const orderMeta = hydrateModelMeta(orderModelMeta);
@@ -66,12 +68,26 @@ export function createDbClient(pool: Pool) {
   ]);
 
   return {
-    user: createModelClient<User, UserCreateInput, UserUpdateInput, UserWhereInput, UserOrderByInput>(userMeta, pool, modelRegistry),
-    profile: createModelClient<Profile, ProfileCreateInput, ProfileUpdateInput, ProfileWhereInput, ProfileOrderByInput>(profileMeta, pool, modelRegistry),
-    order: createModelClient<Order, OrderCreateInput, OrderUpdateInput, OrderWhereInput, OrderOrderByInput>(orderMeta, pool, modelRegistry),
-    log: createModelClient<Log, LogCreateInput, LogUpdateInput, LogWhereInput, LogOrderByInput>(logMeta, pool, modelRegistry),
-    product: createModelClient<Product, ProductCreateInput, ProductUpdateInput, ProductWhereInput, ProductOrderByInput>(productMeta, pool, modelRegistry),
-    productOrder: createModelClient<ProductOrder, ProductOrderCreateInput, ProductOrderUpdateInput, ProductOrderWhereInput, ProductOrderOrderByInput>(productOrderMeta, pool, modelRegistry),
+    user: createModelClient<User, UserCreateInput, UserUpdateInput, UserWhereInput, UserOrderByInput>(userMeta, executor, modelRegistry),
+    profile: createModelClient<Profile, ProfileCreateInput, ProfileUpdateInput, ProfileWhereInput, ProfileOrderByInput>(profileMeta, executor, modelRegistry),
+    order: createModelClient<Order, OrderCreateInput, OrderUpdateInput, OrderWhereInput, OrderOrderByInput>(orderMeta, executor, modelRegistry),
+    log: createModelClient<Log, LogCreateInput, LogUpdateInput, LogWhereInput, LogOrderByInput>(logMeta, executor, modelRegistry),
+    product: createModelClient<Product, ProductCreateInput, ProductUpdateInput, ProductWhereInput, ProductOrderByInput>(productMeta, executor, modelRegistry),
+    productOrder: createModelClient<ProductOrder, ProductOrderCreateInput, ProductOrderUpdateInput, ProductOrderWhereInput, ProductOrderOrderByInput>(productOrderMeta, executor, modelRegistry),
+  };
+}
+
+/** All model clients scoped to a single transaction. Nested `$transaction` is unsupported. */
+export type TxClient = ReturnType<typeof buildModels>;
+
+export function createDbClient(pool: Pool) {
+  async function $transaction<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
+    return runInTransaction(pool, (client) => fn(buildModels(client)));
+  }
+
+  return {
+    ...buildModels(pool),
+    $transaction,
   };
 }
 

@@ -1,6 +1,6 @@
-import type { Pool } from 'pg';
 import type { IncludeInput, IncludeOptions } from './include/types.js';
 import type { ModelMeta } from './model-meta.js';
+import type { Queryable } from './queryable.js';
 export type ModelRegistry = Map<string, ModelMeta>;
 export interface SelectArgs<TWhere, TOrderBy> {
     where?: TWhere;
@@ -35,4 +35,4 @@ export interface ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy> {
         count: number;
     }>;
 }
-export declare function createModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>(model: ModelMeta, pool: Pool, registry?: ModelRegistry): ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>;
+export declare function createModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>(model: ModelMeta, executor: Queryable, registry?: ModelRegistry): ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>;

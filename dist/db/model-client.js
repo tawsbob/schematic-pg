@@ -2,11 +2,11 @@ import { mapPgError } from './errors.js';
 import { fetchWithIncludes } from './include/load.js';
 import { QueryBuilder } from './query-builder.js';
 import { mapRow, mapRows } from './row-mapper.js';
-export function createModelClient(model, pool, registry) {
+export function createModelClient(model, executor, registry) {
     const builder = new QueryBuilder(model);
     async function execute(sql, params) {
         try {
-            const result = await pool.query(sql, params);
+            const result = await executor.query(sql, params);
             return result.rows;
         }
         catch (error) {
@@ -16,7 +16,7 @@ export function createModelClient(model, pool, registry) {
     async function selectRows(args = {}) {
         const findArgs = toFindArgs(args);
         if (args.include && registry) {
-            return fetchWithIncludes(model, registry, pool, {
+            return fetchWithIncludes(model, registry, executor, {
                 ...findArgs,
                 include: args.include,
             }, {
