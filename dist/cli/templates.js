@@ -53,7 +53,7 @@ export const DOCKER_COMPOSE_TEMPLATE = `services:
       POSTGRES_PASSWORD: postgrest
       POSTGRES_DB: postgrest
     volumes:
-      - ./docker_data/postgres:/var/lib/postgresql/data
+      - ./docker_data/postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgrest -d postgrest"]
       interval: 5s

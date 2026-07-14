@@ -5,6 +5,8 @@ export interface GeneratedApiFiles {
     validation: string;
     hooks: string;
     routes: Map<string, string>;
+    openapiTs: string;
+    openapiJson: string;
 }
 export interface GenerateApiFilesOptions {
     customRoutesDir?: string;
