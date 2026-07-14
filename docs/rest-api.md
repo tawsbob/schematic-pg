@@ -15,7 +15,9 @@ Outputs:
 
 | File | Purpose |
 |------|---------|
-| `generated/app.ts` | Hono app entry point — mounts routers, auth + DB middleware, starts the server |
+| `generated/app.ts` | Hono app entry point — mounts routers, auth + DB middleware, API docs, starts the server |
+| `generated/openapi.ts` | OpenAPI 3.1 document as a typed export (`openApiDocument`) — sourced from the schema AST |
+| `generated/openapi.json` | Same OpenAPI document as JSON (for curl / external tools) |
 | `generated/policies.ts` | Per-model ACL metadata derived from `@policy` attributes |
 | `generated/schemas/validation.ts` | Per-model Zod schemas: `{Model}CreateSchema`, `{Model}UpdateSchema`, `{Model}ParamSchema` |
 | `generated/routes/*.ts` | One Hono router per model with GET / POST / PUT / DELETE handlers |
@@ -27,6 +29,7 @@ Outputs:
 npx schematic-pg dev
 # or: npm run dev
 # → regenerates client + API, then starts http://localhost:3000
+# → interactive docs at http://localhost:3000/docs
 ```
 
 For production (no regenerate, no schema watch):
@@ -69,6 +72,29 @@ Each model in `app.schema` maps to a kebab-case plural base path. Handlers deleg
 | `ProductOrder` | `/product-orders` | `/product-orders/:orderId/:productId` |
 
 Models with composite primary keys (`@@id(fields: [...])`) expose one path segment per key field.
+
+## OpenAPI + Scalar docs
+
+`schematic-pg generate:api` (and `generate` / `dev`) regenerates an OpenAPI 3.1 document from the **same schema AST** as routes and Zod validators — not from live Hono reflection.
+
+| Path | Purpose |
+|------|---------|
+| `GET /openapi.json` | OpenAPI 3.1 contract (public; no auth required) |
+| `GET /docs` | Scalar interactive API reference UI (CDN; public) |
+
+```bash
+# After the server is running:
+open http://localhost:3000/docs
+curl http://localhost:3000/openapi.json
+```
+
+On start, the generated app also logs `API docs at http://localhost:${PORT}/docs`.
+
+**Documented in v1:** schema-generated CRUD for every model, shared error shape `{ "error": string }`, Bearer JWT (`components.securitySchemes.bearerAuth`), list filters / `limit` / `offset` / `sort` / `include`, and — when `src/routes/auth.ts` is present — the known `createAuthRouter` endpoints (`POST /auth/register`, `POST /auth/login`, `GET /auth/me`).
+
+**Not documented in v1:** other hand-written custom routes under `src/routes/`.
+
+@omit fields are excluded from `{Model}Response` schemas. Filter and include query params match the tables below.
 
 ## Custom routes
 
@@ -377,8 +403,11 @@ The generated `app.ts` sets up:
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
+import { mountApiDocs } from 'schematic-pg/api/openapi';
+import { openApiDocument } from './openapi.js';
 
 const app = new Hono<AppEnv>();
+mountApiDocs(app, openApiDocument); // GET /openapi.json + GET /docs (before auth/db)
 app.use(logger());
 app.use(prettyJSON());
 app.use(createDbMiddleware());     // injects db from DATABASE_URL

@@ -14,6 +14,7 @@
 - [x] Relation `include` in DB client (nested eager-loading, split + json_agg strategies)
 - [x] Database client transactions (`db.$transaction`, `Queryable` executor seam)
 - [x] Parameterized raw-query escape hatch (`db.$queryRaw`, `db.$executeRaw`, tx-scoped)
+- [x] OpenAPI 3.1 generation from schema AST + Scalar docs UI (`/openapi.json`, `/docs`)
 - [ ] Type generation for frontend consumption
 - [ ] Tree-sitter grammar for editor support
 - [x] VS Code extension with syntax highlighting and language server

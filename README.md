@@ -38,6 +38,7 @@ make dev
 # → starts PostgreSQL, generates code, bootstraps the DB, runs the dev server,
 #   and watches app.schema for changes (regenerate + bootstrap + restart)
 # → http://localhost:3000
+# → API docs at http://localhost:3000/docs
 ```
 
 Or run each step individually:
@@ -362,10 +363,10 @@ schematic-pg init [dir] [--skip-install]  # Scaffold a new project (runs npm ins
 schematic-pg generate [schema]        # schema.sql + db client + API (all three)
 schematic-pg generate:sql [schema]    # SQL DDL to stdout
 schematic-pg generate:client [schema]   # generated/db*.ts only
-schematic-pg generate:api [schema]      # generated/app.ts, routes/, policies, schemas
+schematic-pg generate:api [schema]      # generated/app.ts, routes/, policies, schemas, openapi
 ```
 
-Run `generate:client` before `generate:api` when using the split commands — routes depend on `generated/db.ts`.
+Run `generate:client` before `generate:api` when using the split commands — routes depend on `generated/db.ts`. After the server starts, open [http://localhost:3000/docs](http://localhost:3000/docs) for Scalar docs (OpenAPI at `/openapi.json`).
 
 ### Lifecycle hooks scaffolding
 

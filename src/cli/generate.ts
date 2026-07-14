@@ -47,6 +47,8 @@ export async function generateApi(schemaPath?: string): Promise<void> {
   await writeFile(path.join(outputDir, 'policies.ts'), files.policies, 'utf8');
   await writeFile(path.join(outputDir, 'hooks.ts'), files.hooks, 'utf8');
   await writeFile(path.join(schemasDir, 'validation.ts'), files.validation, 'utf8');
+  await writeFile(path.join(outputDir, 'openapi.ts'), files.openapiTs, 'utf8');
+  await writeFile(path.join(outputDir, 'openapi.json'), files.openapiJson, 'utf8');
 
   for (const [fileName, content] of files.routes) {
     await writeFile(path.join(routesDir, fileName), content, 'utf8');

@@ -1,8 +1,10 @@
 import type { Schema } from '../schema-dsl/ast.js';
-import { DEFAULT_HOOKS_DIR } from '../cli/paths.js';
+import { DEFAULT_CUSTOM_ROUTES_DIR, DEFAULT_HOOKS_DIR } from '../cli/paths.js';
 import { generateAppFile, type AppGeneratorOptions } from './app-generator.js';
+import { discoverCustomRoutes } from './custom-route-scanner.js';
 import { discoverHooks } from './hook-scanner.js';
 import { generateHooksFile } from './hooks-generator.js';
+import { generateOpenApiFiles } from './openapi-generator.js';
 import { generatePoliciesFile } from './policy-generator.js';
 import { generateRouteFiles } from './route-generator.js';
 import { generateValidationSchemas } from './zod-schema-generator.js';
@@ -13,6 +15,8 @@ export interface GeneratedApiFiles {
   validation: string;
   hooks: string;
   routes: Map<string, string>;
+  openapiTs: string;
+  openapiJson: string;
 }
 
 export interface GenerateApiFilesOptions {
@@ -21,11 +25,14 @@ export interface GenerateApiFilesOptions {
 }
 
 export function generateApiFiles(schema: Schema, options?: GenerateApiFilesOptions): GeneratedApiFiles {
-  const appOptions: AppGeneratorOptions | undefined = options?.customRoutesDir
-    ? { customRoutesDir: options.customRoutesDir }
-    : undefined;
+  const customRoutesDir = options?.customRoutesDir ?? DEFAULT_CUSTOM_ROUTES_DIR;
+  const appOptions: AppGeneratorOptions = { customRoutesDir };
   const hooksDir = options?.hooksDir ?? DEFAULT_HOOKS_DIR;
   const { entries: hookEntries, modelsWithHooks } = discoverHooks(hooksDir, schema);
+  const includeAuthPaths = discoverCustomRoutes(customRoutesDir).some(
+    (entry) => entry.basePath === 'auth',
+  );
+  const openapi = generateOpenApiFiles(schema, { includeAuthPaths });
 
   return {
     app: generateAppFile(schema, appOptions),
@@ -33,5 +40,7 @@ export function generateApiFiles(schema: Schema, options?: GenerateApiFilesOptio
     validation: generateValidationSchemas(schema),
     hooks: generateHooksFile(hookEntries),
     routes: generateRouteFiles(schema, modelsWithHooks),
+    openapiTs: openapi.openapiTs,
+    openapiJson: openapi.openapiJson,
   };
 }

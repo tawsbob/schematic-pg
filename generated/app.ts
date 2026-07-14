@@ -16,6 +16,7 @@ import healthRouter from '../src/routes/health.js';
 import { createDbClient } from './db.js';
 import { POLICIES } from './policies.js';
 import { HOOKS } from './hooks.js';
+import { openApiDocument } from './openapi.js';
 import { configurePolicies } from 'schematic-pg/api/auth/policy';
 import { configureHooks } from 'schematic-pg/api/hooks';
 import { createAuthMiddleware } from 'schematic-pg/api/auth/middleware';
@@ -23,6 +24,7 @@ import { createJwtResolver } from 'schematic-pg/api/auth/jwt-resolver';
 import type { AuthResolver } from 'schematic-pg/api/auth/types';
 import { createDbMiddleware } from 'schematic-pg/api/middleware/db';
 import { handleError } from 'schematic-pg/api/middleware/errors';
+import { mountApiDocs } from 'schematic-pg/api/openapi';
 import type { AppEnv } from 'schematic-pg/api/types';
 
 configurePolicies(POLICIES);
@@ -35,6 +37,7 @@ export interface CreateAppOptions {
 
 export function createApp(options: CreateAppOptions = {}): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+  mountApiDocs(app, openApiDocument);
   app.use(logger());
   app.use(prettyJSON());
   app.use(createDbMiddleware({ pool: options.pool, createDbClient }));
@@ -59,5 +62,6 @@ if (isMain) {
   const port = Number(process.env.PORT ?? 3000);
   serve({ fetch: createApp().fetch, port }, () => {
     console.log(`Server running at http://localhost:${port}`);
+    console.log(`API docs at http://localhost:${port}/docs`);
   });
 }

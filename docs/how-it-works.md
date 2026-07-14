@@ -29,4 +29,5 @@
    - Full CRUD handlers backed by the generated DB client
    - Role-based ACL enforcement (driven by `@policy`) with row-level `WHERE` injection
    - Pluggable authentication middleware (default: Bearer JWT)
+   - OpenAPI 3.1 document + Scalar docs UI (`/openapi.json`, `/docs`) from the same AST
 5. **Run** — `generated/app.ts` mounts all routers and starts a Node.js server. You get a validated REST API in seconds.
