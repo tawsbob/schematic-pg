@@ -18,14 +18,14 @@ describe('bootstrapDatabase', () => {
     assert.equal(generatedSql, goldenSql);
   });
 
-  it('executes generated SQL through the database client', async () => {
-    let executedSql = '';
+  it('resets the public schema then executes generated SQL', async () => {
+    const executedSql: string[] = [];
 
     const mockClient = {
       async withClient<T>(fn: (client: { query: (sql: string) => Promise<void> }) => Promise<T>) {
         return fn({
           async query(sql: string) {
-            executedSql = sql;
+            executedSql.push(sql);
           },
         });
       },
@@ -33,7 +33,9 @@ describe('bootstrapDatabase', () => {
 
     await bootstrapDatabase(fixtureSchemaPath, mockClient);
 
-    assert.match(executedSql, /CREATE TABLE "user"/);
-    assert.match(executedSql, /CREATE EXTENSION IF NOT EXISTS "pgcrypto"/);
+    assert.equal(executedSql.length, 2);
+    assert.match(executedSql[0]!, /DROP SCHEMA IF EXISTS public CASCADE/);
+    assert.match(executedSql[1]!, /CREATE TABLE "user"/);
+    assert.match(executedSql[1]!, /CREATE EXTENSION IF NOT EXISTS "pgcrypto"/);
   });
 });

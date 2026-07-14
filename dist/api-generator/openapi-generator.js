@@ -3,14 +3,20 @@ import { fieldHasAttribute, getModelNames, getPrimaryKey, getStoredFields, } fro
 import { getFilterableFields, getIncludableRelationFields, getOmittedFields, getSortableFieldNames, isStoredScalarField, } from './utils/api-fields.js';
 import { buildFilterFieldMeta, queryParamKey } from './utils/filter-operators.js';
 const ERROR_REF = { $ref: '#/components/schemas/Error' };
-const ERROR_CONTENT = {
-    'application/json': {
-        schema: ERROR_REF,
-    },
-};
+const ERROR_EXAMPLE_VALIDATION = 'Validation failed';
+const ERROR_EXAMPLE_FORBIDDEN = 'Role "USER" is not allowed to list this resource';
+const ERROR_EXAMPLE_CONFLICT = 'Unique constraint violation on email';
 const OPTIONAL_BEARER_SECURITY = [{}, { bearerAuth: [] }];
-function errorResponse(description) {
-    return { description, content: ERROR_CONTENT };
+function errorResponse(description, exampleMessage = description) {
+    return {
+        description,
+        content: {
+            'application/json': {
+                schema: ERROR_REF,
+                example: { error: exampleMessage },
+            },
+        },
+    };
 }
 function jsonContent(schema) {
     return {
@@ -32,7 +38,10 @@ export class OpenApiGenerator {
                 type: 'object',
                 required: ['error'],
                 properties: {
-                    error: { type: 'string' },
+                    error: {
+                        type: 'string',
+                        description: 'Human-readable error message',
+                    },
                 },
             },
         };
@@ -161,9 +170,9 @@ export class OpenApiGenerator {
                             description: `List of ${model.name}`,
                             content: jsonContent({ type: 'array', items: responseRef }),
                         },
-                        '400': errorResponse('Validation error'),
+                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
                         '401': errorResponse('Unauthorized'),
-                        '403': errorResponse('Forbidden'),
+                        '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
                         '500': errorResponse('Internal server error'),
                     },
                 },
@@ -181,10 +190,10 @@ export class OpenApiGenerator {
                             description: `Created ${model.name}`,
                             content: jsonContent(responseRef),
                         },
-                        '400': errorResponse('Validation error'),
+                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
                         '401': errorResponse('Unauthorized'),
-                        '403': errorResponse('Forbidden'),
-                        '409': errorResponse('Conflict'),
+                        '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
+                        '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
                         '500': errorResponse('Internal server error'),
                     },
                 },
@@ -204,9 +213,9 @@ export class OpenApiGenerator {
                             description: `${model.name} record`,
                             content: jsonContent(responseRef),
                         },
-                        '400': errorResponse('Validation error'),
+                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
                         '401': errorResponse('Unauthorized'),
-                        '403': errorResponse('Forbidden'),
+                        '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
                         '404': errorResponse('Not found'),
                         '500': errorResponse('Internal server error'),
                     },
@@ -226,11 +235,11 @@ export class OpenApiGenerator {
                             description: `Updated ${model.name}`,
                             content: jsonContent(responseRef),
                         },
-                        '400': errorResponse('Validation error'),
+                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
                         '401': errorResponse('Unauthorized'),
-                        '403': errorResponse('Forbidden'),
+                        '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
                         '404': errorResponse('Not found'),
-                        '409': errorResponse('Conflict'),
+                        '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
                         '500': errorResponse('Internal server error'),
                     },
                 },
@@ -245,9 +254,9 @@ export class OpenApiGenerator {
                             description: `Deleted ${model.name}`,
                             content: jsonContent(responseRef),
                         },
-                        '400': errorResponse('Validation error'),
+                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
                         '401': errorResponse('Unauthorized'),
-                        '403': errorResponse('Forbidden'),
+                        '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
                         '404': errorResponse('Not found'),
                         '500': errorResponse('Internal server error'),
                     },
@@ -445,8 +454,8 @@ export class OpenApiGenerator {
                             description: 'Registered user with access token',
                             content: jsonContent({ $ref: '#/components/schemas/AuthTokenResponse' }),
                         },
-                        '400': errorResponse('Validation error'),
-                        '409': errorResponse('Conflict'),
+                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
+                        '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
                         '500': errorResponse('Internal server error'),
                     },
                 },
@@ -465,7 +474,7 @@ export class OpenApiGenerator {
                             description: 'Access token and user',
                             content: jsonContent({ $ref: '#/components/schemas/AuthTokenResponse' }),
                         },
-                        '400': errorResponse('Validation error'),
+                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
                         '401': errorResponse('Invalid email or password'),
                         '500': errorResponse('Internal server error'),
                     },

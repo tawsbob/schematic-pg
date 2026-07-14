@@ -31,11 +31,11 @@ npx schematic-pg db:bootstrap
 
 That:
 
-1. Generates full DDL from `app.schema`
-2. Runs it against `DATABASE_URL`
+1. Resets the `public` schema (`DROP SCHEMA ... CASCADE`)
+2. Generates full DDL from `app.schema` and runs it against `DATABASE_URL`
 3. Writes `.schema-state/app.schema` as the baseline
 
-No `migrations/` files are required at this stage. Prefer bootstrap for greenfield local/dev setups.
+No `migrations/` files are required at this stage. Prefer bootstrap for greenfield local/dev setups — including `dev` watch reloads, which re-bootstrap on every `app.schema` change.
 
 ---
 

@@ -20,7 +20,7 @@ Commands:
   dev [schema] [--no-watch]  Generate, bootstrap DB, start server, watch schema
   start [schema] [--no-migrate]  Run production server (migrate DB, no generate/watch)
   db:ping                    Test database connection
-  db:bootstrap [schema]      Apply DDL and snapshot schema state
+  db:bootstrap [schema]      Reset public schema, apply DDL, snapshot state
   db:diff [schema]           Show schema diff (--name <name> to write migration)
   db:migrate [schema]        Apply pending migrations
   db:migrate:status [schema] Show migration status

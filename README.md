@@ -449,14 +449,14 @@ npm run start      # schematic-pg start
 
 ```bash
 schematic-pg db:ping [schema]              # Test DATABASE_URL connection (SELECT 1)
-schematic-pg db:bootstrap [schema]         # Apply DDL from schema + write .schema-state snapshot
+schematic-pg db:bootstrap [schema]         # Reset public schema, apply DDL, write .schema-state snapshot
 schematic-pg db:diff [schema]              # Print pending schema changes (snapshot vs app.schema)
 schematic-pg db:diff --name add_users      # Write a migration file under migrations/
 schematic-pg db:migrate [schema]           # Apply pending migration files
 schematic-pg db:migrate:status [schema]    # Show snapshot + migration file status
 ```
 
-`db:bootstrap` is the recommended first-time setup. Use `db:diff` / `db:migrate` when evolving an existing database.
+`db:bootstrap` resets the `public` schema then applies full DDL — safe to re-run locally (including via `dev` watch). Use `db:diff` / `db:migrate` when evolving a database you need to keep.
 
 For a full walkthrough (mental model, local loop, and automating staging/production with GitHub Actions), see [Migrations tutorial](docs/migrations.md).
 

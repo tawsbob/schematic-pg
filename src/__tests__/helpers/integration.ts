@@ -6,7 +6,6 @@ import { createDbClient } from '../../../generated/db.js';
 import type { DbClient } from '../../../generated/db.js';
 import { bootstrapDatabase } from '../../db/bootstrap.js';
 import { getDatabaseUrl } from '../../db/config.js';
-import { resetPublicSchema } from '../../db/reset-database.js';
 
 export const TEST_JWT_SECRET = 'integration-test-secret';
 
@@ -85,7 +84,6 @@ export async function resetBootstrapAndSeed(pool: Pool): Promise<{
   db: DbClient;
   users: SeededUsers;
 }> {
-  await resetPublicSchema(pool);
   await bootstrapDatabase(schemaPath, {
     async withClient<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
       return fn(pool);

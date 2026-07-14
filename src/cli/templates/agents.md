@@ -264,7 +264,7 @@ Flow: `validate → assertPolicy → beforeHooks → db op → afterHooks → re
 schematic-pg generate              # schema.sql + db client + API
 schematic-pg dev [--no-watch]      # generate + bootstrap + server + watch
 schematic-pg start [--no-migrate]  # production: migrate + run server
-schematic-pg db:bootstrap            # first-time DDL apply
+schematic-pg db:bootstrap            # reset public schema + apply DDL
 schematic-pg db:diff [--name label]  # print or write migration
 schematic-pg db:migrate              # apply pending migrations
 schematic-pg hooks:add [--model X]   # scaffold src/hooks/{Model}.ts
