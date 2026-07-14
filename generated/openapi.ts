@@ -22,7 +22,8 @@ export const openApiDocument = {
         ],
         "properties": {
           "error": {
-            "type": "string"
+            "type": "string",
+            "description": "Human-readable error message"
           }
         }
       },
@@ -992,6 +993,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1002,6 +1006,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1012,6 +1019,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1022,6 +1032,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1067,6 +1080,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1077,6 +1093,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1087,6 +1106,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1097,6 +1119,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -1107,6 +1132,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1164,6 +1192,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1174,6 +1205,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1184,6 +1218,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1194,6 +1231,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -1204,6 +1244,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1260,6 +1303,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1270,6 +1316,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1280,6 +1329,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1290,6 +1342,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -1300,6 +1355,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -1310,6 +1368,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1356,6 +1417,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1366,6 +1430,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1376,6 +1443,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1386,6 +1456,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -1396,6 +1469,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1636,6 +1712,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1646,6 +1725,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1656,6 +1738,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1666,6 +1751,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1711,6 +1799,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1721,6 +1812,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1731,6 +1825,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1741,6 +1838,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -1751,6 +1851,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1808,6 +1911,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1818,6 +1924,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1828,6 +1937,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1838,6 +1950,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -1848,6 +1963,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -1904,6 +2022,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -1914,6 +2035,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -1924,6 +2048,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -1934,6 +2061,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -1944,6 +2074,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -1954,6 +2087,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2000,6 +2136,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2010,6 +2149,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2020,6 +2162,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2030,6 +2175,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -2040,6 +2188,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2302,6 +2453,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2312,6 +2466,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2322,6 +2479,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2332,6 +2492,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2377,6 +2540,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2387,6 +2553,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2397,6 +2566,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2407,6 +2579,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -2417,6 +2592,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2474,6 +2652,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2484,6 +2665,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2494,6 +2678,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2504,6 +2691,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -2514,6 +2704,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2570,6 +2763,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2580,6 +2776,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2590,6 +2789,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2600,6 +2802,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -2610,6 +2815,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -2620,6 +2828,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2666,6 +2877,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2676,6 +2890,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2686,6 +2903,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2696,6 +2916,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -2706,6 +2929,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2873,6 +3099,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2883,6 +3112,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2893,6 +3125,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2903,6 +3138,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -2948,6 +3186,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -2958,6 +3199,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -2968,6 +3212,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -2978,6 +3225,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -2988,6 +3238,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -3045,6 +3298,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -3055,6 +3311,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -3065,6 +3324,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -3075,6 +3337,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -3085,6 +3350,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -3141,6 +3409,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -3151,6 +3422,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -3161,6 +3435,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -3171,6 +3448,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -3181,6 +3461,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -3191,6 +3474,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -3237,6 +3523,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -3247,6 +3536,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -3257,6 +3549,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -3267,6 +3562,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -3277,6 +3575,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -3664,6 +3965,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -3674,6 +3978,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -3684,6 +3991,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -3694,6 +4004,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -3739,6 +4052,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -3749,6 +4065,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -3759,6 +4078,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -3769,6 +4091,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -3779,6 +4104,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -3836,6 +4164,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -3846,6 +4177,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -3856,6 +4190,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -3866,6 +4203,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -3876,6 +4216,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -3932,6 +4275,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -3942,6 +4288,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -3952,6 +4301,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -3962,6 +4314,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -3972,6 +4327,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -3982,6 +4340,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4028,6 +4389,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4038,6 +4402,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -4048,6 +4415,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -4058,6 +4428,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -4068,6 +4441,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4364,6 +4740,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4374,6 +4753,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -4384,6 +4766,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -4394,6 +4779,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4439,6 +4827,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4449,6 +4840,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -4459,6 +4853,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -4469,6 +4866,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -4479,6 +4879,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4545,6 +4948,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4555,6 +4961,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -4565,6 +4974,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -4575,6 +4987,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -4585,6 +5000,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4650,6 +5068,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4660,6 +5081,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -4670,6 +5094,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -4680,6 +5107,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -4690,6 +5120,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -4700,6 +5133,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4755,6 +5191,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4765,6 +5204,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
@@ -4775,6 +5217,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
                 }
               }
             }
@@ -4785,6 +5230,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
                 }
               }
             }
@@ -4795,6 +5243,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4836,6 +5287,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4846,6 +5300,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
                 }
               }
             }
@@ -4856,6 +5313,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }
@@ -4897,6 +5357,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Validation failed"
                 }
               }
             }
@@ -4907,6 +5370,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid email or password"
                 }
               }
             }
@@ -4917,6 +5383,9 @@ export const openApiDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
                 }
               }
             }

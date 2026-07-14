@@ -45,6 +45,27 @@ describe('OpenApiGenerator', () => {
     assert.ok(schemas.UserCreate?.properties?.passwordHash);
     assert.ok(schemas.Error?.properties?.error);
 
+    const createResponses = (
+      paths['/users'].post as {
+        responses: Record<
+          string,
+          {
+            description: string;
+            content: { 'application/json': { example: { error: string } } };
+          }
+        >;
+      }
+    ).responses;
+    assert.deepEqual(createResponses['400'].content['application/json'].example, {
+      error: 'Validation failed',
+    });
+    assert.deepEqual(createResponses['409'].content['application/json'].example, {
+      error: 'Unique constraint violation on email',
+    });
+    assert.deepEqual(createResponses['403'].content['application/json'].example, {
+      error: 'Role "USER" is not allowed to list this resource',
+    });
+
     const securitySchemes = (
       document.components as { securitySchemes: Record<string, { type: string; scheme: string }> }
     ).securitySchemes;
