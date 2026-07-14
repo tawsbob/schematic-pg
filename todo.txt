@@ -9,7 +9,7 @@
 - [x] develop the routers query filters by url. 
 - [x] add to policy a way to only allow to update entries that user are owner of.
 - [ ] add swagger ui to the api.
-- [ ] add default authentication route.
+- [x] add default authentication route.
 - [x] add a way to the dev add custom routes.
 - [x] add to cli templates the pkg version
 - [ ] add cache configurable by model on schema.

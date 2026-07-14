@@ -3,7 +3,7 @@ import { PACKAGE_NAME } from '../constants.js';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { AGENTS_TEMPLATE, APP_SCHEMA_TEMPLATE, createPackageJsonTemplate, DOCKER_COMPOSE_TEMPLATE, ENV_TEMPLATE, GITIGNORE_TEMPLATE, HEALTH_ROUTE_TEMPLATE, MAKEFILE_TEMPLATE, TSCONFIG_TEMPLATE, } from './templates.js';
+import { AGENTS_TEMPLATE, APP_SCHEMA_TEMPLATE, AUTH_ROUTE_TEMPLATE, createPackageJsonTemplate, DOCKER_COMPOSE_TEMPLATE, ENV_TEMPLATE, GITIGNORE_TEMPLATE, HEALTH_ROUTE_TEMPLATE, MAKEFILE_TEMPLATE, TSCONFIG_TEMPLATE, } from './templates.js';
 const INIT_FILES = [
     { relativePath: 'AGENTS.md', content: AGENTS_TEMPLATE },
     { relativePath: 'app.schema', content: APP_SCHEMA_TEMPLATE },
@@ -13,6 +13,7 @@ const INIT_FILES = [
     { relativePath: 'Makefile', content: MAKEFILE_TEMPLATE },
     { relativePath: 'tsconfig.json', content: TSCONFIG_TEMPLATE },
     { relativePath: 'src/routes/health.ts', content: HEALTH_ROUTE_TEMPLATE },
+    { relativePath: 'src/routes/auth.ts', content: AUTH_ROUTE_TEMPLATE },
 ];
 function resolveTargetDir(args) {
     const targetArg = args.find((arg) => !arg.startsWith('--'));

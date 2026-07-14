@@ -6,6 +6,7 @@ import path from 'node:path';
 import {
   AGENTS_TEMPLATE,
   APP_SCHEMA_TEMPLATE,
+  AUTH_ROUTE_TEMPLATE,
   createPackageJsonTemplate,
   DOCKER_COMPOSE_TEMPLATE,
   ENV_TEMPLATE,
@@ -24,6 +25,7 @@ const INIT_FILES = [
   { relativePath: 'Makefile', content: MAKEFILE_TEMPLATE },
   { relativePath: 'tsconfig.json', content: TSCONFIG_TEMPLATE },
   { relativePath: 'src/routes/health.ts', content: HEALTH_ROUTE_TEMPLATE },
+  { relativePath: 'src/routes/auth.ts', content: AUTH_ROUTE_TEMPLATE },
 ] as const;
 
 function resolveTargetDir(args: string[]): string {

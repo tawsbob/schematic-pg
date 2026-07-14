@@ -11,6 +11,7 @@ import ordersRouter from './routes/orders.js';
 import logsRouter from './routes/logs.js';
 import productsRouter from './routes/products.js';
 import productOrdersRouter from './routes/product-orders.js';
+import authRouter from '../src/routes/auth.js';
 import healthRouter from '../src/routes/health.js';
 import { createDbClient } from './db.js';
 import { POLICIES } from './policies.js';
@@ -46,6 +47,7 @@ export function createApp(options: CreateAppOptions = {}): Hono<AppEnv> {
   app.route('/logs', logsRouter);
   app.route('/products', productsRouter);
   app.route('/product-orders', productOrdersRouter);
+  app.route('/auth', authRouter);
   app.route('/health', healthRouter);
 
   return app;

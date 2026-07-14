@@ -93,11 +93,73 @@ Generated code imports the runtime from the `schematic-pg` package (`schematic-p
 |----------|---------|---------|
 | `DATABASE_URL` | — (required) | PostgreSQL connection string |
 | `PORT` | `3000` | HTTP listen port |
-| `JWT_SECRET` | — | HMAC secret for the default Bearer JWT resolver |
+| `JWT_SECRET` | — | HMAC secret for JWT sign + verify (required for auth) |
+| `AUTH_PEPPER` | — | App-side pepper appended before Argon2 hash/verify (required for register/login) |
+| `AUTH_ACCESS_TOKEN_TTL` | `1h` | Access token lifetime (`15m`, `1h`, or seconds) |
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
 
 Set these in `.env` before running `dev`, `start`, or `db:bootstrap`.
+
+---
+
+## Authentication
+
+schematic-pg verifies Bearer JWTs on every request and ships a reusable auth layer for **register / login / token issuance**. Runtime lives in the package (`schematic-pg/api/auth/*`); projects mount a thin custom route that auto-registers at `/auth`.
+
+### Enable routes
+
+`init` scaffolds `src/routes/auth.ts`:
+
+```ts
+import { createAuthRouter } from 'schematic-pg/api/auth/routes';
+
+export default createAuthRouter();
+```
+
+After `generate:api`, the custom-route scanner mounts it at `/auth`. Options let you map your user model/fields (`userModel`, `emailField`, `passwordHashField`, `roleField`, `defaultCreateFields`, …).
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/auth/register` | Create user (hashes password, issues access token). Bypasses model `@policy` — do not weaken insert policies for signup. |
+| `POST` | `/auth/login` | Verify password, optional rehash, issue access token |
+| `GET` | `/auth/me` | Current `auth` context from the JWT middleware |
+
+Register/login responses: `{ token, user }` with `passwordHash` omitted (`@omit` / `omitFields`).
+
+### Password hashing
+
+Use Argon2id via `schematic-pg/api/auth/password`:
+
+```ts
+import { passwordService } from 'schematic-pg/api/auth/password';
+import { UnauthorizedError } from 'schematic-pg/api/auth/errors';
+
+const hash = await passwordService.hashPassword(password);
+const valid = await passwordService.verifyPassword(password, user.passwordHash);
+if (!valid) throw new UnauthorizedError();
+if (passwordService.needsRehash(user.passwordHash)) {
+  const newHash = await passwordService.hashPassword(password);
+  await db.user.update({ where: { id: user.id }, data: { passwordHash: newHash } });
+}
+```
+
+### Tokens
+
+`createTokenService()` signs HS256 access tokens with `iat`/`exp`, using the same claim names as `createJwtResolver` (`sub` + `role` by default). The resolver rejects expired (`exp`) and not-yet-valid (`nbf`) tokens when those claims are present.
+
+### Security notes
+
+- **Argon2id** with automatic salt; encoded `$argon2id$…` digest stores algo, version, params, salt, and hash.
+- **Pepper** (`AUTH_PEPPER`) is applied before hash/verify and never stored in the DB.
+- **Verify** uses Argon2’s constant-time check — never compare hash strings manually.
+- **No user enumeration** on login: same 401 message whether the email is missing or the password is wrong; verify always runs (dummy hash when no user).
+- **Expiry enforcement** on JWT verify; issued tokens always carry `exp`.
+- Never log passwords, hashes, pepper, or `JWT_SECRET`. Keep `passwordHash` `@omit` so it never appears in API JSON.
+
+### Future extensions
+
+Password reset, MFA, session/refresh-token management, and login rate limiting are intentionally out of scope for this release.
 
 ---
 
