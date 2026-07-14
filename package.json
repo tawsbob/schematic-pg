@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tawsbob/postgrest.js.git"
+    "url": "git+https://github.com/tawsbob/schematic-pg.git"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

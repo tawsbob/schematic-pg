@@ -15,4 +15,5 @@
 - [ ] add cache configurable by model on schema.
 - [ ] add a custom query validator (to be able to implement business logic) before the query is executed.
 - [ ] create a make file or a way to run dev comand and run all process (docker-compose up, generate, db:bootstrap, dev)
+- [ ] add scalar docs.
 - [ ] thinking in a seed approac.
