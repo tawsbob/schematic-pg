@@ -14,6 +14,7 @@
 - [Database client](docs/database-client.md)
 - [REST API](docs/rest-api.md)
 - [Access control](docs/access-control.md)
+- [Migrations tutorial](docs/migrations.md) — schema diffs, `db:migrate`, and GitHub Actions for staging/production
 - [Project structure](docs/project-structure.md)
 - [Contributing (this repo)](docs/contributing.md)
 - [Why schematic-pg?](docs/why.md)
@@ -455,6 +456,8 @@ schematic-pg db:migrate:status [schema]    # Show snapshot + migration file stat
 ```
 
 `db:bootstrap` is the recommended first-time setup. Use `db:diff` / `db:migrate` when evolving an existing database.
+
+For a full walkthrough (mental model, local loop, and automating staging/production with GitHub Actions), see [Migrations tutorial](docs/migrations.md).
 
 Alternatively, apply SQL manually:
 
