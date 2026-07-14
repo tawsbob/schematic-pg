@@ -15,21 +15,28 @@ export const APP_SCHEMA_TEMPLATE = `extensions {
 }
 
 enums {
-
+  UserRole { ADMIN, USER }
 }
 
 models {
   model User {
-    id:        UUID        @id @default(gen_random_uuid())
-    email:     VARCHAR(255) @unique
-    name:      VARCHAR(150)
-    createdAt: TIMESTAMP   @default(now())
+    id:           UUID         @id @default(gen_random_uuid())
+    email:        VARCHAR(255) @unique
+    name:         VARCHAR(150)?
+    role:         UserRole     @default(USER)
+    passwordHash: VARCHAR(255)? @omit @unfilterable
+    createdAt:    TIMESTAMP    @default(now())
+
+    @policy(role: USER, allow: [select, update], where: "id = {{auth.user.id}}")
+    @policy(role: ADMIN, allow: all)
   }
 }
 `;
 
 export const ENV_TEMPLATE = `DATABASE_URL=postgresql://postgrest:postgrest@localhost:5432/postgrest
 JWT_SECRET=
+AUTH_PEPPER=
+AUTH_ACCESS_TOKEN_TTL=1h
 JWT_ROLE_CLAIM=role
 JWT_USER_ID_CLAIM=sub
 `;
@@ -55,7 +62,7 @@ export const DOCKER_COMPOSE_TEMPLATE = `services:
       POSTGRES_PASSWORD: postgrest
       POSTGRES_DB: postgrest
     volumes:
-      - ./docker_data/postgres:/var/lib/postgresql/data
+      - ./docker_data/postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgrest -d postgrest"]
       interval: 5s
@@ -91,6 +98,11 @@ import type { AppEnv } from '${PACKAGE_NAME}/api/types';
 const router = new Hono<AppEnv>();
 router.get('/', (c) => c.json({ ok: true }));
 export default router;
+`;
+
+export const AUTH_ROUTE_TEMPLATE = `import { createAuthRouter } from '${PACKAGE_NAME}/api/auth/routes';
+
+export default createAuthRouter();
 `;
 
 export function createPackageJsonTemplate(projectName: string): string {

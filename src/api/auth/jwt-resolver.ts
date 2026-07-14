@@ -1,13 +1,12 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Context } from 'hono';
 import type { AppEnv } from '../types.js';
 import { UnauthorizedError } from './errors.js';
+import { verifyHs256Jwt } from './jwt-crypto.js';
 import type { AuthContext, AuthResolver, AuthUser } from './types.js';
 
 const BEARER_PREFIX = 'Bearer ';
 const DEFAULT_ROLE_CLAIM = 'role';
 const DEFAULT_USER_ID_CLAIM = 'sub';
-const JWT_ALGORITHM = 'HS256';
 
 export interface JwtResolverOptions {
   secret?: string;
@@ -38,7 +37,7 @@ export function createJwtResolver(options: JwtResolverOptions = {}): AuthResolve
       throw new UnauthorizedError('JWT_SECRET is not configured');
     }
 
-    const payload = verifyJwt(token, secret);
+    const payload = verifyHs256Jwt(token, secret);
     const role = String(payload[roleClaim] ?? 'PUBLIC');
     const userId = payload[userIdClaim];
 
@@ -53,38 +52,4 @@ export function createJwtResolver(options: JwtResolverOptions = {}): AuthResolve
 
     return { role, user };
   };
-}
-
-function verifyJwt(token: string, secret: string): Record<string, unknown> {
-  const parts = token.split('.');
-
-  if (parts.length !== 3) {
-    throw new UnauthorizedError('Invalid JWT format');
-  }
-
-  const [encodedHeader, encodedPayload, encodedSignature] = parts;
-  const signingInput = `${encodedHeader}.${encodedPayload}`;
-  const expectedSignature = createHmac('sha256', secret).update(signingInput).digest();
-  const actualSignature = base64UrlDecode(encodedSignature!);
-
-  if (
-    expectedSignature.length !== actualSignature.length ||
-    !timingSafeEqual(expectedSignature, actualSignature)
-  ) {
-    throw new UnauthorizedError('Invalid JWT signature');
-  }
-
-  const header = JSON.parse(base64UrlDecode(encodedHeader!).toString('utf8')) as { alg?: string };
-
-  if (header.alg !== JWT_ALGORITHM) {
-    throw new UnauthorizedError(`Unsupported JWT algorithm "${header.alg ?? 'unknown'}"`);
-  }
-
-  return JSON.parse(base64UrlDecode(encodedPayload!).toString('utf8')) as Record<string, unknown>;
-}
-
-function base64UrlDecode(value: string): Buffer {
-  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
-  const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
-  return Buffer.from(normalized + padding, 'base64');
 }
