@@ -21,8 +21,8 @@ describe('Integration — app.schema', () => {
     assert.equal(schema.kind, 'Schema');
   });
 
-  it('has 3 extensions, 2 enums, and 6 models', () => {
-    assert.equal(schema.extensions.length, 3);
+  it('has 2 extensions, 2 enums, and 6 models', () => {
+    assert.equal(schema.extensions.length, 2);
     assert.equal(schema.enums.length, 2);
     assert.equal(schema.models.length, 6);
   });

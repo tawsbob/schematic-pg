@@ -34,6 +34,6 @@ describe('bootstrapDatabase', () => {
     await bootstrapDatabase(fixtureSchemaPath, mockClient);
 
     assert.match(executedSql, /CREATE TABLE "user"/);
-    assert.match(executedSql, /CREATE EXTENSION IF NOT EXISTS "postgis"/);
+    assert.match(executedSql, /CREATE EXTENSION IF NOT EXISTS "pgcrypto"/);
   });
 });

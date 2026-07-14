@@ -138,17 +138,17 @@ model Legacy { id: UUID @id }`),
   it('generates extension creation and removal', () => {
     const sql = diffSql(
       `extensions { pgcrypto }\nenums {}\nmodels {}`,
-      `extensions { pgcrypto postgis }\nenums {}\nmodels {}`,
+      `extensions { pgcrypto citext }\nenums {}\nmodels {}`,
     );
 
-    assert.match(sql, /CREATE EXTENSION IF NOT EXISTS "postgis"/);
+    assert.match(sql, /CREATE EXTENSION IF NOT EXISTS "citext"/);
 
     const reverse = diffSql(
-      `extensions { pgcrypto postgis }\nenums {}\nmodels {}`,
+      `extensions { pgcrypto citext }\nenums {}\nmodels {}`,
       `extensions { pgcrypto }\nenums {}\nmodels {}`,
     );
 
-    assert.match(reverse, /DROP EXTENSION IF EXISTS "postgis"/);
+    assert.match(reverse, /DROP EXTENSION IF EXISTS "citext"/);
   });
 
   it('generates trigger creation and removal', () => {
@@ -194,7 +194,7 @@ model Legacy { id: UUID @id }`),
   it('orders extensions before tables and triggers before table drops', () => {
     const sql = diffSql(
       `extensions { pgcrypto }\nenums {}\nmodels { model Legacy { id: UUID @id } }`,
-      `extensions { pgcrypto postgis }\nenums {}\nmodels {
+      `extensions { pgcrypto citext }\nenums {}\nmodels {
         model User {
           id: UUID @id
           @@trigger {
@@ -208,7 +208,7 @@ model Legacy { id: UUID @id }`),
       }`,
     );
 
-    const createExtensionIndex = sql.indexOf('CREATE EXTENSION IF NOT EXISTS "postgis"');
+    const createExtensionIndex = sql.indexOf('CREATE EXTENSION IF NOT EXISTS "citext"');
     const createTableIndex = sql.indexOf('CREATE TABLE "user"');
     const createTriggerIndex = sql.indexOf('CREATE TRIGGER user_before_update_trigger');
     const dropTableIndex = sql.indexOf('DROP TABLE IF EXISTS legacy');

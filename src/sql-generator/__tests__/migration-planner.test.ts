@@ -140,18 +140,18 @@ model Profile { id: UUID @id userId: UUID user: User @relation(name: "UserProfil
 
   it('detects added and dropped extensions', () => {
     const oldSchema = parse(`extensions { pgcrypto }\nenums {}\nmodels {}`);
-    const newSchema = parse(`extensions { pgcrypto postgis }\nenums {}\nmodels {}`);
+    const newSchema = parse(`extensions { pgcrypto citext }\nenums {}\nmodels {}`);
 
     const migrations = planner.generateMigration(oldSchema, newSchema);
     assert.deepEqual(
       migrations.filter((migration) => migration.kind === 'CreateExtension'),
-      [{ kind: 'CreateExtension', extensionName: 'postgis' }],
+      [{ kind: 'CreateExtension', extensionName: 'citext' }],
     );
 
     const reverse = planner.generateMigration(newSchema, oldSchema);
     assert.deepEqual(
       reverse.filter((migration) => migration.kind === 'DropExtension'),
-      [{ kind: 'DropExtension', extensionName: 'postgis' }],
+      [{ kind: 'DropExtension', extensionName: 'citext' }],
     );
   });
 

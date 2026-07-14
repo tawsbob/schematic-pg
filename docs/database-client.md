@@ -166,7 +166,7 @@ Under the hood, queries go through a minimal `Queryable` interface satisfied by 
 
 ## Raw queries (`$queryRaw` / `$executeRaw`)
 
-An escape hatch for SQL the query API can't express — window functions, CTEs, PostGIS, full-text search, custom aggregates. Both methods live on the top-level client **and** on the `tx` client inside `$transaction`.
+An escape hatch for SQL the query API can't express — window functions, CTEs, full-text search, custom aggregates. Both methods live on the top-level client **and** on the `tx` client inside `$transaction`.
 
 ```typescript
 // Read rows

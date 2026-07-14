@@ -45,7 +45,7 @@ npm-debug.log*
 
 export const DOCKER_COMPOSE_TEMPLATE = `services:
   postgres:
-    image: postgis/postgis:16-3.4
+    image: postgres:18.4-bookworm
     container_name: schematic-pg
     restart: unless-stopped
     ports:

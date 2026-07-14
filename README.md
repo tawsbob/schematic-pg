@@ -42,7 +42,7 @@ make dev
 Or run each step individually:
 
 ```bash
-# Start PostgreSQL (PostGIS-enabled, matches .env defaults)
+# Start PostgreSQL ( matches .env defaults)
 docker compose up -d --wait
 
 # Generate, bootstrap, start server, and watch app.schema (default)
@@ -68,7 +68,7 @@ The `init` command creates everything you need to get running:
 | `AGENTS.md` | Agent-oriented guide for working with schematic-pg in this project |
 | `app.schema` | Starter schema (one `User` model) — edit this |
 | `.env` | `DATABASE_URL`, JWT settings |
-| `docker-compose.yml` | Local PostGIS PostgreSQL on `:5432` |
+| `docker-compose.yml` | Local PostgreSQL on `:5432` |
 | `Makefile` | `make dev` — docker compose (with health wait) + `schematic-pg dev` |
 | `tsconfig.json` | TypeScript config for `generated/` and `src/routes/` |
 | `package.json` | `schematic-pg` + runtime deps (`hono`, `pg`, `zod`, …) |
@@ -106,7 +106,6 @@ Set these in `.env` before running `dev`, `start`, or `db:bootstrap`.
 ```ts
 extensions {
   pgcrypto { version: "1.3" }
-  postgis
   uuid-ossp
 }
 

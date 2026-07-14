@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgis/postgis:16-3.4
+    image: postgres:18.4-bookworm
     container_name: schematic-pg-postgres
     restart: unless-stopped
     ports:

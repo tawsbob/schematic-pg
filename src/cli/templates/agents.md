@@ -63,7 +63,7 @@ npx schematic-pg dev
 ## Schema DSL Essentials
 
 ```ts
-extensions { pgcrypto; postgis }
+extensions { pgcrypto; uuid-ossp }
 
 enums {
   UserRole { ADMIN, USER, PUBLIC }

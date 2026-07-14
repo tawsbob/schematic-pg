@@ -4,9 +4,9 @@ import { parseSnippet } from './helpers.js';
 
 describe('Parser — extensions', () => {
   it('parses bare extensions without options', () => {
-    const schema = parseSnippet('extensions { postgis uuid-ossp }\nenums {}\nmodels {}');
+    const schema = parseSnippet('extensions { citext uuid-ossp }\nenums {}\nmodels {}');
     assert.equal(schema.extensions.length, 2);
-    assert.equal(schema.extensions[0].name, 'postgis');
+    assert.equal(schema.extensions[0].name, 'citext');
     assert.equal(schema.extensions[0].options, undefined);
     assert.equal(schema.extensions[1].name, 'uuid-ossp');
     assert.equal(schema.extensions[1].options, undefined);
