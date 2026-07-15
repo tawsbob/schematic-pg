@@ -182,7 +182,7 @@ models {
 
   model User {
     id:        UUID        @id @default(gen_random_uuid())
-    email:     VARCHAR(255) @unique
+    email:     VARCHAR(255) @unique @regex(pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", message: "Invalid email address")
     name:      VARCHAR(150)
     role:      UserRole    @default(USER)
     age:       SMALLINT?
