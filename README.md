@@ -7,18 +7,374 @@
 
 ---
 
-## Documentation
+## Schema DSL
 
-- [Philosophy & features](docs/philosophy.md)
-- [How it works](docs/how-it-works.md)
-- [Database client](docs/database-client.md)
-- [REST API](docs/rest-api.md)
-- [Access control](docs/access-control.md)
-- [Migrations tutorial](docs/migrations.md) — schema diffs, `db:migrate`, and GitHub Actions for staging/production
-- [Project structure](docs/project-structure.md)
-- [Contributing (this repo)](docs/contributing.md)
-- [Why schematic-pg?](docs/why.md)
-- [Roadmap](docs/roadmap.md)
+`app.schema` is the source of truth. From it, schematic-pg generates PostgreSQL DDL, a type-safe DB client, REST routes, Zod validators, and ACL policies.
+
+A schema file always has three sections, in this order: `extensions`, `enums`, `models`.
+
+```ts
+extensions {
+  pgcrypto
+}
+
+enums {
+  UserRole { ADMIN, USER }
+}
+
+models {
+  model User {
+    id:    UUID @id @default(gen_random_uuid())
+    email: VARCHAR(255) @unique
+    role:  UserRole @default(USER)
+  }
+}
+```
+
+Each feature below is shown in isolation. Identifiers in SQL become `snake_case` automatically (`createdAt` → `created_at`, `User` → `"user"`). API field names stay camelCase.
+
+### Extensions
+
+Declare PostgreSQL extensions to enable. Options are optional.
+
+```ts
+extensions {
+  pgcrypto { version: "1.3" }
+  uuid-ossp
+}
+```
+
+### Enums
+
+Enums become PostgreSQL enum types. Use them as field types and as `@policy` roles.
+
+```ts
+enums {
+  UserRole { ADMIN, USER, PUBLIC }
+  OrderStatus { PENDING, SHIPPED, DELIVERED }
+}
+```
+
+### Models
+
+A model is a table plus its relations, policies, indexes, and triggers.
+
+```ts
+models {
+  model Log {
+    id:      UUID @id @default(gen_random_uuid())
+    message: TEXT
+  }
+}
+```
+
+### Field types
+
+Stored columns use PostgreSQL types. Append `?` for nullable, `[]` for arrays. Parametric types take arguments.
+
+```ts
+model Product {
+  id:          UUID
+  name:        VARCHAR(255)
+  price:       DECIMAL(10, 2)
+  stock:       INTEGER
+  tags:        TEXT[]
+  description: TEXT?
+  metadata:    JSONB
+  createdAt:   TIMESTAMP
+}
+```
+
+Common types: `UUID`, `VARCHAR`, `TEXT`, `BOOLEAN`, `TIMESTAMP`, `DECIMAL`, `NUMERIC`, `INTEGER`, `SMALLINT`, `BIGINT`, `SERIAL`, `JSONB`, `POINT`, `BYTEA`, `DATE`, `TIME`, `INTERVAL`, `REAL`, `DOUBLE`.
+
+Relation fields use another model as the type (`Profile?`, `Order[]`). They are not stored columns — see [Relations](#relations-relation).
+
+### Primary keys (`@id`, `@@id`)
+
+Mark a single column with `@id`. Use `@@id` for a composite key.
+
+```ts
+model User {
+  id: UUID @id @default(gen_random_uuid())
+}
+```
+
+```ts
+model ProductOrder {
+  orderId:   UUID
+  productId: UUID
+
+  @@id(fields: [orderId, productId])
+}
+```
+
+Composite keys expose one path segment per field (`/product-orders/:orderId/:productId`).
+
+### Defaults (`@default`)
+
+Literals, enum values, or call expressions. Fields with `@default` are optional on create.
+
+```ts
+model User {
+  id:        UUID      @id @default(gen_random_uuid())
+  role:      UserRole  @default(USER)
+  isActive:  BOOLEAN   @default(true)
+  createdAt: TIMESTAMP @default(now())
+}
+```
+
+Built-in functions: `gen_random_uuid()`, `now()`.
+
+### Unique constraints (`@unique`)
+
+```ts
+model User {
+  email: VARCHAR(255) @unique
+}
+```
+
+For a partial unique index, use `@@index` with `unique: true` instead — see [Indexes](#indexes-index).
+
+### Validation (`@regex`, `@range`)
+
+Constraints flow into generated Zod request validators. The `message` is returned as the API error.
+
+```ts
+model User {
+  email: VARCHAR(255) @regex(pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", message: "Invalid email address")
+  age:   SMALLINT?    @range(min: 1, max: 120, message: "Age must be between 1 and 120")
+}
+```
+
+Failed validation responds with `{ "error": "Invalid email address" }`.
+
+### Response shaping (`@omit`)
+
+Exclude a stored field from generated API JSON. The DB client still returns the full row.
+
+```ts
+model User {
+  passwordHash: VARCHAR(255)? @omit
+}
+```
+
+`@omit` fields are never URL-filterable. On read endpoints with `include`, they are stripped recursively on nested objects as well.
+
+### Query filters (`@unfilterable`)
+
+Scalar fields are URL-filterable by default (`?role=ADMIN`, `?balance_gte=100`). Opt out per field:
+
+```ts
+model User {
+  id:        UUID      @id @unfilterable
+  updatedAt: TIMESTAMP? @unfilterable
+}
+```
+
+### Relation includes (`@unincludeable`)
+
+Relation fields can be loaded via `?include=profile,orders`. Block that on a field:
+
+```ts
+model User {
+  orders: Order[] @unincludeable
+}
+```
+
+### Relations (`@relation`)
+
+Relation fields point at another model. The side that owns the foreign-key column declares `@relation` with `fields` and `references`. The inverse side is inferred — no `@relation` needed.
+
+**One-to-many**
+
+```ts
+model User {
+  orders: Order[]
+}
+
+model Order {
+  userId: UUID
+  user:   User @relation(fields: [userId], references: [id])
+}
+```
+
+**One-to-one** — unique FK on the owning side, optional inverse:
+
+```ts
+model User {
+  profile: Profile?
+}
+
+model Profile {
+  userId: UUID @unique
+  user:   User @relation(fields: [userId], references: [id])
+}
+```
+
+**Referential actions** (`onDelete`, `onUpdate`) are optional: `CASCADE`, `SET_NULL`, `RESTRICT`, `NO_ACTION`.
+
+```ts
+model Profile {
+  userId: UUID @unique
+  user:   User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: CASCADE,
+    onUpdate: SET_NULL
+  )
+}
+```
+
+**Named relations** — only when two models relate more than once. Both sides must use the same `name`:
+
+```ts
+model User {
+  writtenPosts: Post[] @relation(name: "PostAuthor")
+  editedPosts:  Post[] @relation(name: "PostEditor")
+}
+
+model Post {
+  authorId: UUID
+  editorId: UUID?
+  author: User  @relation(name: "PostAuthor", fields: [authorId], references: [id])
+  editor: User? @relation(name: "PostEditor", fields: [editorId], references: [id])
+}
+```
+
+`include` and API paths use the **field name** (`profile`, `orders`, `author`) — not the optional `name` argument. Foreign keys are named from table and column names.
+
+| Argument | Required | Purpose |
+|----------|----------|---------|
+| `fields` | Yes (FK side) | Local column(s) on this model |
+| `references` | Yes (FK side) | Target column(s) on the related model |
+| `onDelete` | No | PostgreSQL `ON DELETE` action |
+| `onUpdate` | No | PostgreSQL `ON UPDATE` action |
+| `name` | No | Disambiguates multiple relations between the same two models |
+
+**Many-to-many** is an explicit join model with two `@relation`s (and usually `@@id`):
+
+```ts
+model ProductOrder {
+  orderId:   UUID
+  productId: UUID
+  quantity:  INTEGER
+
+  order:   Order   @relation(fields: [orderId], references: [id])
+  product: Product @relation(fields: [productId], references: [id])
+
+  @@id(fields: [orderId, productId])
+}
+```
+
+### REST surface (`@rest`)
+
+By default every model gets full CRUD. `@rest` chooses which HTTP handlers are generated. Disabled methods return `404` and are omitted from OpenAPI. The DB client is unaffected.
+
+```ts
+model User {
+  id: UUID @id
+  @rest(except: [create, update, delete])   // keep list + get
+}
+```
+
+```ts
+model Report {
+  id: UUID @id
+  @rest(only: [list, get])
+}
+```
+
+```ts
+model Internal {
+  id: UUID @id
+  @rest(false)   // no HTTP for this model (`@rest` alone is the same)
+}
+```
+
+| DSL operation | HTTP | Path |
+|---------------|------|------|
+| `list` | `GET` | `/` |
+| `get` | `GET` | `/{pk}` |
+| `create` | `POST` | `/` |
+| `update` | `PUT` | `/{pk}` |
+| `delete` | `DELETE` | `/{pk}` |
+
+Do not mix `only` and `except`. For custom handlers on the same path, see [REST API](docs/rest-api.md).
+
+### Access control (`@policy`)
+
+Attach one or more policies to a model. Models without `@policy` are open. `@policy` only gates **generated** handlers — use `@rest` when an operation should not exist as HTTP at all.
+
+```ts
+model User {
+  id: UUID @id
+
+  @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
+  @policy(role: ADMIN, allow: all)
+}
+```
+
+| Argument | Description |
+|----------|-------------|
+| `role` | Enum identifier (typically a `UserRole` value) |
+| `allow` | `all` or `[select, insert, update, delete]` |
+| `where` | Optional row-level filter; supports `{{auth.user.id}}` |
+
+`GET` → `select`, `POST` → `insert`, `PUT` → `update`, `DELETE` → `delete`. Unauthenticated requests default to `{ role: 'PUBLIC' }`.
+
+`where` is a single condition today (`id = {{auth.user.id}}`, `balance >= 100`). See [Access control](docs/access-control.md) for enforcement, JWT claims, and pluggable auth.
+
+### Indexes (`@@index`)
+
+```ts
+model User {
+  role:     UserRole
+  isActive: BOOLEAN
+  name:     VARCHAR(150)
+  email:    VARCHAR(255)
+
+  @@index(fields: [role, isActive])
+  @@index(fields: [name], where: "isActive = true", name: "active_users_name_idx", type: BTREE)
+  @@index(fields: [email], unique: true, where: "role = 'PUBLIC'")
+}
+```
+
+| Argument | Required | Purpose |
+|----------|----------|---------|
+| `fields` | Yes | Indexed columns |
+| `where` | No | Partial index predicate |
+| `name` | No | Explicit index name |
+| `type` | No | `BTREE`, `GIN`, `GIST`, `HASH`, `BRIN` |
+| `unique` | No | Unique index |
+
+### Triggers (`@@trigger`)
+
+`execute` is the PL/pgSQL function body (wrapped in `BEGIN` / `END` for you). A model may have multiple triggers.
+
+```ts
+model User {
+  balance: INTEGER
+
+  @@trigger {
+    timing: BEFORE,
+    event: UPDATE,
+    level: ROW,
+    execute: """
+      IF (OLD.balance <> NEW.balance) THEN
+        RAISE EXCEPTION 'Balance cannot be updated directly';
+      END IF;
+      RETURN NEW;
+    """
+  }
+}
+```
+
+| Argument | Values | Default |
+|----------|--------|---------|
+| `timing` | `BEFORE`, `AFTER` | — |
+| `event` | `INSERT`, `UPDATE`, `DELETE` | — |
+| `level` | `ROW`, `STATEMENT` | `ROW` |
+| `execute` | Triple-quoted PL/pgSQL | — |
 
 ---
 
@@ -165,189 +521,6 @@ Password reset, MFA, session/refresh-token management, and login rate limiting a
 
 ---
 
-## The DSL
-
-```ts
-extensions {
-  pgcrypto { version: "1.3" }
-  uuid-ossp
-}
-
-enums {
-  UserRole { ADMIN, USER, PUBLIC }
-  OrderStatus { PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED }
-}
-
-models {
-
-  model User {
-    id:        UUID        @id @default(gen_random_uuid())
-    email:     VARCHAR(255) @unique @regex(pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", message: "Invalid email address")
-    name:      VARCHAR(150)
-    role:      UserRole    @default(USER)
-    age:       SMALLINT?
-    balance:   INTEGER
-    isActive:  BOOLEAN     @default(true)
-    createdAt: TIMESTAMP   @default(now())
-    updatedAt: TIMESTAMP?
-
-    profile:   Profile?
-    orders:    Order[]
-
-    @rest(except: [create, update, delete])
-    @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
-    @policy(role: ADMIN, allow: all)
-
-    @@index(fields: [role, isActive])
-    @@index(fields: [name], where: "isActive = true", name: "active_users_name_idx", type: BTREE)
-
-    @@trigger {
-      timing: BEFORE,
-      event: UPDATE,
-      level: ROW,
-      execute: """
-        IF (OLD.balance <> NEW.balance) THEN
-          RAISE EXCEPTION 'Balance cannot be updated directly';
-        END IF;
-        RETURN NEW;
-      """
-    }
-  }
-
-  model Profile {
-    id:       UUID        @id @default(gen_random_uuid())
-    userId:   UUID        @unique
-    bio:      TEXT
-    avatar:   VARCHAR(255)
-    location: POINT
-
-    user:     User        @relation(
-      fields: [userId],
-      references: [id],
-      onDelete: CASCADE,
-      onUpdate: SET_NULL
-    )
-  }
-
-  model Order {
-    id:          UUID        @id @default(gen_random_uuid())
-    userId:      UUID
-    status:      OrderStatus @default(PENDING)
-    totalAmount: DECIMAL(10, 2)
-    items:       JSONB
-    createdAt:   TIMESTAMP   @default(now())
-    updatedAt:   TIMESTAMP?
-
-    user:        User        @relation(fields: [userId], references: [id])
-    products:    ProductOrder[]
-
-    @@index(fields: [userId])
-    @@index(fields: [status, createdAt], name: "order_status_created_idx")
-  }
-
-  model Product {
-    id:          UUID        @id @default(gen_random_uuid())
-    name:        VARCHAR(255)
-    description: TEXT
-    price:       DECIMAL(10, 2) @range(min: 0.01, max: 999999.99)
-    stock:       INTEGER        @range(min: 0)
-    category:    VARCHAR(100)
-    tags:        TEXT[]
-    metadata:    JSONB
-    createdAt:   TIMESTAMP   @default(now())
-    updatedAt:   TIMESTAMP?
-
-    orders:      ProductOrder[]
-
-    @@trigger {
-      timing: AFTER,
-      event: UPDATE,
-      level: ROW,
-      execute: """
-        IF (OLD.stock <> NEW.stock) THEN
-          INSERT INTO log (message) VALUES ('Product stock changed');
-        END IF;
-        RETURN NEW;
-      """
-    }
-  }
-
-  model ProductOrder {
-    id:        SERIAL
-    orderId:   UUID
-    productId: UUID
-    quantity:  INTEGER
-    price:     DECIMAL(10, 2)
-
-    order:     Order   @relation(fields: [orderId], references: [id])
-    product:   Product @relation(fields: [productId], references: [id])
-
-    @@id(fields: [orderId, productId])
-  }
-
-}
-```
-
-### Relations (`@relation`)
-
-Relation fields point at another model (`Profile?`, `Order[]`). The side that owns the foreign-key column must declare `@relation` with `fields` and `references`:
-
-```ts
-model User {
-  profile: Profile?   // inverse — no @relation needed
-  orders:  Order[]
-}
-
-model Profile {
-  userId: UUID @unique
-  user:   User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: CASCADE,   // optional
-    onUpdate: SET_NULL   // optional
-  )
-}
-
-model Order {
-  userId: UUID
-  user:   User @relation(fields: [userId], references: [id])
-}
-```
-
-| Argument | Required | Side | Purpose |
-|----------|----------|------|---------|
-| `fields` | Yes (FK side) | FK owner | Local column(s) on this model |
-| `references` | Yes (FK side) | FK owner | Target column(s) on the related model |
-| `onDelete` | No | FK side | PostgreSQL `ON DELETE` action (`CASCADE`, `SET NULL`, …) |
-| `onUpdate` | No | FK side | PostgreSQL `ON UPDATE` action |
-| `name` | No | Both (must match) | Disambiguates multiple relations between the same two models |
-
-**FK owner vs inverse.** Put `fields` and `references` on the model that stores the foreign key (`Profile.userId` → `user` on `Profile`). The other side (`User.profile`) is inferred automatically — list fields become `hasMany`, optional scalars become `hasOne` / `belongsTo` on the FK side.
-
-**`name` is only for disambiguation.** When a single link exists between two models (like `User` ↔ `Profile`), you do not need `name` on either side. Use matching `name` values only when two models relate more than once:
-
-```ts
-model User {
-  writtenPosts: Post[] @relation(name: "PostAuthor")
-  editedPosts:  Post[] @relation(name: "PostEditor")
-}
-
-model Post {
-  authorId: UUID
-  editorId: UUID?
-  author: User @relation(name: "PostAuthor", fields: [authorId], references: [id])
-  editor: User? @relation(name: "PostEditor", fields: [editorId], references: [id])
-}
-```
-
-If either side declares `name`, the other side must use the same `name` (or omit `@relation` entirely on the inverse when no `name` is used anywhere).
-
-**Runtime keys.** `include` and API relation paths use the **field name** (`profile`, `orders`, `user`) — not the optional `name` argument. `name` is never used for SQL constraint names; foreign keys are named from table and column names.
-
-For `@policy` enforcement, JWT auth, and row-level filters, see [Access control](docs/access-control.md). For `@rest` and same-path custom route overlays, see [REST API](docs/rest-api.md).
-
----
-
 ## CLI Reference
 
 The `schematic-pg` binary is the primary interface. Each command accepts an optional path to a schema file (defaults to `app.schema` in the current directory).
@@ -472,6 +645,21 @@ psql $DATABASE_URL -f schema.sql
 ```bash
 schematic-pg --help
 ```
+
+---
+
+## Documentation
+
+- [Philosophy & features](docs/philosophy.md)
+- [How it works](docs/how-it-works.md)
+- [Database client](docs/database-client.md)
+- [REST API](docs/rest-api.md)
+- [Access control](docs/access-control.md)
+- [Migrations tutorial](docs/migrations.md) — schema diffs, `db:migrate`, and GitHub Actions for staging/production
+- [Project structure](docs/project-structure.md)
+- [Contributing (this repo)](docs/contributing.md)
+- [Why schematic-pg?](docs/why.md)
+- [Roadmap](docs/roadmap.md)
 
 ---
 

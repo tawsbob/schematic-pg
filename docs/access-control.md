@@ -1,6 +1,6 @@
 # Access Control (`@policy`)
 
-Define who can do what — and which rows they can touch — directly on your models. Policies are parsed from the schema, emitted to `generated/policies.ts`, and enforced in generated route handlers at runtime. For the fuller schema syntax including `@policy` examples, see [The DSL](../README.md#the-dsl).
+Define who can do what — and which rows they can touch — directly on your models. Policies are parsed from the schema, emitted to `generated/policies.ts`, and enforced in generated route handlers at runtime. For the schema syntax including `@policy` examples, see [Access control (`@policy`)](../README.md#access-control-policy).
 
 ## Defining policies
 
