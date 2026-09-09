@@ -59,7 +59,8 @@ npx schematic-pg dev
 | `JWT_SECRET` | HMAC secret for Bearer JWT auth |
 | `JWT_ROLE_CLAIM` | JWT claim for role (default `role`) |
 | `JWT_USER_ID_CLAIM` | JWT claim for user id (default `sub`) |
-| `CORS_ORIGIN` | Allowed browser origins (`*` or comma-separated). Unset disables CORS |
+| `CORS_ORIGIN` | Allowed browser origins (`*` or comma-separated). Unset disables CORS. Concrete origins enable credentialed CORS (cookies); `*` does not |
+| `CORS_ALLOW_HEADERS` | Extra allowed request headers (comma-separated), merged with Authorization, Content-Type, X-CSRF-Token |
 
 ## Schema DSL Essentials
 

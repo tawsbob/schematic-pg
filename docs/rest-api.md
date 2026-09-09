@@ -56,6 +56,7 @@ Environment variables (also see [Quick Start](../README.md#quick-start)):
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
 | `CORS_ORIGIN` | — (disabled) | Allowed browser origins. Unset disables CORS. Use `*` or a comma-separated list |
+| `CORS_ALLOW_HEADERS` | — | Extra allowed request headers (comma-separated), merged with the defaults |
 
 The server uses `@hono/node-server` and connects via a shared `pg` `Pool`. The DB client and auth context are injected into every request through Hono context (`c.get('db')`, `c.get('auth')`).
 
@@ -66,26 +67,30 @@ Browser apps hosted on another origin (for example `http://localhost:5173` calli
 | `CORS_ORIGIN` | Effect |
 |---------------|--------|
 | unset / empty | CORS off (default) |
-| `*` | Allow any origin |
-| `http://localhost:5173` | Allow that origin only |
-| `http://localhost:5173,https://app.example.com` | Allow those origins |
+| `*` | Allow any origin (no credentials — invalid with cookies) |
+| `http://localhost:5173` | Allow that origin only; enables `Access-Control-Allow-Credentials: true` |
+| `http://localhost:5173,https://app.example.com` | Allow those origins; credentials enabled |
 
 ```bash
-# .env — Vite / local frontend
+# .env — Vite / local frontend (cookie / credentialed fetch)
 CORS_ORIGIN=http://localhost:5173
 
 # production — one or more exact origins
 CORS_ORIGIN=https://app.example.com,https://admin.example.com
+
+# optional extras beyond Authorization, Content-Type, X-CSRF-Token
+CORS_ALLOW_HEADERS=X-Request-Id
 ```
 
 Middleware is registered **first** (before docs, auth, and routers) so:
 
 - Preflight `OPTIONS` returns `204` and never hits JWT or route handlers
 - `GET /openapi.json`, `/docs`, `/auth`, generated CRUD, and custom `src/routes/` all receive CORS headers
-- Allowed request headers are `Authorization` and `Content-Type` (Bearer JWT + JSON bodies)
+- Concrete origins set `Access-Control-Allow-Credentials: true` so `fetch(..., { credentials: 'include' })` works with cookies
+- Allowed request headers default to `Authorization`, `Content-Type`, and `X-CSRF-Token`; add more via `CORS_ALLOW_HEADERS`
 - Allowed methods are `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
 
-`*` is convenient for local development. Do not combine `*` with cookie credentials; Bearer tokens in `Authorization` do not need `Access-Control-Allow-Credentials`.
+`*` is convenient for Bearer-token local development. Do not use `*` with cookie credentials — the middleware leaves credentials off when origin is `*` (browsers reject `Access-Control-Allow-Origin: *` with credentials).
 
 Do not edit `generated/app.ts` to add CORS — it is overwritten on every generate. Set `CORS_ORIGIN` instead.
 

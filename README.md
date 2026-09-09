@@ -456,11 +456,12 @@ Generated code imports the runtime from the `schematic-pg` package (`schematic-p
 | `AUTH_ACCESS_TOKEN_TTL` | `1h` | Access token lifetime (`15m`, `1h`, or seconds) |
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
-| `CORS_ORIGIN` | — (disabled) | Allowed browser origins. Unset disables CORS. Use `*` for any origin, or a comma-separated list (`http://localhost:5173,https://app.example.com`) |
+| `CORS_ORIGIN` | — (disabled) | Allowed browser origins. Unset disables CORS. Use `*` for any origin (no cookies), or a comma-separated list (`http://localhost:5173,https://app.example.com`). Concrete origins enable credentialed CORS |
+| `CORS_ALLOW_HEADERS` | — | Extra allowed request headers (comma-separated), merged with `Authorization`, `Content-Type`, `X-CSRF-Token` |
 
 Set these in `.env` before running `dev`, `start`, or `db:bootstrap`.
 
-Browser frontends on another origin need `CORS_ORIGIN`. The generated app reads it at runtime (no regenerate). Preflight `OPTIONS` is handled automatically; `Authorization` and `Content-Type` are allowed. See [CORS](docs/rest-api.md#cors).
+Browser frontends on another origin need `CORS_ORIGIN`. The generated app reads it at runtime (no regenerate). Preflight `OPTIONS` is handled automatically; concrete origins enable cookies via `credentials: 'include'`. See [CORS](docs/rest-api.md#cors).
 
 ---
 
