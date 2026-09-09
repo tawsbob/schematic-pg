@@ -14,6 +14,7 @@ import {
   isStoredScalarField,
 } from './utils/api-fields.js';
 import { buildFilterFieldMeta, queryParamKey, type FilterOperator } from './utils/filter-operators.js';
+import { hasRestOperation, isRestEnabled } from './utils/rest.js';
 
 export interface OpenApiGeneratorOptions {
   includeAuthPaths?: boolean;
@@ -76,7 +77,9 @@ export class OpenApiGenerator {
 
     for (const model of this.schema.models) {
       Object.assign(schemas, this.buildModelComponentSchemas(model));
-      Object.assign(paths, this.buildModelPaths(model));
+      if (isRestEnabled(model)) {
+        Object.assign(paths, this.buildModelPaths(model));
+      }
     }
 
     if (this.options.includeAuthPaths) {
@@ -200,54 +203,61 @@ export class OpenApiGenerator {
     const createRef = { $ref: `#/components/schemas/${model.name}Create` };
     const updateRef = { $ref: `#/components/schemas/${model.name}Update` };
     const tag = model.name;
+    const paths: Record<string, OpenApiPathItem> = {};
 
-    const paths: Record<string, OpenApiPathItem> = {
-      [collectionPath]: {
-        get: {
-          tags: [tag],
-          summary: `List ${model.name}`,
-          operationId: `list${model.name}`,
-          security: OPTIONAL_BEARER_SECURITY,
-          parameters: this.buildListQueryParameters(model),
-          responses: {
-            '200': {
-              description: `List of ${model.name}`,
-              content: jsonContent({ type: 'array', items: responseRef }),
-            },
-            '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
-            '401': errorResponse('Unauthorized'),
-            '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
-            '500': errorResponse('Internal server error'),
+    const collectionOps: OpenApiPathItem = {};
+    if (hasRestOperation(model, 'list')) {
+      collectionOps.get = {
+        tags: [tag],
+        summary: `List ${model.name}`,
+        operationId: `list${model.name}`,
+        security: OPTIONAL_BEARER_SECURITY,
+        parameters: this.buildListQueryParameters(model),
+        responses: {
+          '200': {
+            description: `List of ${model.name}`,
+            content: jsonContent({ type: 'array', items: responseRef }),
           },
+          '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
+          '401': errorResponse('Unauthorized'),
+          '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
+          '500': errorResponse('Internal server error'),
         },
-        post: {
-          tags: [tag],
-          summary: `Create ${model.name}`,
-          operationId: `create${model.name}`,
-          security: OPTIONAL_BEARER_SECURITY,
-          requestBody: {
-            required: true,
-            content: jsonContent(createRef),
-          },
-          responses: {
-            '201': {
-              description: `Created ${model.name}`,
-              content: jsonContent(responseRef),
-            },
-            '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
-            '401': errorResponse('Unauthorized'),
-            '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
-            '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
-            '500': errorResponse('Internal server error'),
-          },
+      };
+    }
+    if (hasRestOperation(model, 'create')) {
+      collectionOps.post = {
+        tags: [tag],
+        summary: `Create ${model.name}`,
+        operationId: `create${model.name}`,
+        security: OPTIONAL_BEARER_SECURITY,
+        requestBody: {
+          required: true,
+          content: jsonContent(createRef),
         },
-      },
-    };
+        responses: {
+          '201': {
+            description: `Created ${model.name}`,
+            content: jsonContent(responseRef),
+          },
+          '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
+          '401': errorResponse('Unauthorized'),
+          '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
+          '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
+          '500': errorResponse('Internal server error'),
+        },
+      };
+    }
+    if (Object.keys(collectionOps).length > 0) {
+      paths[collectionPath] = collectionOps;
+    }
 
     if (pkFields.length > 0) {
       const pathParams = this.buildPathParameters(pkFields, model);
-      paths[itemPath] = {
-        get: {
+      const itemOps: OpenApiPathItem = {};
+
+      if (hasRestOperation(model, 'get')) {
+        itemOps.get = {
           tags: [tag],
           summary: `Get ${model.name}`,
           operationId: `get${model.name}`,
@@ -264,8 +274,10 @@ export class OpenApiGenerator {
             '404': errorResponse('Not found'),
             '500': errorResponse('Internal server error'),
           },
-        },
-        put: {
+        };
+      }
+      if (hasRestOperation(model, 'update')) {
+        itemOps.put = {
           tags: [tag],
           summary: `Update ${model.name}`,
           operationId: `update${model.name}`,
@@ -287,8 +299,10 @@ export class OpenApiGenerator {
             '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
             '500': errorResponse('Internal server error'),
           },
-        },
-        delete: {
+        };
+      }
+      if (hasRestOperation(model, 'delete')) {
+        itemOps.delete = {
           tags: [tag],
           summary: `Delete ${model.name}`,
           operationId: `delete${model.name}`,
@@ -305,8 +319,12 @@ export class OpenApiGenerator {
             '404': errorResponse('Not found'),
             '500': errorResponse('Internal server error'),
           },
-        },
-      };
+        };
+      }
+
+      if (Object.keys(itemOps).length > 0) {
+        paths[itemPath] = itemOps;
+      }
     }
 
     return paths;

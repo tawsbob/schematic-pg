@@ -1,11 +1,18 @@
 import path from 'node:path';
 import { PACKAGE_NAME } from '../constants.js';
 import type { Schema } from '../schema-dsl/ast.js';
-import { discoverCustomRoutes } from './custom-route-scanner.js';
+import {
+  discoverCustomRoutes,
+  partitionCustomRoutes,
+  type CustomRouteMountEntry,
+} from './custom-route-scanner.js';
 import { getRouteMountEntries } from './route-generator.js';
 
 export interface AppGeneratorOptions {
   customRoutesDir?: string;
+  /** When provided, skip re-discovering and use these standalone mounts only. */
+  standaloneCustomRoutes?: CustomRouteMountEntry[];
+  overlays?: ReadonlyMap<string, CustomRouteMountEntry>;
 }
 
 const DEFAULT_CUSTOM_ROUTES_DIR = path.resolve('src/routes');
@@ -17,7 +24,8 @@ export class AppGenerator {
   ) {}
 
   generate(): string {
-    const mounts = getRouteMountEntries(this.schema);
+    const overlays = this.options.overlays ?? new Map<string, CustomRouteMountEntry>();
+    const mounts = getRouteMountEntries(this.schema, overlays);
     const generatedImports = mounts
       .map((entry) => `import ${entry.importName} from './routes/${entry.fileName.replace(/\.ts$/, '.js')}';`)
       .join('\n');
@@ -25,12 +33,11 @@ export class AppGenerator {
       .map((entry) => `  app.route('/${entry.basePath}', ${entry.importName});`)
       .join('\n');
 
-    const customRoutesDir = this.options.customRoutesDir ?? DEFAULT_CUSTOM_ROUTES_DIR;
-    const customMounts = discoverCustomRoutes(customRoutesDir);
-    const customImports = customMounts
+    const standaloneMounts = this.resolveStandaloneCustomRoutes();
+    const customImports = standaloneMounts
       .map((entry) => `import ${entry.importName} from '${entry.importPath}';`)
       .join('\n');
-    const customRoutes = customMounts
+    const customRoutes = standaloneMounts
       .map((entry) => `  app.route('/${entry.basePath}', ${entry.importName});`)
       .join('\n');
 
@@ -93,6 +100,16 @@ export class AppGenerator {
       '}',
       '',
     ].join('\n');
+  }
+
+  private resolveStandaloneCustomRoutes(): CustomRouteMountEntry[] {
+    if (this.options.standaloneCustomRoutes) {
+      return this.options.standaloneCustomRoutes;
+    }
+
+    const customRoutesDir = this.options.customRoutesDir ?? DEFAULT_CUSTOM_ROUTES_DIR;
+    const { standalone } = partitionCustomRoutes(discoverCustomRoutes(customRoutesDir), this.schema);
+    return standalone;
   }
 }
 

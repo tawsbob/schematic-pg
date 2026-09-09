@@ -55,10 +55,11 @@ describe('Integration — app.schema', () => {
     assert.equal(user!.fields.length, 12);
   });
 
-  it('User model has 2 @policy model attributes', () => {
+  it('User model has 2 @policy model attributes and @rest', () => {
     const user = schema.models.find((m) => m.name === 'User')!;
     const policies = user.attributes.filter((a) => a.name === 'policy');
     assert.equal(policies.length, 2);
+    assert.ok(user.attributes.some((a) => a.name === 'rest'));
   });
 
   it('User model has 3 @@index and 1 @@trigger directives', () => {

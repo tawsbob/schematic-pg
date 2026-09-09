@@ -25,6 +25,7 @@ describe('Schema DSL TextMate grammar', () => {
   it('app.schema contains constructs covered by grammar', () => {
     const source = readFileSync(appSchemaPath, 'utf8');
     assert.match(source, /@policy/);
+    assert.match(source, /@rest/);
     assert.match(source, /@@index/);
     assert.match(source, /@@trigger/);
     assert.match(source, /gen_random_uuid/);

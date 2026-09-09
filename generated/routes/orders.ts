@@ -14,9 +14,9 @@ import {
   OrderListQuerySchema,
   OrderGetQuerySchema,
   ORDER_LIST_QUERY_FIELDS,
+  ORDER_SORTABLE_FIELDS,
   ORDER_INCLUDABLE_RELATIONS,
   ORDER_OMIT_FIELDS,
-  ORDER_SORTABLE_FIELDS,
   API_OMIT_FIELDS_BY_MODEL,
   API_RELATION_TARGETS,
 } from '../schemas/validation.js';

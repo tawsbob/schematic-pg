@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import { parse } from '../../schema-dsl/index.js';
 import type { AppEnv } from '../../api/types.js';
 import { generateAppFile } from '../app-generator.js';
+import { discoverCustomRoutes, partitionCustomRoutes } from '../custom-route-scanner.js';
 import { generateHooksFile } from '../hooks-generator.js';
 import { discoverHooks } from '../hook-scanner.js';
 import { generatePoliciesFile } from '../policy-generator.js';
@@ -18,7 +19,17 @@ const schemaSource = readFileSync(path.resolve('app.schema'), 'utf8');
 const schema = parse(schemaSource);
 const missingCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/missing-routes');
 const fixtureCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/custom-routes');
+const fixtureOverlayRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/custom-routes-overlay');
 const fixtureHooksDir = path.resolve('src/api-generator/__tests__/fixtures/hooks');
+
+const modelRouteFile: Record<string, string> = {
+  User: 'users.ts',
+  Profile: 'profiles.ts',
+  Order: 'orders.ts',
+  Log: 'logs.ts',
+  Product: 'products.ts',
+  ProductOrder: 'product-orders.ts',
+};
 
 describe('ZodSchemaGenerator', () => {
   it('generates create schemas with regex and range messages from app.schema', () => {
@@ -65,32 +76,86 @@ describe('ZodSchemaGenerator', () => {
 });
 
 describe('RouteGenerator', () => {
-  it('generates CRUD routes for all models', () => {
+  it('generates full CRUD for models without @rest, and read-only for User', () => {
     const routes = generateRouteFiles(schema);
 
     assert.equal(routes.size, schema.models.length);
 
     for (const model of schema.models) {
-      const normalizedName =
-        model.name === 'User'
-          ? 'users.ts'
-          : model.name === 'Profile'
-            ? 'profiles.ts'
-            : model.name === 'Order'
-              ? 'orders.ts'
-              : model.name === 'Log'
-                ? 'logs.ts'
-                : model.name === 'Product'
-                  ? 'products.ts'
-                  : 'product-orders.ts';
-
+      const normalizedName = modelRouteFile[model.name];
+      assert.ok(normalizedName, `missing route mapping for ${model.name}`);
       const content = routes.get(normalizedName);
       assert.ok(content, `missing route file for ${model.name}`);
       assert.match(content!, /router\.get\('\/'/);
-      assert.match(content!, /router\.post\('\/'/);
-      assert.match(content!, /router\.put\('/);
-      assert.match(content!, /router\.delete\('/);
+
+      if (model.name === 'User') {
+        assert.match(content!, /router\.get\('\/:id'/);
+        assert.doesNotMatch(content!, /router\.post\('\/'/);
+        assert.doesNotMatch(content!, /router\.put\('/);
+        assert.doesNotMatch(content!, /router\.delete\('/);
+      } else {
+        assert.match(content!, /router\.post\('\/'/);
+        assert.match(content!, /router\.put\('/);
+        assert.match(content!, /router\.delete\('/);
+      }
     }
+  });
+
+  it('omits route files for @rest(false) models without overlays', () => {
+    const hidden = parse(`
+extensions {}
+enums {}
+models {
+  model Hidden {
+    id: UUID @id
+    @rest(false)
+  }
+}
+`);
+    const routes = generateRouteFiles(hidden);
+    assert.equal(routes.size, 0);
+    assert.deepEqual(getRouteMountEntries(hidden), []);
+  });
+
+  it('merges same-path custom overlays into generated model routers', () => {
+    const { overlays, standalone } = partitionCustomRoutes(
+      discoverCustomRoutes(fixtureOverlayRoutesDir),
+      schema,
+    );
+
+    assert.ok(overlays.has('User'));
+    assert.equal(standalone.length, 0);
+
+    const routes = generateRouteFiles(schema, { overlays });
+    const users = routes.get('users.ts')!;
+    assert.match(users, /import usersRouterOverlay from '\.\.\/\.\.\/src\/routes\/users\.js'/);
+    assert.match(users, /router\.route\('\/', usersRouterOverlay\)/);
+    assert.doesNotMatch(users, /router\.post\('\/'/);
+
+    const app = generateAppFile(schema, {
+      customRoutesDir: fixtureOverlayRoutesDir,
+      standaloneCustomRoutes: standalone,
+      overlays,
+    });
+    assert.doesNotMatch(app, /import usersRouter from '\.\.\/src\/routes\/users\.js'/);
+    assert.match(app, /app\.route\('\/users', usersRouter\)/);
+  });
+
+  it('generated GET and overlay POST share the same mount', async () => {
+    const { default: overlayRouter } = await import('./fixtures/custom-routes-overlay/users.js');
+    const app = new Hono<AppEnv>();
+    const generated = new Hono<AppEnv>();
+    generated.get('/', (c) => c.json({ generated: true }));
+    generated.route('/', overlayRouter);
+    app.route('/users', generated);
+
+    const getResponse = await app.request('/users');
+    assert.equal(getResponse.status, 200);
+    assert.deepEqual(await getResponse.json(), { generated: true });
+
+    const postResponse = await app.request('/users', { method: 'POST' });
+    assert.equal(postResponse.status, 201);
+    assert.deepEqual(await postResponse.json(), { overlay: true });
   });
 
   it('generates composite primary key path params for ProductOrder', () => {
@@ -113,7 +178,7 @@ describe('RouteGenerator', () => {
     assert.doesNotMatch(logs!, /resolvePolicyWhere/);
   });
 
-  it('generates list routes with query filters and omit wrappers on all handlers', () => {
+  it('generates list routes with query filters and omit wrappers on write handlers', () => {
     const routes = generateRouteFiles(schema);
     const users = routes.get('users.ts')!;
     const products = routes.get('products.ts')!;
@@ -125,11 +190,12 @@ describe('RouteGenerator', () => {
     assert.match(users, /shapeResponseMany\(rows, 'User'/);
     assert.match(users, /shapeResponse\(row, 'User'/);
     assert.match(users, /mergeWhere\(where, policyWhere\)/);
-    assert.match(users, /omitFields\(row, USER_OMIT_FIELDS\)/);
-    assert.match(users, /c\.json\(omitFields\(row, USER_OMIT_FIELDS\), 201\)/);
+    assert.doesNotMatch(users, /omitFields\(row, USER_OMIT_FIELDS\)/);
 
     assert.match(products, /validateQuery\(ProductListQuerySchema\)/);
     assert.match(products, /shapeResponseMany\(rows, 'Product'/);
+    assert.match(products, /omitFields\(row, PRODUCT_OMIT_FIELDS\)/);
+    assert.match(products, /c\.json\(omitFields\(row, PRODUCT_OMIT_FIELDS\), 201\)/);
     assert.doesNotMatch(products, /mergeWhere\(where, policyWhere\)/);
   });
 
@@ -142,19 +208,23 @@ describe('RouteGenerator', () => {
     );
   });
 
-  it('injects lifecycle hook wiring only for models with hook files', () => {
+  it('injects lifecycle hook wiring only for writable models with hook files', () => {
     const { modelsWithHooks } = discoverHooks(fixtureHooksDir, schema);
     const routes = generateRouteFiles(schema, modelsWithHooks);
     const users = routes.get('users.ts')!;
+    const logs = routes.get('logs.ts')!;
     const products = routes.get('products.ts')!;
 
-    assert.match(users, /import \{ cancelledResponse, createHookContext, runAfterHooks, runBeforeHooks \}/);
-    assert.match(users, /const hookCtx = createHookContext\(\{ c, db, auth, model: 'User', operation: 'create', data: body \}\)/);
-    assert.match(users, /const gate = await runBeforeHooks\('User', 'create', hookCtx\)/);
-    assert.match(users, /if \(!gate\.proceed\) return gate\.response \?\? cancelledResponse\(c\)/);
-    assert.match(users, /await db\.user\.create\(hookCtx\.data\)/);
-    assert.match(users, /await runAfterHooks\('User', 'update', hookCtx\)/);
-    assert.match(users, /await runAfterHooks\('User', 'delete', hookCtx\)/);
+    assert.doesNotMatch(users, /runBeforeHooks/);
+    assert.doesNotMatch(users, /runAfterHooks/);
+
+    assert.match(logs, /import \{ cancelledResponse, createHookContext, runAfterHooks, runBeforeHooks \}/);
+    assert.match(logs, /const hookCtx = createHookContext\(\{ c, db, auth, model: 'Log', operation: 'create', data: body \}\)/);
+    assert.match(logs, /const gate = await runBeforeHooks\('Log', 'create', hookCtx\)/);
+    assert.match(logs, /if \(!gate\.proceed\) return gate\.response \?\? cancelledResponse\(c\)/);
+    assert.match(logs, /await db\.log\.create\(hookCtx\.data\)/);
+    assert.match(logs, /await runAfterHooks\('Log', 'update', hookCtx\)/);
+    assert.match(logs, /await runAfterHooks\('Log', 'delete', hookCtx\)/);
 
     assert.doesNotMatch(products, /runBeforeHooks/);
     assert.doesNotMatch(products, /runAfterHooks/);
@@ -167,7 +237,7 @@ describe('PolicyGenerator', () => {
 
     assert.match(output, /import type \{ NormalizedPolicy \} from 'schematic-pg\/api\/auth\/policy'/);
     assert.match(output, /export const POLICIES: Record<string, NormalizedPolicy\[\]> = \{/);
-    assert.match(output, /role: 'USER', operations: \['select', 'insert', 'update'\]/);
+    assert.match(output, /role: 'USER', operations: \['select'\]/);
     assert.match(output, /where: "id = \{\{auth\.user\.id\}\}"/);
     assert.match(output, /role: 'ADMIN', operations: 'all'/);
   });

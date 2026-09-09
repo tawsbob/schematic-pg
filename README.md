@@ -83,7 +83,7 @@ After `generate`, your project also contains:
 | `schema.sql` | Idempotent PostgreSQL DDL |
 | `generated/db*.ts` | Type-safe DB client |
 | `generated/app.ts` | Hono server entry point |
-| `generated/routes/*.ts` | CRUD routers per model |
+| `generated/routes/*.ts` | CRUD routers per model (`@rest` may omit methods) |
 | `generated/policies.ts` | ACL metadata from `@policy` |
 | `generated/schemas/validation.ts` | Zod request validators |
 
@@ -194,7 +194,8 @@ models {
     profile:   Profile?
     orders:    Order[]
 
-    @policy(role: USER, allow: [select, insert, update], where: "id = {{auth.user.id}}")
+    @rest(except: [create, update, delete])
+    @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
     @policy(role: ADMIN, allow: all)
 
     @@index(fields: [role, isActive])
@@ -343,7 +344,7 @@ If either side declares `name`, the other side must use the same `name` (or omit
 
 **Runtime keys.** `include` and API relation paths use the **field name** (`profile`, `orders`, `user`) — not the optional `name` argument. `name` is never used for SQL constraint names; foreign keys are named from table and column names.
 
-For `@policy` enforcement, JWT auth, and row-level filters, see [Access control](docs/access-control.md).
+For `@policy` enforcement, JWT auth, and row-level filters, see [Access control](docs/access-control.md). For `@rest` and same-path custom route overlays, see [REST API](docs/rest-api.md).
 
 ---
 

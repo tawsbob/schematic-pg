@@ -24,10 +24,13 @@ describe('OpenApiGenerator', () => {
     const paths = document.paths as Record<string, Record<string, unknown>>;
     assert.ok(paths['/users']);
     assert.ok(paths['/users']?.get);
-    assert.ok(paths['/users']?.post);
+    assert.equal(paths['/users']?.post, undefined);
     assert.ok(paths['/users/{id}']?.get);
-    assert.ok(paths['/users/{id}']?.put);
-    assert.ok(paths['/users/{id}']?.delete);
+    assert.equal(paths['/users/{id}']?.put, undefined);
+    assert.equal(paths['/users/{id}']?.delete, undefined);
+    assert.ok(paths['/products']?.post);
+    assert.ok(paths['/products/{id}']?.put);
+    assert.ok(paths['/products/{id}']?.delete);
     assert.ok(paths['/product-orders/{orderId}/{productId}']?.get);
 
     const listParams = (paths['/users'].get as { parameters: Array<{ name: string }> }).parameters;
@@ -46,7 +49,7 @@ describe('OpenApiGenerator', () => {
     assert.ok(schemas.Error?.properties?.error);
 
     const createResponses = (
-      paths['/users'].post as {
+      paths['/products'].post as {
         responses: Record<
           string,
           {

@@ -11,6 +11,8 @@ import {
   POLICY_OPERATIONS,
   REFERENCE_ACTIONS,
   RELATION_KEYS,
+  REST_KEYS,
+  REST_OPERATIONS,
   TOP_LEVEL_KEYWORDS,
   TRIGGER_EVENTS,
   TRIGGER_KEYS,
@@ -56,6 +58,10 @@ export function getCompletions(
 
   if (/@policy\s*\([^)]*$/.test(prefix)) {
     return policyCompletions(schema, prefix);
+  }
+
+  if (/@rest\s*\([^)]*$/.test(prefix)) {
+    return restCompletions(prefix);
   }
 
   if (/@@index\s*\{[^}]*$/.test(prefix)) {
@@ -189,6 +195,19 @@ function policyCompletions(schema: Schema | undefined, prefix: string): Completi
   }
 
   return keys;
+}
+
+function restCompletions(prefix: string): CompletionItem[] {
+  if (/(?:only|except):\s*\[?[\w,\s]*$/.test(prefix)) {
+    return REST_OPERATIONS.map((operation) =>
+      item(operation, CompletionItemKind.Enum, 'rest operation'),
+    );
+  }
+
+  return [
+    ...REST_KEYS.map((key) => item(key, CompletionItemKind.Property)),
+    item('false', CompletionItemKind.Value, 'disable all generated routes'),
+  ];
 }
 
 function inferRelationTarget(

@@ -12,7 +12,7 @@ model User {
   role: UserRole @default(USER)
   // ...
 
-  @policy(role: USER, allow: [select, insert, update], where: "id = {{auth.user.id}}")
+  @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
   @policy(role: ADMIN, allow: all)
 }
 ```
@@ -33,6 +33,8 @@ model User {
 | `DELETE` | `delete` |
 
 Models **without** `@policy` attributes are open — generated routes skip ACL checks entirely (e.g. `Log` in the sample schema).
+
+Use `@rest` when an operation should not exist as HTTP at all (custom signup, checkout workflows). `@policy` only controls who may call a **generated** handler.
 
 ## How enforcement works
 
@@ -133,7 +135,7 @@ Complex multi-clause SQL in `where` is not supported yet — keep policies to a 
 ```typescript
 export const POLICIES: Record<string, NormalizedPolicy[]> = {
   User: [
-    { role: 'USER', operations: ['select', 'insert', 'update'], where: "id = {{auth.user.id}}" },
+    { role: 'USER', operations: ['select'], where: "id = {{auth.user.id}}" },
     { role: 'ADMIN', operations: 'all' },
   ],
 };
@@ -143,12 +145,12 @@ This file is consumed by `assertPolicy` at runtime — do not edit manually.
 
 ## Example: scoped user access
 
-With the sample `User` policies above:
+With the sample `User` model (`@rest(except: [create, update, delete])` + the policies above):
 
 | Caller | `GET /users` | `GET /users/:id` | `DELETE /users/:id` |
 |--------|--------------|------------------|---------------------|
-| No token (`PUBLIC`) | `403` | `403` | `403` |
-| JWT `role: USER`, `sub: <own-id>` | Returns own row only | Own row if `:id` matches | `403` (delete not in `allow`) |
-| JWT `role: ADMIN` | Returns all rows | Any row | Allowed |
+| No token (`PUBLIC`) | `403` | `403` | `404` (not generated) |
+| JWT `role: USER`, `sub: <own-id>` | Returns own row only | Own row if `:id` matches | `404` (not generated) |
+| JWT `role: ADMIN` | Returns all rows | Any row | `404` (not generated) |
 
-These scenarios are covered by `npm run test:integration` — see [`src/api/__tests__/acl.integration.test.ts`](../src/api/__tests__/acl.integration.test.ts).
+Writes for `User` go through custom routes such as `POST /auth/register`. These scenarios are covered by `npm run test:integration` — see [`src/api/__tests__/acl.integration.test.ts`](../src/api/__tests__/acl.integration.test.ts).

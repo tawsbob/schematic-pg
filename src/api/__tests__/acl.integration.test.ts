@@ -81,10 +81,10 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
       assert.equal(response.status, 403);
     });
 
-    it('denies DELETE /users/:id', async () => {
+    it('returns 404 on DELETE /users/:id when create/update/delete are not generated', async () => {
       const response = await request(app, `/users/${users.alice.id}`, { method: 'DELETE' });
 
-      assert.equal(response.status, 403);
+      assert.equal(response.status, 404);
     });
   });
 
@@ -112,16 +112,16 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
       assert.equal(response.status, 404);
     });
 
-    it('denies DELETE on own row (operation not allowed)', async () => {
+    it('returns 404 on DELETE when the operation is not generated', async () => {
       const response = await request(app, `/users/${users.alice.id}`, {
         method: 'DELETE',
         token: aliceToken,
       });
 
-      assert.equal(response.status, 403);
+      assert.equal(response.status, 404);
     });
 
-    it('allows POST /users (insert without row filter)', async () => {
+    it('returns 404 on POST /users when create is not generated', async () => {
       const response = await request(app, '/users', {
         method: 'POST',
         token: aliceToken,
@@ -132,26 +132,14 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
         },
       });
 
-      assert.equal(response.status, 201);
+      assert.equal(response.status, 404);
     });
 
-    it('allows PUT on own row', async () => {
+    it('returns 404 on PUT when update is not generated', async () => {
       const response = await request(app, `/users/${users.alice.id}`, {
         method: 'PUT',
         token: aliceToken,
         body: { name: 'Alice Updated' },
-      });
-
-      assert.equal(response.status, 200);
-      const row = (await response.json()) as { name: string };
-      assert.equal(row.name, 'Alice Updated');
-    });
-
-    it('returns 404 on PUT for another user row', async () => {
-      const response = await request(app, `/users/${users.bob.id}`, {
-        method: 'PUT',
-        token: aliceToken,
-        body: { name: 'Blocked Update' },
       });
 
       assert.equal(response.status, 404);
@@ -175,13 +163,13 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
       assert.equal(row.id, users.bob.id);
     });
 
-    it('allows DELETE on any user row', async () => {
+    it('returns 404 on DELETE when the operation is not generated', async () => {
       const response = await request(app, `/users/${users.publicUser.id}`, {
         method: 'DELETE',
         token: adminToken,
       });
 
-      assert.equal(response.status, 200);
+      assert.equal(response.status, 404);
     });
   });
 
@@ -221,7 +209,7 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
       assert.equal('passwordHash' in row, false);
     });
 
-    it('omits passwordHash from POST /users responses', async () => {
+    it('returns 404 for POST /users when create is disabled by @rest', async () => {
       const response = await request(app, '/users', {
         method: 'POST',
         token: aliceToken,
@@ -233,9 +221,7 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
         },
       });
 
-      assert.equal(response.status, 201);
-      const row = (await response.json()) as Record<string, unknown>;
-      assert.equal('passwordHash' in row, false);
+      assert.equal(response.status, 404);
     });
 
     it('filters products by category query param', async () => {

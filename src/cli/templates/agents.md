@@ -77,7 +77,8 @@ models {
 
     orders: Order[]
 
-    @policy(role: USER, allow: [select, update], where: "id = {{auth.user.id}}")
+    @rest(except: [create, update, delete])
+    @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
     @policy(role: ADMIN, allow: all)
 
     @@index(fields: [role])
@@ -93,6 +94,7 @@ models {
 **Key concepts:**
 
 - **Relations:** Put `@relation(fields: [...], references: [...])` on the FK-owning side. The inverse side is inferred.
+- **REST surface:** `@rest(only: [...])`, `@rest(except: [...])`, or `@rest(false)` controls which CRUD handlers are generated (`list`/`get`/`create`/`update`/`delete`).
 - **Policies:** `@policy(role: ..., allow: [select|insert|update|delete|all], where: "...")` — `where` supports `{{auth.user.id}}`.
 - **Validation:** `@regex(...)`, `@range(min: ..., max: ...)` flow into generated Zod schemas.
 - **Indexes / triggers:** `@@index(...)`, `@@trigger { timing, event, level, execute: """...""" }`.
@@ -225,8 +227,9 @@ Also available: `ForeignKeyConstraintError`, `DatabaseError`.
 | Location | `src/routes/**/*.ts` |
 | Export | `export default router` (`Hono<AppEnv>`) |
 | Mount path | File path relative to `src/routes/` |
+| Same-path overlay | `src/routes/users.ts` merges into `generated/routes/users.ts` |
 
-`src/routes/health.ts` → `GET /health`. Regenerate after adding files.
+`src/routes/health.ts` → `GET /health` (standalone). When the file name matches a model route (`users.ts`), it is imported into the generated model router after remaining `@rest` handlers. Regenerate after adding files.
 
 ```typescript
 import { Hono } from 'hono';
@@ -276,6 +279,7 @@ schematic-pg hooks:add [--model X]   # scaffold src/hooks/{Model}.ts
 - Unauthenticated requests default to `{ role: 'PUBLIC' }`.
 - `@policy` `allow` maps to HTTP: GET→select, POST→insert, PUT→update, DELETE→delete.
 - Row-level `where` is injected on read/update/delete; POST checks permission only.
+- `@rest` controls which handlers exist; disabled methods return `404` and are omitted from OpenAPI.
 
 ## Generated Outputs (Read-Only)
 

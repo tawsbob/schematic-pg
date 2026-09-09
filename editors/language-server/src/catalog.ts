@@ -30,6 +30,7 @@ export const FIELD_ATTRIBUTES = [
   'range',
   'relation',
   'policy',
+  'rest',
   'unfilterable',
   'unincludeable',
   'omit',
@@ -42,6 +43,10 @@ export const RELATION_KEYS = ['name', 'fields', 'references', 'onDelete', 'onUpd
 export const POLICY_KEYS = ['role', 'allow', 'where'] as const;
 
 export const POLICY_OPERATIONS = ['select', 'insert', 'update', 'delete', 'all'] as const;
+
+export const REST_KEYS = ['only', 'except'] as const;
+
+export const REST_OPERATIONS = ['list', 'get', 'create', 'update', 'delete'] as const;
 
 export const TRIGGER_KEYS = ['timing', 'event', 'level', 'execute'] as const;
 

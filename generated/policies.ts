@@ -3,7 +3,7 @@ import type { NormalizedPolicy } from 'schematic-pg/api/auth/policy';
 
 export const POLICIES: Record<string, NormalizedPolicy[]> = {
   User: [
-    { role: 'USER', operations: ['select', 'insert', 'update'], where: "id = {{auth.user.id}}" },
+    { role: 'USER', operations: ['select'], where: "id = {{auth.user.id}}" },
     { role: 'ADMIN', operations: 'all' },
   ]
 };

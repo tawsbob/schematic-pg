@@ -1,11 +1,20 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { toRouteImportName } from '../api/utils/route-naming.js';
+import type { Schema } from '../schema-dsl/ast.js';
+import { toRouteBasePath, toRouteImportName } from '../api/utils/route-naming.js';
 
 export interface CustomRouteMountEntry {
   basePath: string;
   importName: string;
+  /** Import path relative to generated/app.ts */
   importPath: string;
+  /** Import path relative to generated/routes/*.ts */
+  routeImportPath: string;
+}
+
+export interface PartitionedCustomRoutes {
+  overlays: Map<string, CustomRouteMountEntry>;
+  standalone: CustomRouteMountEntry[];
 }
 
 function isRouteFile(filename: string): boolean {
@@ -48,6 +57,7 @@ function scanDirectory(
       basePath,
       importName: toRouteImportName(basePath),
       importPath: `../src/routes/${basePath}.js`,
+      routeImportPath: `../../src/routes/${basePath}.js`,
     });
   }
 }
@@ -60,4 +70,27 @@ export function discoverCustomRoutes(customRoutesDir: string): CustomRouteMountE
   const entries: CustomRouteMountEntry[] = [];
   scanDirectory(customRoutesDir, '', entries);
   return entries.sort((left, right) => left.basePath.localeCompare(right.basePath));
+}
+
+export function partitionCustomRoutes(
+  entries: CustomRouteMountEntry[],
+  schema: Schema,
+): PartitionedCustomRoutes {
+  const modelBasePaths = new Map(
+    schema.models.map((model) => [toRouteBasePath(model.name), model.name]),
+  );
+
+  const overlays = new Map<string, CustomRouteMountEntry>();
+  const standalone: CustomRouteMountEntry[] = [];
+
+  for (const entry of entries) {
+    const modelName = modelBasePaths.get(entry.basePath);
+    if (modelName) {
+      overlays.set(modelName, entry);
+    } else {
+      standalone.push(entry);
+    }
+  }
+
+  return { overlays, standalone };
 }

@@ -13,7 +13,8 @@ Most backend frameworks force you to scatter your truth across migrations, ORM m
 - **Automatic SQL Generation** — idempotent DDL with snake_case naming conventions
 - **Type-safe Database Client** — Prisma-like query API over parameterized raw SQL (`pg` Pool, no ORM), with nested `include` eager-loading, `db.$transaction()` for atomic multi-model writes, and a parameterized `$queryRaw` / `$executeRaw` escape hatch
 - **Type-safe REST API** — Hono routes with generated Zod validation
-- **Custom routes** — Hand-written Hono routers in `src/routes/` auto-imported into the generated app
+- **Custom routes** — Hand-written Hono routers in `src/routes/`; same-path files overlay into generated model routers
+- **REST surface control** — `@rest(only|except|false)` chooses which CRUD handlers are generated
 - **Lifecycle hooks** — Before/after create, update, and delete with Express-style `next()` cancel semantics; scaffold via `hooks:add`
 - **Inline ACL** — Row-level and role-based access control via `@policy` directives, enforced at runtime in generated routes
 - **Validation Rules** — `@regex` and `@range` constraints that flow into generated Zod request validators (with custom error messages from the schema)

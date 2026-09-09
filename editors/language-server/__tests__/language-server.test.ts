@@ -58,7 +58,7 @@ describe('Schema DSL language server', () => {
   });
 
   it('catalog includes known decorators used in integration tests', () => {
-    for (const decorator of ['id', 'default', 'unique', 'regex', 'range', 'relation', 'policy', 'index', 'trigger']) {
+    for (const decorator of ['id', 'default', 'unique', 'regex', 'range', 'relation', 'policy', 'rest', 'index', 'trigger']) {
       assert.ok(KNOWN_DECORATORS.includes(decorator as (typeof KNOWN_DECORATORS)[number]));
     }
   });

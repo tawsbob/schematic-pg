@@ -98,7 +98,7 @@ On start, the generated app also logs `API docs at http://localhost:${PORT}/docs
 
 ## Custom routes
 
-Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks, or other app-specific handlers, add hand-written Hono routers under `src/routes/`. Running `schematic-pg generate:api` (or `schematic-pg dev`) discovers these files and wires them into `generated/app.ts` — same global middleware (`db`, `auth`, error handling) as schema-generated routes.
+Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks, or other app-specific handlers, add hand-written Hono routers under `src/routes/`. Running `schematic-pg generate:api` (or `schematic-pg dev`) discovers these files and wires them into the generated app — same global middleware (`db`, `auth`, error handling) as schema-generated routes.
 
 **Convention**
 
@@ -113,8 +113,13 @@ Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks
 
 | File | Mounted at |
 |------|------------|
-| `src/routes/health.ts` | `/health` |
-| `src/routes/webhooks/stripe.ts` | `/webhooks/stripe` |
+| `src/routes/health.ts` | `/health` (standalone) |
+| `src/routes/webhooks/stripe.ts` | `/webhooks/stripe` (standalone) |
+| `src/routes/users.ts` | Merged into `generated/routes/users.ts` (same-path overlay) |
+
+**Same-path overlay** — When a custom file's base path matches a model's generated route (`users.ts` → `/users`), the generator imports it into the model router and mounts it with `router.route('/', …)` **after** the remaining generated handlers. Disabled `@rest` methods stay absent from the generated half; custom methods fill the gaps. Standalone custom routes (paths that do not match a model) still mount from `generated/app.ts`. Nested files like `users/me.ts` stay standalone (`/users/me`).
+
+OpenAPI documents schema-generated operations only — hand-written overlay handlers are not reflected in `/openapi.json` in v1.
 
 **Example** — `src/routes/health.ts`:
 
@@ -137,7 +142,7 @@ import healthRouter from '../src/routes/health.js';
 app.route('/health', healthRouter);
 ```
 
-Custom routes are mounted **after** all schema-generated routers. Handlers can use the same request context as generated routes:
+Custom routes that do not match a model path are mounted **after** all schema-generated routers. Handlers can use the same request context as generated routes:
 
 ```typescript
 router.get('/me', async (c) => {
@@ -249,7 +254,26 @@ configureHooks(HOOKS);
 
 ## Endpoints
 
-Every router exposes the same CRUD shape. Models with `@policy` attributes enforce role checks and row-level filters on every handler; models without policies behave as open endpoints. See [Access control](access-control.md) for policy syntax and enforcement.
+By default every model gets the full CRUD shape below. Control which handlers are generated with `@rest` on the model:
+
+```ts
+@rest(except: [create, update, delete])   // keep list + get
+@rest(only: [list, get])                  // allow-list
+@rest(false)                              // no HTTP for this model
+@rest                                     // same as @rest(false)
+```
+
+| DSL operation | HTTP | Path |
+|---------------|------|------|
+| `list` | `GET` | `/` |
+| `get` | `GET` | `/{pk}` |
+| `create` | `POST` | `/` |
+| `update` | `PUT` | `/{pk}` |
+| `delete` | `DELETE` | `/{pk}` |
+
+Disabled operations are omitted from generated routers and from OpenAPI. Missing methods return `404`, not `403`. `@rest` does not affect the DB client, SQL, or Zod schemas.
+
+Models with `@policy` attributes enforce role checks and row-level filters on every **generated** handler; models without policies behave as open endpoints. See [Access control](access-control.md) for policy syntax and enforcement.
 
 | Method | Path | Handler | Validation |
 |--------|------|---------|------------|
@@ -350,33 +374,27 @@ Fields with `@default` or optional (`?`) types are optional on create. Update sc
 # Health check (custom route from src/routes/health.ts)
 curl http://localhost:3000/health
 
-# List users with filters
-curl "http://localhost:3000/users?role=USER&limit=10"
-
-# List users
-curl http://localhost:3000/users
+# List users with filters (requires auth in sample schema)
+curl "http://localhost:3000/users?role=USER&limit=10" -H "Authorization: Bearer $TOKEN"
 
 # Get one user
-curl http://localhost:3000/users/{uuid}
+curl http://localhost:3000/users/{uuid} -H "Authorization: Bearer $TOKEN"
 
-# Create a user
-curl -X POST http://localhost:3000/users \
+# Sample User disables create/update/delete via @rest — use auth register instead
+curl -X POST http://localhost:3000/auth/register \
   -H 'Content-Type: application/json' \
-  -d '{"email":"alice@example.com","name":"Alice","balance":0}'
+  -d '{"email":"alice@example.com","password":"secret-password"}'
 
-# Validation failure (schema message returned)
-curl -X POST http://localhost:3000/users \
+# Create a product (full CRUD)
+curl -X POST http://localhost:3000/products \
   -H 'Content-Type: application/json' \
-  -d '{"email":"not-an-email","name":"Alice","balance":0}'
-# → {"error":"Invalid email address"}
+  -d '{"name":"Book","description":"…","price":"10.00","stock":1,"category":"books","tags":["a"]}'
 
-# Update a user
-curl -X PUT http://localhost:3000/users/{uuid} \
+# Update / delete a product
+curl -X PUT http://localhost:3000/products/{uuid} \
   -H 'Content-Type: application/json' \
-  -d '{"name":"Alice Updated"}'
-
-# Delete a user
-curl -X DELETE http://localhost:3000/users/{uuid}
+  -d '{"stock":2}'
+curl -X DELETE http://localhost:3000/products/{uuid}
 
 # Composite primary key
 curl http://localhost:3000/product-orders/{orderId}/{productId}
@@ -389,7 +407,7 @@ curl http://localhost:3000/product-orders/{orderId}/{productId}
 | `400` | Zod validation failure or foreign key violation |
 | `401` | Malformed or invalid JWT (when `Authorization: Bearer` is present) |
 | `403` | Role not allowed for the requested operation (`@policy` denial) |
-| `404` | Record not found on `GET`, or delete/update returned no rows |
+| `404` | Record not found on `GET`, delete/update returned no rows, or HTTP method disabled by `@rest` |
 | `409` | Unique constraint violation |
 | `500` | Other database errors |
 

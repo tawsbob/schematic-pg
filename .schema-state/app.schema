@@ -25,7 +25,8 @@ models {
     profile:    Profile?
     orders:     Order[]
 
-    @policy(role: USER, allow: [select, insert, update], where: "id = {{auth.user.id}}")
+    @rest(except: [create, update, delete])
+    @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
     @policy(role: ADMIN, allow: all)
 
     @@index(fields: [role, isActive])
