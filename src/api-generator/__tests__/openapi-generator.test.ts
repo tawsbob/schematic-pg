@@ -45,7 +45,9 @@ describe('OpenApiGenerator', () => {
       .schemas;
     assert.ok(schemas.UserResponse?.properties);
     assert.equal(schemas.UserResponse.properties?.passwordHash, undefined);
-    assert.ok(schemas.UserCreate?.properties?.passwordHash);
+    assert.equal(schemas.UserCreate, undefined);
+    assert.equal(schemas.UserUpdate, undefined);
+    assert.ok(schemas.ProductCreate?.properties);
     assert.ok(schemas.Error?.properties?.error);
 
     const createResponses = (
@@ -76,6 +78,28 @@ describe('OpenApiGenerator', () => {
     assert.equal(securitySchemes.bearerAuth?.scheme, 'bearer');
 
     assert.equal(paths['/auth/register'], undefined);
+  });
+
+  it('omits OpenAPI schemas and paths for @rest(false) models', () => {
+    const hidden = parse(`
+extensions {}
+enums {}
+models {
+  model Hidden {
+    id: UUID @id
+    name: TEXT
+    @rest(false)
+  }
+}
+`);
+    const document = new OpenApiGenerator(hidden).generate();
+    const paths = document.paths as Record<string, unknown>;
+    const schemas = (document.components as { schemas: Record<string, unknown> }).schemas;
+
+    assert.equal(paths['/hiddens'], undefined);
+    assert.equal(schemas.HiddenResponse, undefined);
+    assert.equal(schemas.HiddenCreate, undefined);
+    assert.equal(schemas.HiddenUpdate, undefined);
   });
 
   it('includes known auth paths when includeAuthPaths is true', () => {

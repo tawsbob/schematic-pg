@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { toRouteImportName } from '../api/utils/route-naming.js';
+import { toRouteBasePath, toRouteImportName } from '../api/utils/route-naming.js';
 function isRouteFile(filename) {
     return (filename.endsWith('.ts') &&
         !filename.endsWith('.test.ts') &&
@@ -29,6 +29,7 @@ function scanDirectory(customRoutesDir, relativeDir, entries) {
             basePath,
             importName: toRouteImportName(basePath),
             importPath: `../src/routes/${basePath}.js`,
+            routeImportPath: `../../src/routes/${basePath}.js`,
         });
     }
 }
@@ -39,4 +40,19 @@ export function discoverCustomRoutes(customRoutesDir) {
     const entries = [];
     scanDirectory(customRoutesDir, '', entries);
     return entries.sort((left, right) => left.basePath.localeCompare(right.basePath));
+}
+export function partitionCustomRoutes(entries, schema) {
+    const modelBasePaths = new Map(schema.models.map((model) => [toRouteBasePath(model.name), model.name]));
+    const overlays = new Map();
+    const standalone = [];
+    for (const entry of entries) {
+        const modelName = modelBasePaths.get(entry.basePath);
+        if (modelName) {
+            overlays.set(modelName, entry);
+        }
+        else {
+            standalone.push(entry);
+        }
+    }
+    return { overlays, standalone };
 }

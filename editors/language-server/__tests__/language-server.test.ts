@@ -55,6 +55,10 @@ describe('Schema DSL language server', () => {
     const labels = completions.map((item) => item.label);
     assert.ok(labels.includes('@id'));
     assert.ok(labels.includes('@default'));
+    assert.ok(labels.includes('@rest'));
+    assert.ok(labels.includes('@policy'));
+    const rest = completions.find((item) => item.label === '@rest');
+    assert.equal(rest?.detail, 'model attribute');
   });
 
   it('catalog includes known decorators used in integration tests', () => {

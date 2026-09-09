@@ -21,7 +21,8 @@ models {
     passwordHash: VARCHAR(255)? @omit @unfilterable
     createdAt:    TIMESTAMP    @default(now())
 
-    @policy(role: USER, allow: [select, update], where: "id = {{auth.user.id}}")
+    @rest(except: [create, update, delete])
+    @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
     @policy(role: ADMIN, allow: all)
   }
 }

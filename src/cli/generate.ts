@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse } from '../schema-dsl/index.js';
 import { generateApiFiles } from '../api-generator/index.js';
@@ -50,11 +50,25 @@ export async function generateApi(schemaPath?: string): Promise<void> {
   await writeFile(path.join(outputDir, 'openapi.ts'), files.openapiTs, 'utf8');
   await writeFile(path.join(outputDir, 'openapi.json'), files.openapiJson, 'utf8');
 
-  for (const [fileName, content] of files.routes) {
+  await syncGeneratedRouteFiles(routesDir, files.routes);
+
+  console.log(`Generated API files in ${outputDir}`);
+}
+
+export async function syncGeneratedRouteFiles(
+  routesDir: string,
+  routes: Map<string, string>,
+): Promise<void> {
+  for (const [fileName, content] of routes) {
     await writeFile(path.join(routesDir, fileName), content, 'utf8');
   }
 
-  console.log(`Generated API files in ${outputDir}`);
+  const existing = await readdir(routesDir);
+  await Promise.all(
+    existing
+      .filter((fileName) => fileName.endsWith('.ts') && !routes.has(fileName))
+      .map((fileName) => unlink(path.join(routesDir, fileName))),
+  );
 }
 
 export async function generateAll(schemaPath?: string): Promise<void> {

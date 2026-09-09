@@ -4,74 +4,154 @@ import { getClientExportName } from '../db/type-generator.js';
 import { toRouteBasePath, toRouteFileName, toRouteImportName } from '../api/utils/route-naming.js';
 import { toModelConstantPrefix } from './utils/api-fields.js';
 import { hasPolicies } from './utils/policy.js';
+import { isRestEnabled, normalizeRest } from './utils/rest.js';
 export class RouteGenerator {
     model;
     schema;
     modelsWithHooks;
-    constructor(model, schema, modelsWithHooks = new Set()) {
+    overlays;
+    constructor(model, schema, options = {}) {
         this.model = model;
         this.schema = schema;
-        this.modelsWithHooks = modelsWithHooks;
+        this.modelsWithHooks = options.modelsWithHooks ?? new Set();
+        this.overlays = options.overlays ?? new Map();
     }
     generate() {
-        const clientKey = getClientExportName(this.model.name);
+        const rest = normalizeRest(this.model);
+        const overlay = this.overlays.get(this.model.name);
+        const operations = rest.operations;
+        if (operations.size === 0 && !overlay) {
+            return null;
+        }
+        if (operations.size === 0 && overlay) {
+            return this.generateOverlayOnly(overlay);
+        }
+        const needsPk = operations.has('get') || operations.has('update') || operations.has('delete');
         const primaryKey = getPrimaryKey(this.model);
-        if (!primaryKey) {
+        if (needsPk && !primaryKey) {
             throw new Error(`Model ${this.model.name} has no primary key`);
         }
-        const pathParams = primaryKey.fields.map((field) => `:${field}`).join('/');
-        const whereFromParams = primaryKey.fields.map((field) => `${field}: params.${field}`).join(', ');
+        const clientKey = getClientExportName(this.model.name);
+        const pathParams = primaryKey?.fields.map((field) => `:${field}`).join('/') ?? '';
+        const whereFromParams = primaryKey?.fields.map((field) => `${field}: params.${field}`).join(', ') ?? '';
         const paramSchemaName = `${this.model.name}ParamSchema`;
         const listQuerySchemaName = `${this.model.name}ListQuerySchema`;
         const getQuerySchemaName = `${this.model.name}GetQuerySchema`;
         const modelHasPolicies = hasPolicies(this.model);
-        const modelHasHooks = this.modelsWithHooks.has(this.model.name);
+        const hasWriteOps = operations.has('create') || operations.has('update') || operations.has('delete');
+        const modelHasHooks = hasWriteOps && this.modelsWithHooks.has(this.model.name);
         const constantPrefix = toModelConstantPrefix(this.model.name);
+        const needsValidateJson = operations.has('create') || operations.has('update');
+        const needsValidateParam = operations.has('get') || operations.has('update') || operations.has('delete');
+        const needsValidateQuery = operations.has('list') || operations.has('get');
+        const needsNotFound = operations.has('get');
+        const needsBuildReadQuery = operations.has('list');
+        const needsParseInclude = operations.has('get');
+        const needsOmitFields = hasWriteOps;
+        const needsShapeResponse = operations.has('list') || operations.has('get');
+        const validateImports = [];
+        if (needsValidateJson)
+            validateImports.push('validateJson');
+        if (needsValidateParam)
+            validateImports.push('validateParam');
+        if (needsValidateQuery)
+            validateImports.push('validateQuery');
+        const schemaImports = [];
+        if (operations.has('create'))
+            schemaImports.push(`  ${this.model.name}CreateSchema,`);
+        if (operations.has('update'))
+            schemaImports.push(`  ${this.model.name}UpdateSchema,`);
+        if (needsValidateParam)
+            schemaImports.push(`  ${paramSchemaName},`);
+        if (operations.has('list'))
+            schemaImports.push(`  ${listQuerySchemaName},`);
+        if (operations.has('get'))
+            schemaImports.push(`  ${getQuerySchemaName},`);
+        if (operations.has('list')) {
+            schemaImports.push(`  ${constantPrefix}_LIST_QUERY_FIELDS,`);
+            schemaImports.push(`  ${constantPrefix}_SORTABLE_FIELDS,`);
+        }
+        if (operations.has('list') || operations.has('get')) {
+            schemaImports.push(`  ${constantPrefix}_INCLUDABLE_RELATIONS,`);
+        }
+        if (needsOmitFields)
+            schemaImports.push(`  ${constantPrefix}_OMIT_FIELDS,`);
+        if (needsShapeResponse) {
+            schemaImports.push(`  API_OMIT_FIELDS_BY_MODEL,`);
+            schemaImports.push(`  API_RELATION_TARGETS,`);
+        }
+        const handlerBlocks = [];
+        if (operations.has('list')) {
+            handlerBlocks.push(this.generateListRoute(clientKey, modelHasPolicies, listQuerySchemaName, constantPrefix));
+        }
+        if (operations.has('get')) {
+            handlerBlocks.push(this.generateGetRoute(clientKey, pathParams, paramSchemaName, getQuerySchemaName, whereFromParams, modelHasPolicies, constantPrefix));
+        }
+        if (operations.has('create')) {
+            handlerBlocks.push(this.generateCreateRoute(clientKey, modelHasPolicies, modelHasHooks, constantPrefix));
+        }
+        if (operations.has('update')) {
+            handlerBlocks.push(this.generateUpdateRoute(clientKey, pathParams, paramSchemaName, whereFromParams, modelHasPolicies, modelHasHooks, constantPrefix));
+        }
+        if (operations.has('delete')) {
+            handlerBlocks.push(this.generateDeleteRoute(clientKey, pathParams, paramSchemaName, whereFromParams, modelHasPolicies, modelHasHooks, constantPrefix));
+        }
+        const lines = [
+            '// Auto-generated by RouteGenerator. Do not edit manually.',
+            "import { Hono } from 'hono';",
+            `import type { AppEnv } from '${PACKAGE_NAME}/api/types';`,
+        ];
+        if (validateImports.length > 0) {
+            lines.push(`import { ${validateImports.join(', ')} } from '${PACKAGE_NAME}/api/middleware/validate';`);
+        }
+        if (needsNotFound) {
+            lines.push(`import { notFoundResponse } from '${PACKAGE_NAME}/api/middleware/errors';`);
+        }
+        if (needsBuildReadQuery) {
+            lines.push(`import { buildReadQuery } from '${PACKAGE_NAME}/api/utils/read-query';`);
+        }
+        if (needsParseInclude) {
+            lines.push(`import { parseIncludeQuery } from '${PACKAGE_NAME}/api/utils/include-query';`);
+        }
+        if (needsOmitFields) {
+            lines.push(`import { omitFields } from '${PACKAGE_NAME}/api/utils/omit-fields';`);
+        }
+        if (needsShapeResponse) {
+            lines.push(`import { shapeResponse, shapeResponseMany } from '${PACKAGE_NAME}/api/utils/response-shape';`);
+        }
+        if (modelHasPolicies) {
+            lines.push(`import { assertPolicy, mergeWhere, resolvePolicyWhere } from '${PACKAGE_NAME}/api/auth/policy';`);
+        }
+        if (modelHasHooks) {
+            lines.push(`import { cancelledResponse, createHookContext, runAfterHooks, runBeforeHooks } from '${PACKAGE_NAME}/api/hooks';`);
+        }
+        if (schemaImports.length > 0) {
+            lines.push('import {');
+            lines.push(...schemaImports);
+            lines.push(`} from '../schemas/validation.js';`);
+        }
+        if (overlay) {
+            lines.push(`import ${overlay.importName}Overlay from '${overlay.routeImportPath}';`);
+        }
+        lines.push('', 'const router = new Hono<AppEnv>();', '');
+        for (const block of handlerBlocks) {
+            lines.push(...block, '');
+        }
+        if (overlay) {
+            lines.push(`router.route('/', ${overlay.importName}Overlay);`, '');
+        }
+        lines.push('export default router;', '');
+        return lines.join('\n');
+    }
+    generateOverlayOnly(overlay) {
         return [
             '// Auto-generated by RouteGenerator. Do not edit manually.',
             "import { Hono } from 'hono';",
             `import type { AppEnv } from '${PACKAGE_NAME}/api/types';`,
-            `import { validateJson, validateParam, validateQuery } from '${PACKAGE_NAME}/api/middleware/validate';`,
-            `import { notFoundResponse } from '${PACKAGE_NAME}/api/middleware/errors';`,
-            `import { buildReadQuery } from '${PACKAGE_NAME}/api/utils/read-query';`,
-            `import { parseIncludeQuery } from '${PACKAGE_NAME}/api/utils/include-query';`,
-            `import { omitFields } from '${PACKAGE_NAME}/api/utils/omit-fields';`,
-            `import { shapeResponse, shapeResponseMany } from '${PACKAGE_NAME}/api/utils/response-shape';`,
-            ...(modelHasPolicies
-                ? [
-                    `import { assertPolicy, mergeWhere, resolvePolicyWhere } from '${PACKAGE_NAME}/api/auth/policy';`,
-                ]
-                : []),
-            ...(modelHasHooks
-                ? [
-                    `import { cancelledResponse, createHookContext, runAfterHooks, runBeforeHooks } from '${PACKAGE_NAME}/api/hooks';`,
-                ]
-                : []),
-            `import {`,
-            `  ${this.model.name}CreateSchema,`,
-            `  ${this.model.name}UpdateSchema,`,
-            `  ${paramSchemaName},`,
-            `  ${listQuerySchemaName},`,
-            `  ${getQuerySchemaName},`,
-            `  ${constantPrefix}_LIST_QUERY_FIELDS,`,
-            `  ${constantPrefix}_INCLUDABLE_RELATIONS,`,
-            `  ${constantPrefix}_OMIT_FIELDS,`,
-            `  ${constantPrefix}_SORTABLE_FIELDS,`,
-            `  API_OMIT_FIELDS_BY_MODEL,`,
-            `  API_RELATION_TARGETS,`,
-            `} from '../schemas/validation.js';`,
+            `import ${overlay.importName}Overlay from '${overlay.routeImportPath}';`,
             '',
             'const router = new Hono<AppEnv>();',
-            '',
-            ...this.generateListRoute(clientKey, modelHasPolicies, listQuerySchemaName, constantPrefix),
-            '',
-            ...this.generateGetRoute(clientKey, pathParams, paramSchemaName, getQuerySchemaName, whereFromParams, modelHasPolicies, constantPrefix),
-            '',
-            ...this.generateCreateRoute(clientKey, modelHasPolicies, modelHasHooks, constantPrefix),
-            '',
-            ...this.generateUpdateRoute(clientKey, pathParams, paramSchemaName, whereFromParams, modelHasPolicies, modelHasHooks, constantPrefix),
-            '',
-            ...this.generateDeleteRoute(clientKey, pathParams, paramSchemaName, whereFromParams, modelHasPolicies, modelHasHooks, constantPrefix),
+            `router.route('/', ${overlay.importName}Overlay);`,
             '',
             'export default router;',
             '',
@@ -264,16 +344,36 @@ export class RouteGenerator {
         return toRouteBasePath(this.model.name);
     }
 }
-export function generateRouteFiles(schema, modelsWithHooks = new Set()) {
+export function generateRouteFiles(schema, modelsWithHooksOrOptions = new Set()) {
+    const options = normalizeRouteGeneratorOptions(modelsWithHooksOrOptions);
     const files = new Map();
     for (const model of schema.models) {
-        const generator = new RouteGenerator(model, schema, modelsWithHooks);
-        files.set(generator.getRouteFileName(), generator.generate());
+        const generator = new RouteGenerator(model, schema, options);
+        const content = generator.generate();
+        if (content !== null) {
+            files.set(generator.getRouteFileName(), content);
+        }
     }
     return files;
 }
-export function getRouteMountEntries(schema) {
-    return schema.models.map((model) => {
+function normalizeRouteGeneratorOptions(value) {
+    if (value instanceof Set) {
+        return { modelsWithHooks: value };
+    }
+    if (value &&
+        typeof value === 'object' &&
+        'has' in value &&
+        typeof value.has === 'function' &&
+        !('overlays' in value) &&
+        !('modelsWithHooks' in value)) {
+        return { modelsWithHooks: value };
+    }
+    return value;
+}
+export function getRouteMountEntries(schema, overlays = new Map()) {
+    return schema.models
+        .filter((model) => isRestEnabled(model) || overlays.has(model.name))
+        .map((model) => {
         const basePath = toRouteBasePath(model.name);
         const fileName = toRouteFileName(model.name);
         const importName = toRouteImportName(basePath);

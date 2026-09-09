@@ -18,6 +18,15 @@ export interface NormalizedRest {
 }
 
 export function normalizeRest(model: Model): NormalizedRest {
+  const fieldRest = model.fields.find((field) =>
+    field.attributes.some((attribute) => attribute.name === 'rest'),
+  );
+  if (fieldRest) {
+    throw new Error(
+      `@rest on model ${model.name} must be a model attribute, not a field attribute on "${fieldRest.name}"`,
+    );
+  }
+
   const restAttributes = model.attributes.filter((attribute) => attribute.name === 'rest');
 
   if (restAttributes.length === 0) {

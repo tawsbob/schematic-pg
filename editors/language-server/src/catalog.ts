@@ -29,12 +29,12 @@ export const FIELD_ATTRIBUTES = [
   'regex',
   'range',
   'relation',
-  'policy',
-  'rest',
   'unfilterable',
   'unincludeable',
   'omit',
 ] as const;
+
+export const MODEL_ATTRIBUTES = ['policy', 'rest'] as const;
 
 export const MODEL_DIRECTIVES = ['index', 'trigger', 'id'] as const;
 
@@ -64,4 +64,8 @@ export const INDEX_KEYS = ['fields', 'where', 'name', 'type', 'unique'] as const
 
 export const DEFAULT_FUNCTIONS = ['gen_random_uuid', 'now'] as const;
 
-export const KNOWN_DECORATORS = [...FIELD_ATTRIBUTES, ...MODEL_DIRECTIVES] as const;
+export const KNOWN_DECORATORS = [
+  ...FIELD_ATTRIBUTES,
+  ...MODEL_ATTRIBUTES,
+  ...MODEL_DIRECTIVES,
+] as const;

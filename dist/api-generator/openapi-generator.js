@@ -2,6 +2,7 @@ import { toRouteBasePath } from '../api/utils/route-naming.js';
 import { fieldHasAttribute, getModelNames, getPrimaryKey, getStoredFields, } from '../sql-generator/utils/ast-helpers.js';
 import { getFilterableFields, getIncludableRelationFields, getOmittedFields, getSortableFieldNames, isStoredScalarField, } from './utils/api-fields.js';
 import { buildFilterFieldMeta, queryParamKey } from './utils/filter-operators.js';
+import { hasRestOperation, isRestEnabled } from './utils/rest.js';
 const ERROR_REF = { $ref: '#/components/schemas/Error' };
 const ERROR_EXAMPLE_VALIDATION = 'Validation failed';
 const ERROR_EXAMPLE_FORBIDDEN = 'Role "USER" is not allowed to list this resource';
@@ -47,6 +48,9 @@ export class OpenApiGenerator {
         };
         const paths = {};
         for (const model of this.schema.models) {
+            if (!isRestEnabled(model)) {
+                continue;
+            }
             Object.assign(schemas, this.buildModelComponentSchemas(model));
             Object.assign(paths, this.buildModelPaths(model));
         }
@@ -127,22 +131,27 @@ export class OpenApiGenerator {
                 nullable: Boolean(field.type.optional),
             });
         }
-        return {
+        const schemas = {
             [`${model.name}Response`]: {
                 type: 'object',
                 properties: responseProps,
                 ...(responseRequired.length > 0 ? { required: responseRequired } : {}),
             },
-            [`${model.name}Create`]: {
+        };
+        if (hasRestOperation(model, 'create')) {
+            schemas[`${model.name}Create`] = {
                 type: 'object',
                 properties: createProps,
                 ...(createRequired.length > 0 ? { required: createRequired } : {}),
-            },
-            [`${model.name}Update`]: {
+            };
+        }
+        if (hasRestOperation(model, 'update')) {
+            schemas[`${model.name}Update`] = {
                 type: 'object',
                 properties: updateProps,
-            },
-        };
+            };
+        }
+        return schemas;
     }
     buildModelPaths(model) {
         const basePath = toRouteBasePath(model.name);
@@ -157,52 +166,58 @@ export class OpenApiGenerator {
         const createRef = { $ref: `#/components/schemas/${model.name}Create` };
         const updateRef = { $ref: `#/components/schemas/${model.name}Update` };
         const tag = model.name;
-        const paths = {
-            [collectionPath]: {
-                get: {
-                    tags: [tag],
-                    summary: `List ${model.name}`,
-                    operationId: `list${model.name}`,
-                    security: OPTIONAL_BEARER_SECURITY,
-                    parameters: this.buildListQueryParameters(model),
-                    responses: {
-                        '200': {
-                            description: `List of ${model.name}`,
-                            content: jsonContent({ type: 'array', items: responseRef }),
-                        },
-                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
-                        '401': errorResponse('Unauthorized'),
-                        '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
-                        '500': errorResponse('Internal server error'),
+        const paths = {};
+        const collectionOps = {};
+        if (hasRestOperation(model, 'list')) {
+            collectionOps.get = {
+                tags: [tag],
+                summary: `List ${model.name}`,
+                operationId: `list${model.name}`,
+                security: OPTIONAL_BEARER_SECURITY,
+                parameters: this.buildListQueryParameters(model),
+                responses: {
+                    '200': {
+                        description: `List of ${model.name}`,
+                        content: jsonContent({ type: 'array', items: responseRef }),
                     },
+                    '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
+                    '401': errorResponse('Unauthorized'),
+                    '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
+                    '500': errorResponse('Internal server error'),
                 },
-                post: {
-                    tags: [tag],
-                    summary: `Create ${model.name}`,
-                    operationId: `create${model.name}`,
-                    security: OPTIONAL_BEARER_SECURITY,
-                    requestBody: {
-                        required: true,
-                        content: jsonContent(createRef),
-                    },
-                    responses: {
-                        '201': {
-                            description: `Created ${model.name}`,
-                            content: jsonContent(responseRef),
-                        },
-                        '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
-                        '401': errorResponse('Unauthorized'),
-                        '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
-                        '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
-                        '500': errorResponse('Internal server error'),
-                    },
+            };
+        }
+        if (hasRestOperation(model, 'create')) {
+            collectionOps.post = {
+                tags: [tag],
+                summary: `Create ${model.name}`,
+                operationId: `create${model.name}`,
+                security: OPTIONAL_BEARER_SECURITY,
+                requestBody: {
+                    required: true,
+                    content: jsonContent(createRef),
                 },
-            },
-        };
+                responses: {
+                    '201': {
+                        description: `Created ${model.name}`,
+                        content: jsonContent(responseRef),
+                    },
+                    '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
+                    '401': errorResponse('Unauthorized'),
+                    '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
+                    '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
+                    '500': errorResponse('Internal server error'),
+                },
+            };
+        }
+        if (Object.keys(collectionOps).length > 0) {
+            paths[collectionPath] = collectionOps;
+        }
         if (pkFields.length > 0) {
             const pathParams = this.buildPathParameters(pkFields, model);
-            paths[itemPath] = {
-                get: {
+            const itemOps = {};
+            if (hasRestOperation(model, 'get')) {
+                itemOps.get = {
                     tags: [tag],
                     summary: `Get ${model.name}`,
                     operationId: `get${model.name}`,
@@ -219,8 +234,10 @@ export class OpenApiGenerator {
                         '404': errorResponse('Not found'),
                         '500': errorResponse('Internal server error'),
                     },
-                },
-                put: {
+                };
+            }
+            if (hasRestOperation(model, 'update')) {
+                itemOps.put = {
                     tags: [tag],
                     summary: `Update ${model.name}`,
                     operationId: `update${model.name}`,
@@ -242,8 +259,10 @@ export class OpenApiGenerator {
                         '409': errorResponse('Conflict', ERROR_EXAMPLE_CONFLICT),
                         '500': errorResponse('Internal server error'),
                     },
-                },
-                delete: {
+                };
+            }
+            if (hasRestOperation(model, 'delete')) {
+                itemOps.delete = {
                     tags: [tag],
                     summary: `Delete ${model.name}`,
                     operationId: `delete${model.name}`,
@@ -260,8 +279,11 @@ export class OpenApiGenerator {
                         '404': errorResponse('Not found'),
                         '500': errorResponse('Internal server error'),
                     },
-                },
-            };
+                };
+            }
+            if (Object.keys(itemOps).length > 0) {
+                paths[itemPath] = itemOps;
+            }
         }
         return paths;
     }

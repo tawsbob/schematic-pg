@@ -76,10 +76,11 @@ export class OpenApiGenerator {
     const paths: Record<string, OpenApiPathItem> = {};
 
     for (const model of this.schema.models) {
-      Object.assign(schemas, this.buildModelComponentSchemas(model));
-      if (isRestEnabled(model)) {
-        Object.assign(paths, this.buildModelPaths(model));
+      if (!isRestEnabled(model)) {
+        continue;
       }
+      Object.assign(schemas, this.buildModelComponentSchemas(model));
+      Object.assign(paths, this.buildModelPaths(model));
     }
 
     if (this.options.includeAuthPaths) {
@@ -170,22 +171,30 @@ export class OpenApiGenerator {
       });
     }
 
-    return {
+    const schemas: Record<string, JsonSchema> = {
       [`${model.name}Response`]: {
         type: 'object',
         properties: responseProps,
         ...(responseRequired.length > 0 ? { required: responseRequired } : {}),
       },
-      [`${model.name}Create`]: {
+    };
+
+    if (hasRestOperation(model, 'create')) {
+      schemas[`${model.name}Create`] = {
         type: 'object',
         properties: createProps,
         ...(createRequired.length > 0 ? { required: createRequired } : {}),
-      },
-      [`${model.name}Update`]: {
+      };
+    }
+
+    if (hasRestOperation(model, 'update')) {
+      schemas[`${model.name}Update`] = {
         type: 'object',
         properties: updateProps,
-      },
-    };
+      };
+    }
+
+    return schemas;
   }
 
   private buildModelPaths(model: Model): Record<string, OpenApiPathItem> {

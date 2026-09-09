@@ -3,6 +3,7 @@ import { CompletionItem, CompletionItemKind, Position } from 'vscode-languageser
 import {
   DEFAULT_FUNCTIONS,
   FIELD_ATTRIBUTES,
+  MODEL_ATTRIBUTES,
   INDEX_KEYS,
   INDEX_TYPES,
   MODEL_DIRECTIVES,
@@ -47,9 +48,14 @@ export function getCompletions(
   }
 
   if (/(?<![@])@[\w]*$/.test(prefix)) {
-    return FIELD_ATTRIBUTES.map((name) =>
-      item(`@${name}`, CompletionItemKind.Property, 'field attribute'),
-    );
+    return [
+      ...FIELD_ATTRIBUTES.map((name) =>
+        item(`@${name}`, CompletionItemKind.Property, 'field attribute'),
+      ),
+      ...MODEL_ATTRIBUTES.map((name) =>
+        item(`@${name}`, CompletionItemKind.Property, 'model attribute'),
+      ),
+    ];
   }
 
   if (/@relation\s*\([^)]*$/.test(prefix)) {

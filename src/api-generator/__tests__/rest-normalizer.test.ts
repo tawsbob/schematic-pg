@@ -102,4 +102,15 @@ describe('normalizeRest', () => {
 
     assert.throws(() => normalizeRest(model), /Unknown @rest operation "upsert"/);
   });
+
+  it('rejects @rest attached to a field', () => {
+    const model = parseModelBody(`
+      id: UUID @id @rest(except: [create, update, delete])
+    `);
+
+    assert.throws(
+      () => normalizeRest(model),
+      /must be a model attribute, not a field attribute on "id"/,
+    );
+  });
 });
