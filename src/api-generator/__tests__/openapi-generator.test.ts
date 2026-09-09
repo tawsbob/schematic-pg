@@ -136,7 +136,7 @@ describe('OpenAPI generateApiFiles integration', () => {
 });
 
 describe('AppGenerator OpenAPI mount', () => {
-  it('mounts docs routes before middleware', () => {
+  it('mounts CORS before docs, and docs before logger', () => {
     const output = generateAppFile(schema, { customRoutesDir: missingCustomRoutesDir });
 
     assert.match(output, /import \{ openApiDocument \} from '\.\/openapi\.js'/);
@@ -144,8 +144,10 @@ describe('AppGenerator OpenAPI mount', () => {
     assert.match(output, /mountApiDocs\(app, openApiDocument\)/);
     assert.match(output, /API docs at http:\/\/localhost:\$\{port\}\/docs/);
 
+    const corsIndex = output.indexOf('app.use(createCorsMiddleware())');
     const mountIndex = output.indexOf('mountApiDocs(app, openApiDocument)');
     const loggerIndex = output.indexOf('app.use(logger())');
+    assert.ok(corsIndex >= 0 && corsIndex < mountIndex);
     assert.ok(mountIndex >= 0);
     assert.ok(loggerIndex > mountIndex);
   });

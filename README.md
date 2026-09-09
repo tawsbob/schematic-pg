@@ -425,7 +425,7 @@ The `init` command creates everything you need to get running:
 |------------------|---------|
 | `AGENTS.md` | Agent-oriented guide for working with schematic-pg in this project |
 | `app.schema` | Starter schema (one `User` model) — edit this |
-| `.env` | `DATABASE_URL`, JWT settings |
+| `.env` | `DATABASE_URL`, JWT settings, `CORS_ORIGIN` |
 | `docker-compose.yml` | Local PostgreSQL on `:5432` |
 | `Makefile` | `make dev` — docker compose (with health wait) + `schematic-pg dev` |
 | `tsconfig.json` | TypeScript config for `generated/` and `src/routes/` |
@@ -456,8 +456,11 @@ Generated code imports the runtime from the `schematic-pg` package (`schematic-p
 | `AUTH_ACCESS_TOKEN_TTL` | `1h` | Access token lifetime (`15m`, `1h`, or seconds) |
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
+| `CORS_ORIGIN` | — (disabled) | Allowed browser origins. Unset disables CORS. Use `*` for any origin, or a comma-separated list (`http://localhost:5173,https://app.example.com`) |
 
 Set these in `.env` before running `dev`, `start`, or `db:bootstrap`.
+
+Browser frontends on another origin need `CORS_ORIGIN`. The generated app reads it at runtime (no regenerate). Preflight `OPTIONS` is handled automatically; `Authorization` and `Content-Type` are allowed. See [CORS](docs/rest-api.md#cors).
 
 ---
 

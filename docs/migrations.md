@@ -147,7 +147,7 @@ Treat migrations as a first-class deploy artifact: generate them locally (or in 
 1. **Commit** `migrations/` and `.schema-state/` (do not gitignore them in app repos).
 2. Store per-environment secrets, for example:
    - `DATABASE_URL` — Postgres connection string for that environment
-   - Any app secrets your deploy needs (`JWT_SECRET`, `AUTH_PEPPER`, …)
+   - Any app secrets your deploy needs (`JWT_SECRET`, `AUTH_PEPPER`, `CORS_ORIGIN`, …)
 3. Use [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment) named `staging` and `production` so secrets and approval rules stay separate.
 4. Prefer a **dedicated migrate job** before (or as part of) deploy—not ad-hoc SQL on the server.
 

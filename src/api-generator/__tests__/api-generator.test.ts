@@ -268,9 +268,14 @@ describe('AppGenerator', () => {
     assert.match(output, /import \{ configureHooks \} from 'schematic-pg\/api\/hooks'/);
     assert.match(output, /configurePolicies\(POLICIES\)/);
     assert.match(output, /configureHooks\(HOOKS\)/);
+    assert.match(output, /import \{ createCorsMiddleware \} from 'schematic-pg\/api\/middleware\/cors'/);
+    assert.match(output, /app\.use\(createCorsMiddleware\(\)\)/);
     assert.match(output, /app\.use\(createDbMiddleware\(\{ pool: options\.pool, createDbClient \}\)\)/);
     assert.match(output, /export function createApp\(options: CreateAppOptions = \{\}\): Hono<AppEnv>/);
     assert.match(output, /app\.use\(createAuthMiddleware\(options\.authResolver \?\? createJwtResolver\(\)\)\)/);
+    const corsUseIndex = output.indexOf('app.use(createCorsMiddleware())');
+    const docsMountIndex = output.indexOf('mountApiDocs(app, openApiDocument)');
+    assert.ok(corsUseIndex >= 0 && corsUseIndex < docsMountIndex);
     assert.match(output, /import \{ logger \} from 'hono\/logger'/);
     assert.match(output, /import \{ prettyJSON \} from 'hono\/pretty-json'/);
     assert.match(output, /import \{ serve \} from '@hono\/node-server'/);

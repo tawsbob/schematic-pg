@@ -22,6 +22,7 @@ import { configureHooks } from 'schematic-pg/api/hooks';
 import { createAuthMiddleware } from 'schematic-pg/api/auth/middleware';
 import { createJwtResolver } from 'schematic-pg/api/auth/jwt-resolver';
 import type { AuthResolver } from 'schematic-pg/api/auth/types';
+import { createCorsMiddleware } from 'schematic-pg/api/middleware/cors';
 import { createDbMiddleware } from 'schematic-pg/api/middleware/db';
 import { handleError } from 'schematic-pg/api/middleware/errors';
 import { mountApiDocs } from 'schematic-pg/api/openapi';
@@ -37,6 +38,7 @@ export interface CreateAppOptions {
 
 export function createApp(options: CreateAppOptions = {}): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+  app.use(createCorsMiddleware());
   mountApiDocs(app, openApiDocument);
   app.use(logger());
   app.use(prettyJSON());

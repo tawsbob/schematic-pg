@@ -25,7 +25,7 @@ my-app/
 ├── app.schema              # Source of truth — edit this
 ├── schema.sql              # Generated PostgreSQL DDL (read-only)
 ├── AGENTS.md               # This file
-├── .env                    # DATABASE_URL, JWT_* settings
+├── .env                    # DATABASE_URL, JWT_*, CORS_ORIGIN
 ├── docker-compose.yml      # Local PostgreSQL
 ├── generated/              # Generated — do not edit
 │   ├── db.ts               # createDbClient(pool)
@@ -59,6 +59,7 @@ npx schematic-pg dev
 | `JWT_SECRET` | HMAC secret for Bearer JWT auth |
 | `JWT_ROLE_CLAIM` | JWT claim for role (default `role`) |
 | `JWT_USER_ID_CLAIM` | JWT claim for user id (default `sub`) |
+| `CORS_ORIGIN` | Allowed browser origins (`*` or comma-separated). Unset disables CORS |
 
 ## Schema DSL Essentials
 

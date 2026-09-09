@@ -6,7 +6,7 @@ After `schematic-pg init` and `schematic-pg generate`, a typical application loo
 my-app/
 ├── app.schema              # Your single source of truth
 ├── schema.sql              # Generated PostgreSQL DDL
-├── .env                    # DATABASE_URL, JWT_* settings
+├── .env                    # DATABASE_URL, JWT_*, CORS_ORIGIN
 ├── docker-compose.yml      # Local PostgreSQL (optional)
 ├── tsconfig.json
 ├── package.json            # schematic-pg + hono + pg + zod

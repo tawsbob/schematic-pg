@@ -55,8 +55,39 @@ Environment variables (also see [Quick Start](../README.md#quick-start)):
 | `JWT_SECRET` | — | HMAC secret for the default Bearer JWT resolver |
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
+| `CORS_ORIGIN` | — (disabled) | Allowed browser origins. Unset disables CORS. Use `*` or a comma-separated list |
 
 The server uses `@hono/node-server` and connects via a shared `pg` `Pool`. The DB client and auth context are injected into every request through Hono context (`c.get('db')`, `c.get('auth')`).
+
+## CORS
+
+Browser apps hosted on another origin (for example `http://localhost:5173` calling `http://localhost:3000`) are blocked unless the API sends CORS headers. schematic-pg does this in `createApp()` from `CORS_ORIGIN` — a runtime env var, not a schema attribute. Changing origins does not require `generate:api`.
+
+| `CORS_ORIGIN` | Effect |
+|---------------|--------|
+| unset / empty | CORS off (default) |
+| `*` | Allow any origin |
+| `http://localhost:5173` | Allow that origin only |
+| `http://localhost:5173,https://app.example.com` | Allow those origins |
+
+```bash
+# .env — Vite / local frontend
+CORS_ORIGIN=http://localhost:5173
+
+# production — one or more exact origins
+CORS_ORIGIN=https://app.example.com,https://admin.example.com
+```
+
+Middleware is registered **first** (before docs, auth, and routers) so:
+
+- Preflight `OPTIONS` returns `204` and never hits JWT or route handlers
+- `GET /openapi.json`, `/docs`, `/auth`, generated CRUD, and custom `src/routes/` all receive CORS headers
+- Allowed request headers are `Authorization` and `Content-Type` (Bearer JWT + JSON bodies)
+- Allowed methods are `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
+
+`*` is convenient for local development. Do not combine `*` with cookie credentials; Bearer tokens in `Authorization` do not need `Access-Control-Allow-Credentials`.
+
+Do not edit `generated/app.ts` to add CORS — it is overwritten on every generate. Set `CORS_ORIGIN` instead.
 
 ## Routes
 
@@ -98,7 +129,7 @@ On start, the generated app also logs `API docs at http://localhost:${PORT}/docs
 
 ## Custom routes
 
-Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks, or other app-specific handlers, add hand-written Hono routers under `src/routes/`. Running `schematic-pg generate:api` (or `schematic-pg dev`) discovers these files and wires them into the generated app — same global middleware (`db`, `auth`, error handling) as schema-generated routes.
+Not every endpoint maps to a CRUD model. For auth flows, webhooks, health checks, or other app-specific handlers, add hand-written Hono routers under `src/routes/`. Running `schematic-pg generate:api` (or `schematic-pg dev`) discovers these files and wires them into the generated app — same global middleware (`cors`, `db`, `auth`, error handling) as schema-generated routes.
 
 **Convention**
 
@@ -425,6 +456,7 @@ import { mountApiDocs } from 'schematic-pg/api/openapi';
 import { openApiDocument } from './openapi.js';
 
 const app = new Hono<AppEnv>();
+app.use(createCorsMiddleware());   // CORS_ORIGIN (no-op when unset)
 mountApiDocs(app, openApiDocument); // GET /openapi.json + GET /docs (before auth/db)
 app.use(logger());
 app.use(prettyJSON());
@@ -451,6 +483,7 @@ schematic-pg/dist/api/       # Published runtime (import as schematic-pg/api/*)
 │   ├── policy.ts           # assertPolicy, resolvePolicyWhere, mergeWhere
 │   └── ...
 ├── middleware/
+│   ├── cors.ts             # createCorsMiddleware() from CORS_ORIGIN
 │   ├── db.ts               # Pool + createDbClient + context middleware
 │   ├── validate.ts         # Zod validation wrappers
 │   └── errors.ts           # HTTP error mapping (401, 403, 409, …)
