@@ -90,4 +90,28 @@ describe('SqlGenerator — app.schema', () => {
     assert.match(sql, /BEGIN\n {2}NEW\.updated_at = now\(\);/);
     assert.match(sql, /END;/);
   });
+
+  it('generates RETURNS TABLE with snake_case column names', () => {
+    const schema = parse(
+      wrapFunctions(`
+        function searchProducts(query: TEXT): TABLE(id: UUID, productName: TEXT, price: DECIMAL) {
+          language: sql
+          volatility: STABLE
+          execute: """
+            SELECT id, name, price FROM product
+            WHERE name ILIKE '%' || query || '%'
+          """
+        }
+      `),
+    );
+    const sql = new SqlGenerator().generate(schema);
+
+    assert.match(sql, /CREATE OR REPLACE FUNCTION search_products\(query TEXT\)/);
+    assert.match(
+      sql,
+      /RETURNS TABLE \(id UUID, product_name TEXT, price DECIMAL\)/,
+    );
+    assert.match(sql, /LANGUAGE sql/);
+    assert.match(sql, /STABLE/);
+  });
 });

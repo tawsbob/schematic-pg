@@ -307,4 +307,53 @@ model Audit {
     assert.equal(migrations[0]?.kind, 'DropFunction');
     assert.equal(migrations[1]?.kind, 'CreateFunction');
   });
+
+  it('detects TABLE column changes as drop and create', () => {
+    const oldSchema = parse(
+      wrapFunctions(`
+        function search(query: TEXT): TABLE(id: UUID, name: TEXT) {
+          execute: """
+            SELECT id, name FROM product
+          """
+        }
+      `),
+    );
+    const newSchema = parse(
+      wrapFunctions(`
+        function search(query: TEXT): TABLE(id: UUID, name: TEXT, price: DECIMAL) {
+          execute: """
+            SELECT id, name, price FROM product
+          """
+        }
+      `),
+    );
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.equal(migrations[0]?.kind, 'DropFunction');
+    assert.equal(migrations[1]?.kind, 'CreateFunction');
+  });
+
+  it('detects TABLE function body changes as replace', () => {
+    const oldSchema = parse(
+      wrapFunctions(`
+        function search(query: TEXT): TABLE(id: UUID, name: TEXT) {
+          execute: """
+            SELECT id, name FROM product
+          """
+        }
+      `),
+    );
+    const newSchema = parse(
+      wrapFunctions(`
+        function search(query: TEXT): TABLE(id: UUID, name: TEXT) {
+          execute: """
+            SELECT id, name FROM product WHERE name ILIKE '%' || query || '%'
+          """
+        }
+      `),
+    );
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.deepEqual(migrations, [{ kind: 'ReplaceFunction', functionName: 'search' }]);
+  });
 });

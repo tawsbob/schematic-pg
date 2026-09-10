@@ -100,7 +100,7 @@ models {
 - **Policies:** `@policy(role: ..., allow: [select|insert|update|delete|all], where: "...")` — `where` supports `{{auth.user.id}}`.
 - **Validation:** `@regex(...)`, `@range(min: ..., max: ...)` flow into generated Zod schemas.
 - **Indexes / triggers:** `@@index(...)`, `@@trigger { timing, event, level, execute: """...""" }`.
-- **SQL functions:** optional `functions { function name(args): ReturnType { execute: """...""" } }` after `models`. Names snake_case in SQL; call with `db.$queryRaw`.
+- **SQL functions:** optional `functions { function name(args): ReturnType { execute: """...""" } }` after `models`. `ReturnType` may be a scalar (`INTEGER`, `TRIGGER`, `VOID`, …) or `TABLE(col: Type, …)`. Names snake_case in SQL; call scalars with `SELECT fn($1)`, table functions with `SELECT * FROM fn($1)` via `db.$queryRaw`.
 
 ## Database Client
 

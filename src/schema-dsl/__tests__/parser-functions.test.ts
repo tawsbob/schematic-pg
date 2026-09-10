@@ -33,6 +33,10 @@ describe('Parser — functions', () => {
     assert.equal(sqlFunction.params.length, 1);
     assert.equal(sqlFunction.params[0].name, 'userId');
     assert.equal(sqlFunction.params[0].type.name, 'UUID');
+    assert.equal(sqlFunction.returns.kind, 'TypeExpr');
+    if (sqlFunction.returns.kind !== 'TypeExpr') {
+      return;
+    }
     assert.equal(sqlFunction.returns.name, 'INTEGER');
     assert.equal(sqlFunction.language, 'sql');
     assert.equal(sqlFunction.volatility, 'STABLE');
@@ -53,6 +57,10 @@ describe('Parser — functions', () => {
     `);
 
     assert.equal(sqlFunction.params.length, 0);
+    assert.equal(sqlFunction.returns.kind, 'TypeExpr');
+    if (sqlFunction.returns.kind !== 'TypeExpr') {
+      return;
+    }
     assert.equal(sqlFunction.returns.name, 'TRIGGER');
     assert.equal(sqlFunction.language, 'plpgsql');
     assert.equal(sqlFunction.security, 'DEFINER');
@@ -103,6 +111,62 @@ describe('Parser — functions', () => {
     assert.equal(sqlFunction.params[0].name, 'query');
     assert.equal(sqlFunction.params[1].name, 'limit');
     assert.equal(sqlFunction.params[1].type.name, 'INTEGER');
+  });
+
+  it('parses a TABLE return with columns and trailing comma', () => {
+    const sqlFunction = parseFunction(`
+      function searchProducts(query: TEXT): TABLE(id: UUID, name: TEXT, price: DECIMAL,) {
+        language: sql
+        volatility: STABLE
+        execute: """
+          SELECT id, name, price FROM product
+          WHERE name ILIKE '%' || query || '%'
+        """
+      }
+    `);
+
+    assert.equal(sqlFunction.returns.kind, 'TableReturn');
+    if (sqlFunction.returns.kind !== 'TableReturn') {
+      return;
+    }
+    assert.equal(sqlFunction.returns.columns.length, 3);
+    assert.equal(sqlFunction.returns.columns[0].name, 'id');
+    assert.equal(sqlFunction.returns.columns[0].type.name, 'UUID');
+    assert.equal(sqlFunction.returns.columns[1].name, 'name');
+    assert.equal(sqlFunction.returns.columns[2].name, 'price');
+    assert.equal(sqlFunction.returns.columns[2].type.name, 'DECIMAL');
+  });
+
+  it('throws when TABLE has no columns', () => {
+    expectParseError(
+      wrapFunctions(`function search(): TABLE() { execute: """SELECT 1""" }`),
+      /at least one TABLE column/,
+    );
+  });
+
+  it('throws when TABLE is missing a column list', () => {
+    expectParseError(
+      wrapFunctions(`function search(): TABLE { execute: """SELECT 1""" }`),
+      /TABLE column list/,
+    );
+  });
+
+  it('throws when TABLE column names are duplicated', () => {
+    expectParseError(
+      wrapFunctions(
+        `function search(): TABLE(id: UUID, id: TEXT) { execute: """SELECT 1""" }`,
+      ),
+      /already defined/,
+    );
+  });
+
+  it('throws when a TABLE column name collides with a parameter', () => {
+    expectParseError(
+      wrapFunctions(
+        `function search(query: TEXT): TABLE(query: TEXT) { execute: """SELECT 1""" }`,
+      ),
+      /distinct from parameter/,
+    );
   });
 
   it('throws when execute is missing', () => {

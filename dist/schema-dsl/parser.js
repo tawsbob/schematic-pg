@@ -137,7 +137,7 @@ export class Parser {
         const params = this.parseFunctionParams();
         this.expect(TokenType.RPAREN, "')'");
         this.expect(TokenType.COLON, "':'");
-        const returns = this.parseTypeExpr();
+        const returns = this.parseFunctionReturn(params);
         this.expect(TokenType.LBRACE, "'{'");
         const body = this.parseFunctionBody();
         this.expect(TokenType.RBRACE, "'}'");
@@ -150,6 +150,53 @@ export class Parser {
             volatility: body.volatility,
             security: body.security,
             execute: body.execute,
+            loc: this.loc(start),
+        };
+    }
+    parseFunctionReturn(params) {
+        const current = this.current();
+        if (current.type === TokenType.IDENT &&
+            current.value === 'TABLE' &&
+            this.peekType(1) === TokenType.LPAREN) {
+            return this.parseTableReturn(params);
+        }
+        if (current.type === TokenType.IDENT && current.value === 'TABLE') {
+            throw new ParseError("TABLE column list '(...)'", current);
+        }
+        return this.parseTypeExpr();
+    }
+    parseTableReturn(params) {
+        const start = this.expect(TokenType.IDENT, "'TABLE'");
+        this.expect(TokenType.LPAREN, "'('");
+        if (this.check(TokenType.RPAREN)) {
+            throw new ParseError('at least one TABLE column', this.current());
+        }
+        const columns = [];
+        const columnNames = new Set();
+        const paramNames = new Set(params.map((param) => param.name));
+        do {
+            const nameToken = this.expect(TokenType.IDENT, 'TABLE column name');
+            if (columnNames.has(nameToken.value)) {
+                throw new ParseError(`unique TABLE column name, "${nameToken.value}" already defined`, nameToken);
+            }
+            if (paramNames.has(nameToken.value)) {
+                throw new ParseError(`TABLE column name distinct from parameter "${nameToken.value}"`, nameToken);
+            }
+            columnNames.add(nameToken.value);
+            this.expect(TokenType.COLON, "':'");
+            const type = this.parseTypeExpr();
+            columns.push({
+                kind: 'FunctionParam',
+                name: nameToken.value,
+                type,
+                loc: this.loc(nameToken),
+            });
+        } while (this.match(TokenType.COMMA) && !this.check(TokenType.RPAREN));
+        this.consumeTrailingComma();
+        this.expect(TokenType.RPAREN, "')'");
+        return {
+            kind: 'TableReturn',
+            columns,
             loc: this.loc(start),
         };
     }

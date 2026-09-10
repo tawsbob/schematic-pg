@@ -64,7 +64,7 @@ export const FUNCTION_VOLATILITIES = ['VOLATILE', 'STABLE', 'IMMUTABLE'] as cons
 
 export const FUNCTION_SECURITIES = ['INVOKER', 'DEFINER'] as const;
 
-export const FUNCTION_RETURN_TYPES = ['TRIGGER', 'VOID'] as const;
+export const FUNCTION_RETURN_TYPES = ['TRIGGER', 'VOID', 'TABLE'] as const;
 
 export const REFERENCE_ACTIONS = ['CASCADE', 'SET_NULL', 'RESTRICT', 'NO_ACTION'] as const;
 

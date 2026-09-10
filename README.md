@@ -390,6 +390,15 @@ functions {
     """
   }
 
+  function searchProducts(query: TEXT): TABLE(id: UUID, name: TEXT, price: DECIMAL) {
+    language: sql
+    volatility: STABLE
+    execute: """
+      SELECT id, name, price FROM product
+      WHERE name ILIKE '%' || query || '%'
+    """
+  }
+
   function setUpdatedAt(): TRIGGER {
     language: plpgsql
     execute: """
@@ -407,11 +416,11 @@ functions {
 | `security` | `INVOKER`, `DEFINER` | `INVOKER` |
 | `execute` | Triple-quoted SQL / PL/pgSQL | required |
 
-Return types are PostgreSQL types (`INTEGER`, `UUID`, `JSONB`, …), `TRIGGER`, or `VOID`. Body keys may be newline-separated or comma-separated.
+Return types are PostgreSQL types (`INTEGER`, `UUID`, `JSONB`, …), `TRIGGER`, `VOID`, or `TABLE(col: Type, …)` for set-returning functions. Body keys may be newline-separated or comma-separated. TABLE column names must be unique and must not collide with input parameter names.
 
 `language: plpgsql` wraps the body in `BEGIN` / `END` unless it already starts with `DECLARE` or `BEGIN`. Function names must be unique in the schema.
 
-`db:diff` treats body, language, volatility, and security changes as `CREATE OR REPLACE`. Argument or return-type changes drop the old function, then create the new one.
+`db:diff` treats body, language, volatility, and security changes as `CREATE OR REPLACE`. Argument or return-type changes (including TABLE column changes) drop the old function, then create the new one.
 
 Functions are database objects only in this release — they are not REST endpoints. Call them with `db.$queryRaw`:
 
@@ -419,6 +428,11 @@ Functions are database objects only in this release — they are not REST endpoi
 const [row] = await db.$queryRaw<{ get_user_balance: number }>(
   'SELECT get_user_balance($1)',
   [userId],
+);
+
+const products = await db.$queryRaw<{ id: string; name: string; price: string }>(
+  'SELECT * FROM search_products($1)',
+  [query],
 );
 ```
 

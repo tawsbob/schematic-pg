@@ -99,7 +99,7 @@
       "patterns": [
         {
           "name": "entity.name.type.schema-dsl",
-          "match": "\\b(?:UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|POINT|SERIAL|BIGINT|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL|TRIGGER|VOID)(?:\\([^)]*\\))?\\??(?:\\[\\])?"
+          "match": "\\b(?:UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|POINT|SERIAL|BIGINT|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL|TRIGGER|VOID|TABLE)(?:\\([^)]*\\))?\\??(?:\\[\\])?"
         },
         {
           "name": "entity.name.type.schema-dsl",

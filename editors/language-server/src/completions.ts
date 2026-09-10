@@ -92,7 +92,7 @@ export function getCompletions(
     ];
   }
 
-  if (/function\s+\w+\s*\([^)]*\)\s*(?::\s*[\w?[\]]+)?\s*\{[^}]*$/.test(prefix)) {
+  if (/function\s+\w+\s*\([^)]*\)\s*(?::\s*[\w?[\]]*(?:\([^)]*\))?)?\s*\{[^}]*$/.test(prefix)) {
     return [
       ...FUNCTION_KEYS.map((key) => item(key, CompletionItemKind.Property)),
       ...FUNCTION_LANGUAGES.map((value) => item(value, CompletionItemKind.Enum, 'function language')),

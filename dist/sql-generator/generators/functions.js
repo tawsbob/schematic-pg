@@ -1,4 +1,4 @@
-import { getEnumNames, normalizeFunction, } from '../utils/ast-helpers.js';
+import { formatNormalizedFunctionReturn, getEnumNames, normalizeFunction, } from '../utils/ast-helpers.js';
 import { joinSection } from '../utils/format.js';
 import { quoteIdentifier } from '../utils/snake-case.js';
 export function generateCreateFunction(normalized) {
@@ -8,7 +8,7 @@ export function generateCreateFunction(normalized) {
         .join(', ');
     const clauses = [
         `CREATE OR REPLACE FUNCTION ${functionName}(${params})`,
-        `RETURNS ${normalized.returns}`,
+        `RETURNS ${formatNormalizedFunctionReturn(normalized.returns)}`,
         `LANGUAGE ${normalized.language}`,
     ];
     if (normalized.volatility !== 'VOLATILE') {

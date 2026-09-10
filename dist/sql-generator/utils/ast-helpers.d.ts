@@ -61,16 +61,24 @@ export interface NormalizedFunctionParam {
     sqlName: string;
     sqlType: string;
 }
+export type NormalizedFunctionReturn = {
+    kind: 'scalar';
+    sqlType: string;
+} | {
+    kind: 'table';
+    columns: NormalizedFunctionParam[];
+};
 export interface NormalizedFunction {
     name: string;
     sqlName: string;
     params: NormalizedFunctionParam[];
-    returns: string;
+    returns: NormalizedFunctionReturn;
     language: string;
     volatility: string;
     security: string;
     execute: string;
 }
 export declare function normalizeFunction(sqlFunction: SqlFunction, enumNames: Set<string>): NormalizedFunction;
+export declare function formatNormalizedFunctionReturn(returns: NormalizedFunctionReturn): string;
 export declare function functionIdentity(normalized: NormalizedFunction): string;
 export declare function functionSignature(normalized: NormalizedFunction): string;

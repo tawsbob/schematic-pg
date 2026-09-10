@@ -25,8 +25,9 @@ describe('Integration — app.schema', () => {
     assert.equal(schema.extensions.length, 2);
     assert.equal(schema.enums.length, 2);
     assert.equal(schema.models.length, 6);
-    assert.equal(schema.functions.length, 1);
+    assert.equal(schema.functions.length, 2);
     assert.equal(schema.functions[0].name, 'getUserBalance');
+    assert.equal(schema.functions[1].name, 'searchProducts');
   });
 
   it('includes uuid-ossp and pgcrypto with version block', () => {

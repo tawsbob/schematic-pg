@@ -36,7 +36,7 @@ export interface SqlFunction {
     kind: 'SqlFunction';
     name: string;
     params: FunctionParam[];
-    returns: TypeExpr;
+    returns: FunctionReturn;
     language?: string;
     volatility?: string;
     security?: string;
@@ -49,6 +49,13 @@ export interface FunctionParam {
     type: TypeExpr;
     loc: SourceLocation;
 }
+export interface TableReturn {
+    kind: 'TableReturn';
+    columns: FunctionParam[];
+    loc: SourceLocation;
+}
+export type FunctionReturn = TypeExpr | TableReturn;
+export declare function isTableReturn(returns: FunctionReturn): returns is TableReturn;
 export interface Field {
     kind: 'Field';
     name: string;

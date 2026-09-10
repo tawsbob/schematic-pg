@@ -1,4 +1,5 @@
-import type { Field, Model, Schema, SourceLocation, SqlFunction, TypeExpr } from 'schematic-pg/schema-dsl';
+import type { Field, FunctionReturn, Model, Schema, SourceLocation, SqlFunction, TypeExpr } from 'schematic-pg/schema-dsl';
+import { isTableReturn } from 'schematic-pg/schema-dsl';
 import { Range } from 'vscode-languageserver';
 import { toRange } from './utils.js';
 
@@ -127,7 +128,7 @@ function createTypeRef(type: TypeExpr, containerName: string): IndexedSymbol | u
 }
 
 function isBuiltinType(name: string): boolean {
-  return /^(UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|BIGINT|POINT|SERIAL|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL|TRIGGER|VOID)$/.test(
+  return /^(UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|BIGINT|POINT|SERIAL|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL|TRIGGER|VOID|TABLE)$/.test(
     name,
   );
 }
@@ -144,6 +145,16 @@ function formatType(type: TypeExpr): string {
     rendered += '?';
   }
   return rendered;
+}
+
+function formatFunctionReturn(returns: FunctionReturn): string {
+  if (isTableReturn(returns)) {
+    const columns = returns.columns
+      .map((column) => `${column.name}: ${formatType(column.type)}`)
+      .join(', ');
+    return `TABLE(${columns})`;
+  }
+  return formatType(returns);
 }
 
 export function findDefinition(index: SchemaIndex, word: string): IndexedSymbol | undefined {
@@ -204,7 +215,7 @@ export function findContainingFunction(schema: Schema, positionLine: number): Sq
 
 function formatFunctionSignature(sqlFunction: SqlFunction): string {
   const params = sqlFunction.params.map((param) => `${param.name}: ${formatType(param.type)}`).join(', ');
-  return `(${params}): ${formatType(sqlFunction.returns)}`;
+  return `(${params}): ${formatFunctionReturn(sqlFunction.returns)}`;
 }
 
 export function locAt(line: number, col: number): SourceLocation {

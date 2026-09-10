@@ -1,6 +1,7 @@
+import { isTableReturn } from '../../schema-dsl/ast.js';
 import { formatDefaultValue, serializeValue } from './value-formatter.js';
 import { mapColumnType } from './type-mapper.js';
-import { toSnakeCase, toTableName } from './snake-case.js';
+import { toSnakeCase, toTableName, quoteIdentifier } from './snake-case.js';
 export function getModelNames(schema) {
     return new Set(schema.models.map((model) => model.name));
 }
@@ -251,20 +252,43 @@ export function resolveTriggerNames(model, timing, event) {
     };
 }
 export function normalizeFunction(sqlFunction, enumNames) {
+    const params = sqlFunction.params.map((param) => ({
+        name: param.name,
+        sqlName: toSnakeCase(param.name),
+        sqlType: serializeColumnType(param.type, enumNames),
+    }));
+    const returns = isTableReturn(sqlFunction.returns)
+        ? {
+            kind: 'table',
+            columns: sqlFunction.returns.columns.map((column) => ({
+                name: column.name,
+                sqlName: toSnakeCase(column.name),
+                sqlType: serializeColumnType(column.type, enumNames),
+            })),
+        }
+        : {
+            kind: 'scalar',
+            sqlType: serializeColumnType(sqlFunction.returns, enumNames),
+        };
     return {
         name: sqlFunction.name,
         sqlName: toSnakeCase(sqlFunction.name),
-        params: sqlFunction.params.map((param) => ({
-            name: param.name,
-            sqlName: toSnakeCase(param.name),
-            sqlType: serializeColumnType(param.type, enumNames),
-        })),
-        returns: serializeColumnType(sqlFunction.returns, enumNames),
+        params,
+        returns,
         language: (sqlFunction.language ?? 'sql').toLowerCase(),
         volatility: (sqlFunction.volatility ?? 'VOLATILE').toUpperCase(),
         security: (sqlFunction.security ?? 'INVOKER').toUpperCase(),
         execute: sqlFunction.execute.trim(),
     };
+}
+export function formatNormalizedFunctionReturn(returns) {
+    if (returns.kind === 'scalar') {
+        return returns.sqlType;
+    }
+    const columns = returns.columns
+        .map((column) => `${quoteIdentifier(column.sqlName)} ${column.sqlType}`)
+        .join(', ');
+    return `TABLE (${columns})`;
 }
 export function functionIdentity(normalized) {
     return JSON.stringify({

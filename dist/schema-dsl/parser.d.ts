@@ -22,6 +22,8 @@ export declare class Parser {
     private parseModelsSection;
     private parseFunctionsSection;
     parseFunction(existingNames?: Set<string>): SqlFunction;
+    private parseFunctionReturn;
+    private parseTableReturn;
     private parseFunctionParams;
     private parseFunctionParam;
     private parseFunctionBody;

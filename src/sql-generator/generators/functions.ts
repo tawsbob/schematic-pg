@@ -1,5 +1,6 @@
 import type { Schema } from '../../schema-dsl/ast.js';
 import {
+  formatNormalizedFunctionReturn,
   getEnumNames,
   normalizeFunction,
   type NormalizedFunction,
@@ -16,7 +17,7 @@ export function generateCreateFunction(normalized: NormalizedFunction): string {
     .join(', ');
   const clauses = [
     `CREATE OR REPLACE FUNCTION ${functionName}(${params})`,
-    `RETURNS ${normalized.returns}`,
+    `RETURNS ${formatNormalizedFunctionReturn(normalized.returns)}`,
     `LANGUAGE ${normalized.language}`,
   ];
 

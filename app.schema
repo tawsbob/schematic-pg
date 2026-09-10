@@ -145,4 +145,13 @@ functions {
       SELECT balance FROM "user" WHERE id = user_id
     """
   }
+
+  function searchProducts(query: TEXT): TABLE(id: UUID, name: TEXT, price: DECIMAL) {
+    language: sql
+    volatility: STABLE
+    execute: """
+      SELECT id, name, price FROM product
+      WHERE name ILIKE '%' || query || '%'
+    """
+  }
 }

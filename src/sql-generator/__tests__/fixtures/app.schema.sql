@@ -125,6 +125,15 @@ AS $$
   SELECT balance FROM "user" WHERE id = user_id
 $$;
 
+CREATE OR REPLACE FUNCTION search_products(query TEXT)
+RETURNS TABLE (id UUID, name TEXT, price DECIMAL)
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT id, name, price FROM product
+        WHERE name ILIKE '%' || query || '%'
+$$;
+
 -- Create triggers
 
 CREATE OR REPLACE FUNCTION user_before_update_trigger_func()

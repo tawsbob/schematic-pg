@@ -294,6 +294,33 @@ model Legacy { id: UUID @id }`),
     assert.ok(dropIndex >= 0);
     assert.ok(createIndex > dropIndex);
   });
+
+  it('drops a TABLE function before recreating it when columns change', () => {
+    const sql = diffSql(
+      wrapFunctions(`
+        function search(query: TEXT): TABLE(id: UUID, name: TEXT) {
+          execute: """
+            SELECT id, name FROM product
+          """
+        }
+      `),
+      wrapFunctions(`
+        function search(query: TEXT): TABLE(id: UUID, name: TEXT, price: DECIMAL) {
+          execute: """
+            SELECT id, name, price FROM product
+          """
+        }
+      `),
+    );
+
+    const dropIndex = sql.indexOf('DROP FUNCTION IF EXISTS search(TEXT)');
+    const createIndex = sql.indexOf(
+      'CREATE OR REPLACE FUNCTION search(query TEXT)\nRETURNS TABLE (id UUID, name TEXT, price DECIMAL)',
+    );
+
+    assert.ok(dropIndex >= 0);
+    assert.ok(createIndex > dropIndex);
+  });
 });
 
 describe('schema snapshot and diff integration', () => {
