@@ -16,6 +16,10 @@ const PRIMITIVE_TYPES = new Set([
 ]);
 
 export function mapColumnType(type: TypeExpr, enumNames: Set<string>): string {
+  if (type.name === 'TRIGGER' || type.name === 'VOID') {
+    return type.name;
+  }
+
   const baseType = mapBaseType(type, enumNames);
   return type.array ? `${baseType}[]` : baseType;
 }

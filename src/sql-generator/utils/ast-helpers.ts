@@ -7,6 +7,7 @@ import type {
   KeyValueArgs,
   Model,
   Schema,
+  SqlFunction,
   TypeExpr,
   Value,
 } from '../../schema-dsl/ast.js';
@@ -358,4 +359,50 @@ export function resolveTriggerNames(model: Model, timing: string, event: string)
     functionName: `${baseName}_trigger_func`,
     triggerName: `${baseName}_trigger`,
   };
+}
+
+export interface NormalizedFunctionParam {
+  name: string;
+  sqlName: string;
+  sqlType: string;
+}
+
+export interface NormalizedFunction {
+  name: string;
+  sqlName: string;
+  params: NormalizedFunctionParam[];
+  returns: string;
+  language: string;
+  volatility: string;
+  security: string;
+  execute: string;
+}
+
+export function normalizeFunction(sqlFunction: SqlFunction, enumNames: Set<string>): NormalizedFunction {
+  return {
+    name: sqlFunction.name,
+    sqlName: toSnakeCase(sqlFunction.name),
+    params: sqlFunction.params.map((param) => ({
+      name: param.name,
+      sqlName: toSnakeCase(param.name),
+      sqlType: serializeColumnType(param.type, enumNames),
+    })),
+    returns: serializeColumnType(sqlFunction.returns, enumNames),
+    language: (sqlFunction.language ?? 'sql').toLowerCase(),
+    volatility: (sqlFunction.volatility ?? 'VOLATILE').toUpperCase(),
+    security: (sqlFunction.security ?? 'INVOKER').toUpperCase(),
+    execute: sqlFunction.execute.trim(),
+  };
+}
+
+export function functionIdentity(normalized: NormalizedFunction): string {
+  return JSON.stringify({
+    sqlName: normalized.sqlName,
+    params: normalized.params.map((param) => param.sqlType),
+    returns: normalized.returns,
+  });
+}
+
+export function functionSignature(normalized: NormalizedFunction): string {
+  return JSON.stringify(normalized);
 }

@@ -20,6 +20,10 @@ export function wrapModels(body: string): string {
   return `extensions {}\nenums {}\nmodels { ${body} }`;
 }
 
+export function wrapFunctions(body: string): string {
+  return `extensions {}\nenums {}\nmodels {}\nfunctions { ${body} }`;
+}
+
 export function parseSnippet(source: string) {
   return parse(source);
 }

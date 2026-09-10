@@ -1,4 +1,4 @@
-export type Migration = CreateExtension | DropExtension | CreateTable | DropTable | AddColumn | DropColumn | AlterColumn | CreateIndex | DropIndex | CreateEnum | AddEnumValue | AddConstraint | DropConstraint | CreateTrigger | DropTrigger;
+export type Migration = CreateExtension | DropExtension | CreateTable | DropTable | AddColumn | DropColumn | AlterColumn | CreateIndex | DropIndex | CreateEnum | AddEnumValue | AddConstraint | DropConstraint | CreateFunction | ReplaceFunction | DropFunction | CreateTrigger | DropTrigger;
 export interface CreateTable {
     kind: 'CreateTable';
     modelName: string;
@@ -82,5 +82,18 @@ export interface CreateTrigger {
 export interface DropTrigger {
     kind: 'DropTrigger';
     modelName: string;
+    signature: string;
+}
+export interface CreateFunction {
+    kind: 'CreateFunction';
+    functionName: string;
+}
+export interface ReplaceFunction {
+    kind: 'ReplaceFunction';
+    functionName: string;
+}
+export interface DropFunction {
+    kind: 'DropFunction';
+    functionName: string;
     signature: string;
 }

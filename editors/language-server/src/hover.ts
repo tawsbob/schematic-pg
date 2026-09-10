@@ -31,6 +31,12 @@ export function getHover(
         contents: `**model ${word}**\n\nFields: ${fieldCount}`,
       };
     }
+
+    if (definition.kind === 'function') {
+      return {
+        contents: `**function ${word}**\n\n${definition.detail ?? ''}`.trim(),
+      };
+    }
   }
 
   for (const [fieldKey, fieldSymbol] of index.fields.entries()) {

@@ -6,10 +6,12 @@ import type {
   Enum,
   Extension,
   Field,
+  FunctionParam,
   KeyValuePair,
   Model,
   Schema,
   SourceLocation,
+  SqlFunction,
   TypeExpr,
   Value,
 } from './ast.js';
@@ -46,6 +48,7 @@ export class Parser {
     const extensions = this.parseExtensionsSection();
     const enums = this.parseEnumsSection();
     const models = this.parseModelsSection();
+    const functions = this.check(TokenType.FUNCTIONS) ? this.parseFunctionsSection() : [];
     this.expect(TokenType.EOF, 'end of schema');
 
     return {
@@ -53,6 +56,7 @@ export class Parser {
       extensions,
       enums,
       models,
+      functions,
       loc: this.loc(start),
     };
   }
@@ -152,6 +156,162 @@ export class Parser {
 
     this.expect(TokenType.RBRACE, "'}'");
     return models;
+  }
+
+  private parseFunctionsSection(): SqlFunction[] {
+    this.expect(TokenType.FUNCTIONS, "'functions'");
+    this.expect(TokenType.LBRACE, "'{'");
+    const functions: SqlFunction[] = [];
+    const names = new Set<string>();
+
+    while (!this.check(TokenType.RBRACE)) {
+      functions.push(this.parseFunction(names));
+    }
+
+    this.expect(TokenType.RBRACE, "'}'");
+    return functions;
+  }
+
+  parseFunction(existingNames?: Set<string>): SqlFunction {
+    const start = this.expect(TokenType.FUNCTION, "'function'");
+    const nameToken = this.expect(TokenType.IDENT, 'function name');
+    if (existingNames?.has(nameToken.value)) {
+      throw new ParseError(`unique function name, "${nameToken.value}" already defined`, nameToken);
+    }
+    existingNames?.add(nameToken.value);
+    this.expect(TokenType.LPAREN, "'('");
+    const params = this.parseFunctionParams();
+    this.expect(TokenType.RPAREN, "')'");
+    this.expect(TokenType.COLON, "':'");
+    const returns = this.parseTypeExpr();
+    this.expect(TokenType.LBRACE, "'{'");
+    const body = this.parseFunctionBody();
+    this.expect(TokenType.RBRACE, "'}'");
+
+    return {
+      kind: 'SqlFunction',
+      name: nameToken.value,
+      params,
+      returns,
+      language: body.language,
+      volatility: body.volatility,
+      security: body.security,
+      execute: body.execute,
+      loc: this.loc(start),
+    };
+  }
+
+  private parseFunctionParams(): FunctionParam[] {
+    if (this.check(TokenType.RPAREN)) {
+      return [];
+    }
+
+    const params: FunctionParam[] = [];
+
+    do {
+      params.push(this.parseFunctionParam());
+    } while (this.match(TokenType.COMMA) && !this.check(TokenType.RPAREN));
+
+    this.consumeTrailingComma();
+    return params;
+  }
+
+  private parseFunctionParam(): FunctionParam {
+    const start = this.expect(TokenType.IDENT, 'parameter name');
+    this.expect(TokenType.COLON, "':'");
+    const type = this.parseTypeExpr();
+    return {
+      kind: 'FunctionParam',
+      name: start.value,
+      type,
+      loc: this.loc(start),
+    };
+  }
+
+  private parseFunctionBody(): {
+    language?: string;
+    volatility?: string;
+    security?: string;
+    execute: string;
+  } {
+    if (this.check(TokenType.RBRACE)) {
+      throw new ParseError("function body key 'execute'", this.current());
+    }
+
+    let language: string | undefined;
+    let volatility: string | undefined;
+    let security: string | undefined;
+    let execute: string | undefined;
+
+    do {
+      const keyToken = this.expect(TokenType.IDENT, 'function body key');
+      this.expect(TokenType.COLON, "':'");
+      const valueToken = this.current();
+      const value = this.parseValue();
+
+      switch (keyToken.value) {
+        case 'language': {
+          if (value.kind !== 'Identifier') {
+            throw new ParseError("'sql' or 'plpgsql'", valueToken);
+          }
+          const languageName = value.name.toLowerCase();
+          if (languageName !== 'sql' && languageName !== 'plpgsql') {
+            throw new ParseError("'sql' or 'plpgsql'", valueToken);
+          }
+          language = languageName;
+          break;
+        }
+        case 'volatility': {
+          if (value.kind !== 'Identifier') {
+            throw new ParseError("'VOLATILE', 'STABLE', or 'IMMUTABLE'", valueToken);
+          }
+          const volatilityName = value.name.toUpperCase();
+          if (
+            volatilityName !== 'VOLATILE' &&
+            volatilityName !== 'STABLE' &&
+            volatilityName !== 'IMMUTABLE'
+          ) {
+            throw new ParseError("'VOLATILE', 'STABLE', or 'IMMUTABLE'", valueToken);
+          }
+          volatility = volatilityName;
+          break;
+        }
+        case 'security': {
+          if (value.kind !== 'Identifier') {
+            throw new ParseError("'INVOKER' or 'DEFINER'", valueToken);
+          }
+          const securityName = value.name.toUpperCase();
+          if (securityName !== 'INVOKER' && securityName !== 'DEFINER') {
+            throw new ParseError("'INVOKER' or 'DEFINER'", valueToken);
+          }
+          security = securityName;
+          break;
+        }
+        case 'execute': {
+          if (value.kind !== 'TripleStringLiteral') {
+            throw new ParseError('triple-quoted execute body', valueToken);
+          }
+          execute = value.value.trim();
+          if (execute.length === 0) {
+            throw new ParseError('non-empty execute body', valueToken);
+          }
+          break;
+        }
+        default:
+          throw new ParseError(
+            "function body key 'language', 'volatility', 'security', or 'execute'",
+            keyToken,
+          );
+      }
+
+      this.match(TokenType.COMMA);
+    } while (!this.check(TokenType.RBRACE));
+
+    if (!execute) {
+      throw new ParseError("function body key 'execute'", this.current());
+    }
+
+    return { language, volatility, security, execute };
   }
 
   private parseModelBody(name: string, start: Token): Model {

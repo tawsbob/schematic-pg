@@ -18,3 +18,4 @@
 - [ ] Type generation for frontend consumption
 - [ ] Tree-sitter grammar for editor support
 - [x] VS Code extension with syntax highlighting and language server
+- [x] SQL functions in the schema DSL (`functions { function … }`, diff-based migrations)

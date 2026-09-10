@@ -10,12 +10,14 @@ function expectTokens(source: string, expected: Array<{ type: TokenType; value: 
 
 describe('Lexer', () => {
   describe('keywords', () => {
-    it('tokenizes extensions enums models model', () => {
-      expectTokens('extensions enums models model', [
+    it('tokenizes extensions enums models model functions function', () => {
+      expectTokens('extensions enums models model functions function', [
         { type: TokenType.EXTENSIONS, value: 'extensions' },
         { type: TokenType.ENUMS, value: 'enums' },
         { type: TokenType.MODELS, value: 'models' },
         { type: TokenType.MODEL, value: 'model' },
+        { type: TokenType.FUNCTIONS, value: 'functions' },
+        { type: TokenType.FUNCTION, value: 'function' },
       ]);
     });
   });
@@ -91,6 +93,12 @@ describe('Lexer', () => {
     it('tokenizes triple-quoted string preserving newlines', () => {
       expectTokens('"""line1\nline2"""', [
         { type: TokenType.TRIPLE_STRING, value: 'line1\nline2' },
+      ]);
+    });
+
+    it('tokenizes triple-quoted string preserving embedded double quotes', () => {
+      expectTokens('"""FROM "user" x"""', [
+        { type: TokenType.TRIPLE_STRING, value: 'FROM "user" x' },
       ]);
     });
 

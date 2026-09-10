@@ -3,6 +3,11 @@ import { CompletionItem, CompletionItemKind, Position } from 'vscode-languageser
 import {
   DEFAULT_FUNCTIONS,
   FIELD_ATTRIBUTES,
+  FUNCTION_KEYS,
+  FUNCTION_LANGUAGES,
+  FUNCTION_RETURN_TYPES,
+  FUNCTION_SECURITIES,
+  FUNCTION_VOLATILITIES,
   MODEL_ATTRIBUTES,
   INDEX_KEYS,
   INDEX_TYPES,
@@ -21,6 +26,7 @@ import {
   TRIGGER_TIMINGS,
 } from './catalog.js';
 import {
+  findContainingFunction,
   findContainingModel,
   getEnumNames,
   getEnumValues,
@@ -86,6 +92,15 @@ export function getCompletions(
     ];
   }
 
+  if (/function\s+\w+\s*\([^)]*\)\s*(?::\s*[\w?[\]]+)?\s*\{[^}]*$/.test(prefix)) {
+    return [
+      ...FUNCTION_KEYS.map((key) => item(key, CompletionItemKind.Property)),
+      ...FUNCTION_LANGUAGES.map((value) => item(value, CompletionItemKind.Enum, 'function language')),
+      ...FUNCTION_VOLATILITIES.map((value) => item(value, CompletionItemKind.Enum, 'function volatility')),
+      ...FUNCTION_SECURITIES.map((value) => item(value, CompletionItemKind.Enum, 'function security')),
+    ];
+  }
+
   if (/@default\s*\([^)]*$/.test(prefix)) {
     return DEFAULT_FUNCTIONS.map((fn) =>
       item(`${fn}()`, CompletionItemKind.Function, 'default expression'),
@@ -111,6 +126,16 @@ export function getCompletions(
   }
 
   if (schema) {
+    const sqlFunction = findContainingFunction(schema, position.line);
+    if (sqlFunction && /^\s+[\w]*$/.test(trimmed)) {
+      return [
+        ...FUNCTION_KEYS.map((key) => item(key, CompletionItemKind.Property)),
+        ...FUNCTION_LANGUAGES.map((value) => item(value, CompletionItemKind.Enum, 'function language')),
+        ...FUNCTION_VOLATILITIES.map((value) => item(value, CompletionItemKind.Enum, 'function volatility')),
+        ...FUNCTION_SECURITIES.map((value) => item(value, CompletionItemKind.Enum, 'function security')),
+      ];
+    }
+
     const model = findContainingModel(schema, position.line);
     if (model && /^\s+[\w]*$/.test(trimmed)) {
       return PG_TYPES.map((type) => item(type, CompletionItemKind.TypeParameter, 'PostgreSQL type'));
@@ -150,7 +175,10 @@ function typeCompletions(schema: Schema): CompletionItem[] {
     item(name, CompletionItemKind.Class, 'model type'),
   );
   const pgTypes = PG_TYPES.map((type) => item(type, CompletionItemKind.TypeParameter, 'PostgreSQL type'));
-  return [...pgTypes, ...enumNames, ...modelNames];
+  const functionReturnTypes = FUNCTION_RETURN_TYPES.map((type) =>
+    item(type, CompletionItemKind.TypeParameter, 'function return type'),
+  );
+  return [...pgTypes, ...functionReturnTypes, ...enumNames, ...modelNames];
 }
 
 function relationCompletions(

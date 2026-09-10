@@ -12,6 +12,9 @@ export type Migration =
   | AddEnumValue
   | AddConstraint
   | DropConstraint
+  | CreateFunction
+  | ReplaceFunction
+  | DropFunction
   | CreateTrigger
   | DropTrigger;
 
@@ -103,5 +106,21 @@ export interface CreateTrigger {
 export interface DropTrigger {
   kind: 'DropTrigger';
   modelName: string;
+  signature: string;
+}
+
+export interface CreateFunction {
+  kind: 'CreateFunction';
+  functionName: string;
+}
+
+export interface ReplaceFunction {
+  kind: 'ReplaceFunction';
+  functionName: string;
+}
+
+export interface DropFunction {
+  kind: 'DropFunction';
+  functionName: string;
   signature: string;
 }

@@ -1,4 +1,4 @@
-import { collectForeignKeys, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeIndexDirective, normalizeTriggerDirective, serializeColumnType, serializeDefault, serializeForeignKey, } from './utils/ast-helpers.js';
+import { collectForeignKeys, functionIdentity, functionSignature, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, serializeColumnType, serializeDefault, serializeForeignKey, } from './utils/ast-helpers.js';
 export class MigrationPlanner {
     generateMigration(oldSchema, newSchema) {
         const migrations = [];
@@ -7,6 +7,7 @@ export class MigrationPlanner {
         migrations.push(...this.diffModels(oldSchema, newSchema));
         migrations.push(...this.diffConstraints(oldSchema, newSchema));
         migrations.push(...this.diffIndexes(oldSchema, newSchema));
+        migrations.push(...this.diffFunctions(oldSchema, newSchema));
         migrations.push(...this.diffTriggers(oldSchema, newSchema));
         return migrations;
     }
@@ -191,6 +192,48 @@ export class MigrationPlanner {
                 if (!newTriggers.has(signature)) {
                     migrations.push({ kind: 'DropTrigger', modelName, signature });
                 }
+            }
+        }
+        return migrations;
+    }
+    diffFunctions(oldSchema, newSchema) {
+        const migrations = [];
+        const oldEnumNames = getEnumNames(oldSchema);
+        const newEnumNames = getEnumNames(newSchema);
+        const oldFunctions = new Map(oldSchema.functions.map((sqlFunction) => [
+            sqlFunction.name,
+            normalizeFunction(sqlFunction, oldEnumNames),
+        ]));
+        const newFunctions = new Map(newSchema.functions.map((sqlFunction) => [
+            sqlFunction.name,
+            normalizeFunction(sqlFunction, newEnumNames),
+        ]));
+        for (const [functionName, newFunction] of newFunctions) {
+            const oldFunction = oldFunctions.get(functionName);
+            if (!oldFunction) {
+                migrations.push({ kind: 'CreateFunction', functionName });
+                continue;
+            }
+            if (functionIdentity(oldFunction) !== functionIdentity(newFunction)) {
+                migrations.push({
+                    kind: 'DropFunction',
+                    functionName,
+                    signature: functionSignature(oldFunction),
+                });
+                migrations.push({ kind: 'CreateFunction', functionName });
+                continue;
+            }
+            if (functionSignature(oldFunction) !== functionSignature(newFunction)) {
+                migrations.push({ kind: 'ReplaceFunction', functionName });
+            }
+        }
+        for (const [functionName, oldFunction] of oldFunctions) {
+            if (!newFunctions.has(functionName)) {
+                migrations.push({
+                    kind: 'DropFunction',
+                    functionName,
+                    signature: functionSignature(oldFunction),
+                });
             }
         }
         return migrations;

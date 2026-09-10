@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { parse } from '../../schema-dsl/index.js';
-import { wrapModels } from '../../schema-dsl/__tests__/helpers.js';
+import { wrapFunctions, wrapModels } from '../../schema-dsl/__tests__/helpers.js';
 import { MigrationPlanner } from '../migration-planner.js';
 import { MigrationSqlGenerator } from '../migration-sql-generator.js';
 
@@ -217,6 +217,82 @@ model Legacy { id: UUID @id }`),
     assert.ok(createTableIndex > createExtensionIndex);
     assert.ok(createTriggerIndex > createTableIndex);
     assert.ok(dropTableIndex > createTriggerIndex);
+  });
+
+  it('generates function creation, replacement, and removal', () => {
+    const sql = diffSql(
+      wrapFunctions(''),
+      wrapFunctions(`
+        function getUserBalance(userId: UUID): INTEGER {
+          language: sql
+          volatility: STABLE
+          execute: """
+            SELECT balance FROM "user" WHERE id = user_id
+          """
+        }
+      `),
+    );
+
+    assert.match(sql, /CREATE OR REPLACE FUNCTION get_user_balance\(user_id UUID\)/);
+
+    const replaced = diffSql(
+      wrapFunctions(`
+        function ping(): INTEGER {
+          execute: """
+            SELECT 1
+          """
+        }
+      `),
+      wrapFunctions(`
+        function ping(): INTEGER {
+          execute: """
+            SELECT 2
+          """
+        }
+      `),
+    );
+
+    assert.match(replaced, /CREATE OR REPLACE FUNCTION ping\(\)/);
+    assert.match(replaced, /SELECT 2/);
+    assert.equal(replaced.includes('DROP FUNCTION'), false);
+
+    const reverse = diffSql(
+      wrapFunctions(`
+        function getUserBalance(userId: UUID): INTEGER {
+          execute: """
+            SELECT balance FROM "user" WHERE id = user_id
+          """
+        }
+      `),
+      wrapFunctions(''),
+    );
+
+    assert.match(reverse, /DROP FUNCTION IF EXISTS get_user_balance\(UUID\)/);
+  });
+
+  it('drops a function before recreating it when argument types change', () => {
+    const sql = diffSql(
+      wrapFunctions(`
+        function ping(value: INTEGER): INTEGER {
+          execute: """
+            SELECT value
+          """
+        }
+      `),
+      wrapFunctions(`
+        function ping(value: TEXT): INTEGER {
+          execute: """
+            SELECT value
+          """
+        }
+      `),
+    );
+
+    const dropIndex = sql.indexOf('DROP FUNCTION IF EXISTS ping(INTEGER)');
+    const createIndex = sql.indexOf('CREATE OR REPLACE FUNCTION ping(value TEXT)');
+
+    assert.ok(dropIndex >= 0);
+    assert.ok(createIndex > dropIndex);
   });
 });
 

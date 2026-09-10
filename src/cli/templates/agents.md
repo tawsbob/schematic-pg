@@ -14,7 +14,7 @@ schematic-pg is a single-file backend framework for PostgreSQL and Node.js. **`a
 
 1. **Never edit `generated/`** — it is overwritten on every `generate` / `dev` run.
 2. **Regenerate after changes** to `app.schema`, `src/routes/`, or `src/hooks/` (`schematic-pg generate` or `schematic-pg dev`).
-3. **Edit `app.schema`** for models, relations, policies, indexes, and triggers.
+3. **Edit `app.schema`** for models, relations, policies, indexes, triggers, and SQL functions.
 4. **Use extension points** for app-specific logic: `src/routes/` (custom HTTP) and `src/hooks/` (lifecycle hooks).
 5. **Do not hand-write SQL** for CRUD — use the generated DB client or REST API.
 
@@ -100,6 +100,7 @@ models {
 - **Policies:** `@policy(role: ..., allow: [select|insert|update|delete|all], where: "...")` — `where` supports `{{auth.user.id}}`.
 - **Validation:** `@regex(...)`, `@range(min: ..., max: ...)` flow into generated Zod schemas.
 - **Indexes / triggers:** `@@index(...)`, `@@trigger { timing, event, level, execute: """...""" }`.
+- **SQL functions:** optional `functions { function name(args): ReturnType { execute: """...""" } }` after `models`. Names snake_case in SQL; call with `db.$queryRaw`.
 
 ## Database Client
 

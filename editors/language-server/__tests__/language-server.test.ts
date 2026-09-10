@@ -32,6 +32,7 @@ describe('Schema DSL language server', () => {
     assert.ok(index.models.has('User'));
     assert.ok(index.enums.has('UserRole'));
     assert.ok(index.fields.has('User.email'));
+    assert.ok(index.functions.has('getUserBalance'));
   });
 
   it('finds definitions and references for models', () => {
@@ -48,6 +49,7 @@ describe('Schema DSL language server', () => {
     const symbols = getDocumentSymbols(schema);
     assert.ok(symbols.some((symbol) => symbol.name === 'User'));
     assert.ok(symbols.some((symbol) => symbol.name === 'UserRole'));
+    assert.ok(symbols.some((symbol) => symbol.name === 'getUserBalance'));
   });
 
   it('offers decorator completions after @', () => {

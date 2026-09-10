@@ -1,4 +1,4 @@
-import type { Attribute, Field, Model, Schema } from './ast.js';
+import type { Attribute, Field, Model, Schema, SqlFunction } from './ast.js';
 import { Token } from './tokens.js';
 export declare class ParseError extends Error {
     readonly line: number;
@@ -20,6 +20,11 @@ export declare class Parser {
     private parseEnumsSection;
     private parseEnum;
     private parseModelsSection;
+    private parseFunctionsSection;
+    parseFunction(existingNames?: Set<string>): SqlFunction;
+    private parseFunctionParams;
+    private parseFunctionParam;
+    private parseFunctionBody;
     private parseModelBody;
     private parseTypeExpr;
     private parseFieldAttributes;

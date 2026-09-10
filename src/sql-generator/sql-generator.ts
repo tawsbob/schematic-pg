@@ -4,6 +4,7 @@ import { generateDropTables } from './generators/drop-tables.js';
 import { generateEnums } from './generators/enums.js';
 import { generateExtensions } from './generators/extensions.js';
 import { generateForeignKeys } from './generators/foreign-keys.js';
+import { generateFunctions } from './generators/functions.js';
 import { generateIndexes } from './generators/indexes.js';
 import { generateTables } from './generators/tables.js';
 import { generateTriggers } from './generators/triggers.js';
@@ -17,6 +18,7 @@ export class SqlGenerator {
       generateTables(schema),
       generateForeignKeys(schema),
       generateIndexes(schema),
+      generateFunctions(schema),
       generateTriggers(schema),
     ];
 

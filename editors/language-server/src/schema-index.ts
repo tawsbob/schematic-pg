@@ -1,4 +1,4 @@
-import type { Field, Model, Schema, SourceLocation, TypeExpr } from 'schematic-pg/schema-dsl';
+import type { Field, Model, Schema, SourceLocation, SqlFunction, TypeExpr } from 'schematic-pg/schema-dsl';
 import { Range } from 'vscode-languageserver';
 import { toRange } from './utils.js';
 
@@ -8,7 +8,8 @@ export type SymbolKind =
   | 'model'
   | 'field'
   | 'type-ref'
-  | 'extension';
+  | 'extension'
+  | 'function';
 
 export interface IndexedSymbol {
   name: string;
@@ -25,6 +26,7 @@ export interface SchemaIndex {
   fields: Map<string, IndexedSymbol>;
   typeRefs: IndexedSymbol[];
   enumValues: Map<string, IndexedSymbol>;
+  functions: Map<string, IndexedSymbol>;
 }
 
 export function buildSchemaIndex(schema: Schema): SchemaIndex {
@@ -34,6 +36,7 @@ export function buildSchemaIndex(schema: Schema): SchemaIndex {
   const fields = new Map<string, IndexedSymbol>();
   const typeRefs: IndexedSymbol[] = [];
   const enumValues = new Map<string, IndexedSymbol>();
+  const functions = new Map<string, IndexedSymbol>();
 
   for (const extension of schema.extensions) {
     const symbol: IndexedSymbol = {
@@ -95,7 +98,18 @@ export function buildSchemaIndex(schema: Schema): SchemaIndex {
     }
   }
 
-  return { symbols, enums, models, fields, typeRefs, enumValues };
+  for (const sqlFunction of schema.functions) {
+    const functionSymbol: IndexedSymbol = {
+      name: sqlFunction.name,
+      kind: 'function',
+      range: toRange(sqlFunction.loc),
+      detail: formatFunctionSignature(sqlFunction),
+    };
+    symbols.push(functionSymbol);
+    functions.set(sqlFunction.name, functionSymbol);
+  }
+
+  return { symbols, enums, models, fields, typeRefs, enumValues, functions };
 }
 
 function createTypeRef(type: TypeExpr, containerName: string): IndexedSymbol | undefined {
@@ -113,7 +127,7 @@ function createTypeRef(type: TypeExpr, containerName: string): IndexedSymbol | u
 }
 
 function isBuiltinType(name: string): boolean {
-  return /^(UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|BIGINT|POINT|SERIAL|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL)$/.test(
+  return /^(UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|BIGINT|POINT|SERIAL|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL|TRIGGER|VOID)$/.test(
     name,
   );
 }
@@ -133,7 +147,7 @@ function formatType(type: TypeExpr): string {
 }
 
 export function findDefinition(index: SchemaIndex, word: string): IndexedSymbol | undefined {
-  return index.enums.get(word) ?? index.models.get(word);
+  return index.enums.get(word) ?? index.models.get(word) ?? index.functions.get(word);
 }
 
 export function findReferences(index: SchemaIndex, word: string): Range[] {
@@ -178,6 +192,19 @@ export function findContainingModel(schema: Schema, positionLine: number): Model
     const end = model.loc.endLine ?? model.loc.line;
     return positionLine + 1 >= start && positionLine + 1 <= end;
   });
+}
+
+export function findContainingFunction(schema: Schema, positionLine: number): SqlFunction | undefined {
+  return schema.functions.find((sqlFunction) => {
+    const start = sqlFunction.loc.line;
+    const end = sqlFunction.loc.endLine ?? sqlFunction.loc.line;
+    return positionLine + 1 >= start && positionLine + 1 <= end;
+  });
+}
+
+function formatFunctionSignature(sqlFunction: SqlFunction): string {
+  const params = sqlFunction.params.map((param) => `${param.name}: ${formatType(param.type)}`).join(', ');
+  return `(${params}): ${formatType(sqlFunction.returns)}`;
 }
 
 export function locAt(line: number, col: number): SourceLocation {

@@ -136,3 +136,13 @@ models {
   }
 
 }
+
+functions {
+  function getUserBalance(userId: UUID): INTEGER {
+    language: sql
+    volatility: STABLE
+    execute: """
+      SELECT balance FROM "user" WHERE id = user_id
+    """
+  }
+}

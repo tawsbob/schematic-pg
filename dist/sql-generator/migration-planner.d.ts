@@ -9,6 +9,7 @@ export declare class MigrationPlanner {
     private diffConstraints;
     private diffIndexes;
     private diffTriggers;
+    private diffFunctions;
     private triggerSignatures;
     private indexSignatures;
 }

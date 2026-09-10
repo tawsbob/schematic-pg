@@ -1,4 +1,4 @@
-export const TOP_LEVEL_KEYWORDS = ['extensions', 'enums', 'models', 'model'] as const;
+export const TOP_LEVEL_KEYWORDS = ['extensions', 'enums', 'models', 'model', 'functions', 'function'] as const;
 
 export const PG_TYPES = [
   'UUID',
@@ -55,6 +55,16 @@ export const TRIGGER_TIMINGS = ['BEFORE', 'AFTER'] as const;
 export const TRIGGER_EVENTS = ['INSERT', 'UPDATE', 'DELETE'] as const;
 
 export const TRIGGER_LEVELS = ['ROW', 'STATEMENT'] as const;
+
+export const FUNCTION_KEYS = ['language', 'volatility', 'security', 'execute'] as const;
+
+export const FUNCTION_LANGUAGES = ['sql', 'plpgsql'] as const;
+
+export const FUNCTION_VOLATILITIES = ['VOLATILE', 'STABLE', 'IMMUTABLE'] as const;
+
+export const FUNCTION_SECURITIES = ['INVOKER', 'DEFINER'] as const;
+
+export const FUNCTION_RETURN_TYPES = ['TRIGGER', 'VOID'] as const;
 
 export const REFERENCE_ACTIONS = ['CASCADE', 'SET_NULL', 'RESTRICT', 'NO_ACTION'] as const;
 

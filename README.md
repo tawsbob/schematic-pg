@@ -11,7 +11,7 @@
 
 `app.schema` is the source of truth. From it, schematic-pg generates PostgreSQL DDL, a type-safe DB client, REST routes, Zod validators, and ACL policies.
 
-A schema file always has three sections, in this order: `extensions`, `enums`, `models`.
+A schema file has three required sections, in this order: `extensions`, `enums`, `models`. An optional `functions` section may follow.
 
 ```ts
 extensions {
@@ -375,6 +375,52 @@ model User {
 | `event` | `INSERT`, `UPDATE`, `DELETE` | — |
 | `level` | `ROW`, `STATEMENT` | `ROW` |
 | `execute` | Triple-quoted PL/pgSQL | — |
+
+### Functions
+
+Optional section after `models`. Each `function` becomes a PostgreSQL `CREATE OR REPLACE FUNCTION`. Names and parameters are converted to `snake_case` (`getUserBalance` → `get_user_balance`, `userId` → `user_id`). The `execute` body is copied as-is — use those SQL names inside it, not camelCase.
+
+```ts
+functions {
+  function getUserBalance(userId: UUID): INTEGER {
+    language: sql
+    volatility: STABLE
+    execute: """
+      SELECT balance FROM "user" WHERE id = user_id
+    """
+  }
+
+  function setUpdatedAt(): TRIGGER {
+    language: plpgsql
+    execute: """
+      NEW.updated_at = now();
+      RETURN NEW;
+    """
+  }
+}
+```
+
+| Argument | Values | Default |
+|----------|--------|---------|
+| `language` | `sql`, `plpgsql` | `sql` |
+| `volatility` | `VOLATILE`, `STABLE`, `IMMUTABLE` | `VOLATILE` |
+| `security` | `INVOKER`, `DEFINER` | `INVOKER` |
+| `execute` | Triple-quoted SQL / PL/pgSQL | required |
+
+Return types are PostgreSQL types (`INTEGER`, `UUID`, `JSONB`, …), `TRIGGER`, or `VOID`. Body keys may be newline-separated or comma-separated.
+
+`language: plpgsql` wraps the body in `BEGIN` / `END` unless it already starts with `DECLARE` or `BEGIN`. Function names must be unique in the schema.
+
+`db:diff` treats body, language, volatility, and security changes as `CREATE OR REPLACE`. Argument or return-type changes drop the old function, then create the new one.
+
+Functions are database objects only in this release — they are not REST endpoints. Call them with `db.$queryRaw`:
+
+```ts
+const [row] = await db.$queryRaw<{ get_user_balance: number }>(
+  'SELECT get_user_balance($1)',
+  [userId],
+);
+```
 
 ---
 

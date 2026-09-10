@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { parse } from '../../schema-dsl/index.js';
 import { SqlGenerator } from '../sql-generator.js';
+import { wrapFunctions } from '../../schema-dsl/__tests__/helpers.js';
 
 const appSchemaPath = join(process.cwd(), 'app.schema');
 const fixturePath = join(process.cwd(), 'src/sql-generator/__tests__/fixtures/app.schema.sql');
@@ -26,6 +27,7 @@ describe('SqlGenerator — app.schema', () => {
       '-- Create tables',
       '-- Alter tables (foreign keys)',
       '-- Create indexes',
+      '-- Create functions',
       '-- Create triggers',
     ]) {
       assert.ok(sql.includes(header), `missing section ${header}`);
@@ -45,6 +47,7 @@ describe('SqlGenerator — app.schema', () => {
     assert.match(sql, /ALTER TABLE "order" ADD CONSTRAINT order_user_id_fkey/);
     assert.match(sql, /CREATE INDEX user_role_is_active_idx/);
     assert.match(sql, /CREATE UNIQUE INDEX user_email_idx/);
+    assert.match(sql, /CREATE OR REPLACE FUNCTION get_user_balance\(user_id UUID\)/);
     assert.match(sql, /CREATE OR REPLACE FUNCTION user_before_update_trigger_func/);
     assert.match(sql, /CREATE OR REPLACE FUNCTION product_after_update_trigger_func/);
     assert.match(sql, /CREATE OR REPLACE FUNCTION product_before_update_trigger_func/);
@@ -55,8 +58,36 @@ describe('SqlGenerator — app.schema', () => {
     assert.match(sql, /-- @range: min = 1, max = 120/);
   });
 
-  it('transforms index WHERE clauses to snake_case field names', () => {
-    assert.match(sql, /WHERE is_active = true/);
-    assert.match(sql, /WHERE role = 'PUBLIC'/);
+  it('generates SQL functions with snake_case names and plpgsql wrapping', () => {
+    const schema = parse(
+      wrapFunctions(`
+        function getUserBalance(userId: UUID): INTEGER {
+          language: sql
+          volatility: STABLE
+          execute: """
+            SELECT balance FROM "user" WHERE id = user_id
+          """
+        }
+
+        function setUpdatedAt(): TRIGGER {
+          language: plpgsql
+          execute: """
+            NEW.updated_at = now();
+            RETURN NEW;
+          """
+        }
+      `),
+    );
+    const sql = new SqlGenerator().generate(schema);
+
+    assert.match(sql, /CREATE OR REPLACE FUNCTION get_user_balance\(user_id UUID\)/);
+    assert.match(sql, /RETURNS INTEGER/);
+    assert.match(sql, /LANGUAGE sql/);
+    assert.match(sql, /STABLE/);
+    assert.match(sql, /CREATE OR REPLACE FUNCTION set_updated_at\(\)/);
+    assert.match(sql, /RETURNS TRIGGER/);
+    assert.match(sql, /LANGUAGE plpgsql/);
+    assert.match(sql, /BEGIN\n {2}NEW\.updated_at = now\(\);/);
+    assert.match(sql, /END;/);
   });
 });

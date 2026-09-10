@@ -3,6 +3,8 @@ export declare enum TokenType {
     ENUMS = "ENUMS",
     MODELS = "MODELS",
     MODEL = "MODEL",
+    FUNCTIONS = "FUNCTIONS",
+    FUNCTION = "FUNCTION",
     STRING = "STRING",
     TRIPLE_STRING = "TRIPLE_STRING",
     NUMBER = "NUMBER",

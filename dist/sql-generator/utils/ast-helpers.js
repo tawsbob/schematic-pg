@@ -250,3 +250,29 @@ export function resolveTriggerNames(model, timing, event) {
         triggerName: `${baseName}_trigger`,
     };
 }
+export function normalizeFunction(sqlFunction, enumNames) {
+    return {
+        name: sqlFunction.name,
+        sqlName: toSnakeCase(sqlFunction.name),
+        params: sqlFunction.params.map((param) => ({
+            name: param.name,
+            sqlName: toSnakeCase(param.name),
+            sqlType: serializeColumnType(param.type, enumNames),
+        })),
+        returns: serializeColumnType(sqlFunction.returns, enumNames),
+        language: (sqlFunction.language ?? 'sql').toLowerCase(),
+        volatility: (sqlFunction.volatility ?? 'VOLATILE').toUpperCase(),
+        security: (sqlFunction.security ?? 'INVOKER').toUpperCase(),
+        execute: sqlFunction.execute.trim(),
+    };
+}
+export function functionIdentity(normalized) {
+    return JSON.stringify({
+        sqlName: normalized.sqlName,
+        params: normalized.params.map((param) => param.sqlType),
+        returns: normalized.returns,
+    });
+}
+export function functionSignature(normalized) {
+    return JSON.stringify(normalized);
+}

@@ -64,5 +64,21 @@ export function getDocumentSymbols(schema: Schema): DocumentSymbol[] {
     );
   }
 
+  for (const sqlFunction of schema.functions) {
+    const functionSymbol = index.functions.get(sqlFunction.name);
+    if (!functionSymbol) {
+      continue;
+    }
+
+    symbols.push(
+      DocumentSymbol.create(
+        sqlFunction.name,
+        LspSymbolKind.Function,
+        functionSymbol.range,
+        functionSymbol.range,
+      ),
+    );
+  }
+
   return symbols;
 }

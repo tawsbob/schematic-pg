@@ -4,6 +4,8 @@ export var TokenType;
     TokenType["ENUMS"] = "ENUMS";
     TokenType["MODELS"] = "MODELS";
     TokenType["MODEL"] = "MODEL";
+    TokenType["FUNCTIONS"] = "FUNCTIONS";
+    TokenType["FUNCTION"] = "FUNCTION";
     TokenType["STRING"] = "STRING";
     TokenType["TRIPLE_STRING"] = "TRIPLE_STRING";
     TokenType["NUMBER"] = "NUMBER";
@@ -27,6 +29,8 @@ const KEYWORDS = {
     enums: TokenType.ENUMS,
     models: TokenType.MODELS,
     model: TokenType.MODEL,
+    functions: TokenType.FUNCTIONS,
+    function: TokenType.FUNCTION,
     true: TokenType.BOOLEAN,
     false: TokenType.BOOLEAN,
 };

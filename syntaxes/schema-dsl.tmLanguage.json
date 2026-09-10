@@ -75,7 +75,7 @@
       "patterns": [
         {
           "name": "keyword.control.schema-dsl",
-          "match": "\\b(extensions|enums|models|model)\\b"
+          "match": "\\b(extensions|enums|models|model|functions|function)\\b"
         }
       ]
     },
@@ -99,7 +99,7 @@
       "patterns": [
         {
           "name": "entity.name.type.schema-dsl",
-          "match": "\\b(?:UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|POINT|SERIAL|BIGINT|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL)(?:\\([^)]*\\))?\\??(?:\\[\\])?"
+          "match": "\\b(?:UUID|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|JSONB|INTEGER|SMALLINT|POINT|SERIAL|BIGINT|REAL|DOUBLE|NUMERIC|BYTEA|DATE|TIME|INTERVAL|TRIGGER|VOID)(?:\\([^)]*\\))?\\??(?:\\[\\])?"
         },
         {
           "name": "entity.name.type.schema-dsl",
@@ -111,7 +111,7 @@
       "patterns": [
         {
           "name": "support.constant.schema-dsl",
-          "match": "\\b(?:select|insert|update|delete|all|BEFORE|AFTER|ROW|UPDATE|INSERT|DELETE|CASCADE|SET_NULL|RESTRICT|NO_ACTION|BTREE|GIN|GIST|HASH|BRIN)\\b"
+          "match": "\\b(?:select|insert|update|delete|all|BEFORE|AFTER|ROW|UPDATE|INSERT|DELETE|CASCADE|SET_NULL|RESTRICT|NO_ACTION|BTREE|GIN|GIST|HASH|BRIN|VOLATILE|STABLE|IMMUTABLE|INVOKER|DEFINER|sql|plpgsql)\\b"
         },
         {
           "name": "support.function.schema-dsl",
@@ -119,7 +119,7 @@
         },
         {
           "name": "support.type.property-name.schema-dsl",
-          "match": "\\b(?:fields|references|onDelete|onUpdate|role|allow|where|timing|event|level|execute|pattern|message|min|max|name|type|unique|version)\\b"
+          "match": "\\b(?:fields|references|onDelete|onUpdate|role|allow|where|timing|event|level|execute|pattern|message|min|max|name|type|unique|version|language|volatility|security)\\b"
         }
       ]
     },

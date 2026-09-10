@@ -3,6 +3,8 @@ export enum TokenType {
   ENUMS = 'ENUMS',
   MODELS = 'MODELS',
   MODEL = 'MODEL',
+  FUNCTIONS = 'FUNCTIONS',
+  FUNCTION = 'FUNCTION',
 
   STRING = 'STRING',
   TRIPLE_STRING = 'TRIPLE_STRING',
@@ -39,6 +41,8 @@ const KEYWORDS: Record<string, TokenType> = {
   enums: TokenType.ENUMS,
   models: TokenType.MODELS,
   model: TokenType.MODEL,
+  functions: TokenType.FUNCTIONS,
+  function: TokenType.FUNCTION,
   true: TokenType.BOOLEAN,
   false: TokenType.BOOLEAN,
 };

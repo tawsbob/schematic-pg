@@ -1,7 +1,12 @@
-import type { Field, Model, Schema } from '../schema-dsl/ast.js';
+import type { Enum, Field, Model, Schema, SqlFunction } from '../schema-dsl/ast.js';
 import { generateAddEnumValue, generateEnum } from './generators/enums.js';
 import { generateCreateExtension, generateDropExtension } from './generators/extensions.js';
 import { generateForeignKey } from './generators/foreign-keys.js';
+import {
+  generateCreateFunction,
+  generateDropFunction,
+  type NormalizedFunction,
+} from './generators/functions.js';
 import {
   generateCreateIndex,
   generateDropIndex,
@@ -20,6 +25,7 @@ import {
   getEnumNames,
   getModelNames,
   getStoredFields,
+  normalizeFunction,
   normalizeIndexDirective,
   normalizeTriggerDirective,
   parseForeignKeySignature,
@@ -38,10 +44,13 @@ const MIGRATION_ORDER: Record<Migration['kind'], number> = {
   DropConstraint: 8,
   DropIndex: 9,
   CreateIndex: 10,
-  CreateTrigger: 11,
-  DropTrigger: 12,
-  DropTable: 13,
-  DropExtension: 14,
+  DropFunction: 11,
+  CreateFunction: 12,
+  ReplaceFunction: 13,
+  CreateTrigger: 14,
+  DropTrigger: 15,
+  DropTable: 16,
+  DropExtension: 17,
 };
 
 export class MigrationSqlGenerator {
@@ -54,13 +63,23 @@ export class MigrationSqlGenerator {
     const modelNames = getModelNames(newSchema);
     const modelMap = new Map(newSchema.models.map((model) => [model.name, model]));
     const enumMap = new Map(newSchema.enums.map((enumDef) => [enumDef.name, enumDef]));
+    const functionMap = new Map(
+      newSchema.functions.map((sqlFunction) => [sqlFunction.name, sqlFunction]),
+    );
 
     const ordered = [...migrations].sort(
       (left, right) => MIGRATION_ORDER[left.kind] - MIGRATION_ORDER[right.kind],
     );
 
     const statements = ordered.map((migration) =>
-      this.migrationToSql(migration, { newSchema, enumNames, modelNames, modelMap, enumMap }),
+      this.migrationToSql(migration, {
+        newSchema,
+        enumNames,
+        modelNames,
+        modelMap,
+        enumMap,
+        functionMap,
+      }),
     );
 
     return `${statements.join('\n\n')}\n`;
@@ -73,10 +92,11 @@ export class MigrationSqlGenerator {
       enumNames: Set<string>;
       modelNames: Set<string>;
       modelMap: Map<string, Model>;
-      enumMap: Map<string, import('../schema-dsl/ast.js').Enum>;
+      enumMap: Map<string, Enum>;
+      functionMap: Map<string, SqlFunction>;
     },
   ): string {
-    const { enumNames, modelNames, modelMap, enumMap } = context;
+    const { enumNames, modelNames, modelMap, enumMap, functionMap } = context;
 
     switch (migration.kind) {
       case 'CreateExtension':
@@ -187,6 +207,18 @@ export class MigrationSqlGenerator {
         }
         const normalized = JSON.parse(migration.signature) as NormalizedTrigger;
         return generateDropTrigger(model, normalized);
+      }
+      case 'CreateFunction':
+      case 'ReplaceFunction': {
+        const sqlFunction = functionMap.get(migration.functionName);
+        if (!sqlFunction) {
+          throw new Error(`Function "${migration.functionName}" not found in new schema`);
+        }
+        return generateCreateFunction(normalizeFunction(sqlFunction, enumNames));
+      }
+      case 'DropFunction': {
+        const normalized = JSON.parse(migration.signature) as NormalizedFunction;
+        return generateDropFunction(normalized);
       }
       default: {
         const exhaustive: never = migration;

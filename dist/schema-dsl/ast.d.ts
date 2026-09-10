@@ -9,6 +9,7 @@ export interface Schema {
     extensions: Extension[];
     enums: Enum[];
     models: Model[];
+    functions: SqlFunction[];
     loc: SourceLocation;
 }
 export interface Extension {
@@ -29,6 +30,23 @@ export interface Model {
     fields: Field[];
     attributes: Attribute[];
     directives: Directive[];
+    loc: SourceLocation;
+}
+export interface SqlFunction {
+    kind: 'SqlFunction';
+    name: string;
+    params: FunctionParam[];
+    returns: TypeExpr;
+    language?: string;
+    volatility?: string;
+    security?: string;
+    execute: string;
+    loc: SourceLocation;
+}
+export interface FunctionParam {
+    kind: 'FunctionParam';
+    name: string;
+    type: TypeExpr;
     loc: SourceLocation;
 }
 export interface Field {

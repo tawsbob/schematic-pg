@@ -115,6 +115,16 @@ CREATE INDEX order_user_id_idx ON "order" (user_id);
 
 CREATE INDEX order_status_created_idx ON "order" (status, created_at);
 
+-- Create functions
+
+CREATE OR REPLACE FUNCTION get_user_balance(user_id UUID)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT balance FROM "user" WHERE id = user_id
+$$;
+
 -- Create triggers
 
 CREATE OR REPLACE FUNCTION user_before_update_trigger_func()

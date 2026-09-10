@@ -13,6 +13,9 @@ const PRIMITIVE_TYPES = new Set([
     'TIMESTAMP',
 ]);
 export function mapColumnType(type, enumNames) {
+    if (type.name === 'TRIGGER' || type.name === 'VOID') {
+        return type.name;
+    }
     const baseType = mapBaseType(type, enumNames);
     return type.array ? `${baseType}[]` : baseType;
 }

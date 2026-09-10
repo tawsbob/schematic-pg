@@ -1,4 +1,4 @@
-import type { Attribute, AttributeArgs, Directive, Field, KeyValueArgs, Model, Schema, TypeExpr, Value } from '../../schema-dsl/ast.js';
+import type { Attribute, AttributeArgs, Directive, Field, KeyValueArgs, Model, Schema, SqlFunction, TypeExpr, Value } from '../../schema-dsl/ast.js';
 export interface PrimaryKeyInfo {
     fields: string[];
     composite: boolean;
@@ -56,3 +56,21 @@ export interface TriggerNames {
 }
 export declare function normalizeTriggerDirective(directive: Directive): NormalizedTrigger;
 export declare function resolveTriggerNames(model: Model, timing: string, event: string): TriggerNames;
+export interface NormalizedFunctionParam {
+    name: string;
+    sqlName: string;
+    sqlType: string;
+}
+export interface NormalizedFunction {
+    name: string;
+    sqlName: string;
+    params: NormalizedFunctionParam[];
+    returns: string;
+    language: string;
+    volatility: string;
+    security: string;
+    execute: string;
+}
+export declare function normalizeFunction(sqlFunction: SqlFunction, enumNames: Set<string>): NormalizedFunction;
+export declare function functionIdentity(normalized: NormalizedFunction): string;
+export declare function functionSignature(normalized: NormalizedFunction): string;

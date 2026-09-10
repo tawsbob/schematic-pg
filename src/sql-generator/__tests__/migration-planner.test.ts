@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { parse } from '../../schema-dsl/index.js';
 import { MigrationPlanner } from '../migration-planner.js';
-import { wrapModels } from '../../schema-dsl/__tests__/helpers.js';
+import { wrapFunctions, wrapModels } from '../../schema-dsl/__tests__/helpers.js';
 
 describe('MigrationPlanner', () => {
   const planner = new MigrationPlanner();
@@ -231,5 +231,80 @@ model Audit {
     const migrations = planner.generateMigration(oldSchema, newSchema);
     assert.ok(migrations.some((migration) => migration.kind === 'CreateTable' && migration.modelName === 'Audit'));
     assert.ok(migrations.some((migration) => migration.kind === 'CreateTrigger' && migration.modelName === 'Audit'));
+  });
+
+  it('detects added and dropped functions', () => {
+    const oldSchema = parse(wrapFunctions(''));
+    const newSchema = parse(
+      wrapFunctions(`
+        function getUserBalance(userId: UUID): INTEGER {
+          execute: """
+            SELECT balance FROM "user" WHERE id = user_id
+          """
+        }
+      `),
+    );
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.deepEqual(
+      migrations.filter((migration) => migration.kind === 'CreateFunction'),
+      [{ kind: 'CreateFunction', functionName: 'getUserBalance' }],
+    );
+
+    const reverse = planner.generateMigration(newSchema, oldSchema);
+    assert.equal(reverse.filter((migration) => migration.kind === 'DropFunction').length, 1);
+    assert.equal(reverse[0]?.kind, 'DropFunction');
+    if (reverse[0]?.kind === 'DropFunction') {
+      assert.equal(reverse[0].functionName, 'getUserBalance');
+    }
+  });
+
+  it('detects function body changes as replace', () => {
+    const oldSchema = parse(
+      wrapFunctions(`
+        function ping(): INTEGER {
+          execute: """
+            SELECT 1
+          """
+        }
+      `),
+    );
+    const newSchema = parse(
+      wrapFunctions(`
+        function ping(): INTEGER {
+          execute: """
+            SELECT 2
+          """
+        }
+      `),
+    );
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.deepEqual(migrations, [{ kind: 'ReplaceFunction', functionName: 'ping' }]);
+  });
+
+  it('detects function argument type changes as drop and create', () => {
+    const oldSchema = parse(
+      wrapFunctions(`
+        function ping(value: INTEGER): INTEGER {
+          execute: """
+            SELECT value
+          """
+        }
+      `),
+    );
+    const newSchema = parse(
+      wrapFunctions(`
+        function ping(value: TEXT): INTEGER {
+          execute: """
+            SELECT value
+          """
+        }
+      `),
+    );
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.equal(migrations[0]?.kind, 'DropFunction');
+    assert.equal(migrations[1]?.kind, 'CreateFunction');
   });
 });

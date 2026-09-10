@@ -130,7 +130,10 @@ export class Lexer {
     scanTripleString(startLine, startCol) {
         let value = '';
         while (!this.isAtEnd()) {
-            if (this.match('"') && this.match('"') && this.match('"')) {
+            if (this.peekChar() === '"' && this.peekChar(1) === '"' && this.peekChar(2) === '"') {
+                this.advance();
+                this.advance();
+                this.advance();
                 return this.makeToken(TokenType.TRIPLE_STRING, value, startLine, startCol);
             }
             value += this.advance();
