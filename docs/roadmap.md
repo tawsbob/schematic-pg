@@ -19,3 +19,4 @@
 - [ ] Tree-sitter grammar for editor support
 - [x] VS Code extension with syntax highlighting and language server
 - [x] SQL functions in the schema DSL (`functions { function … }`, diff-based migrations)
+- [x] Table partitions in the schema DSL (`@@partition`, add/remove via `db:diff`)

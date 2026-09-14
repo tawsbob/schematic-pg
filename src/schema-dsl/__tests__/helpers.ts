@@ -13,6 +13,7 @@ import type {
 } from '../ast.js';
 import { LexError } from '../lexer.js';
 import { ParseError } from '../parser.js';
+import { SchemaError } from '../validate.js';
 import { parse, tokenize } from '../index.js';
 import { TokenType } from '../tokens.js';
 
@@ -44,7 +45,36 @@ export function expectParseError(
   assert.throws(
     () => parse(source),
     (error: unknown) => {
-      assert.ok(error instanceof ParseError, `expected ParseError, got ${error}`);
+      assert.ok(
+        error instanceof ParseError || error instanceof SchemaError,
+        `expected ParseError or SchemaError, got ${error}`,
+      );
+      const message = error.message;
+      if (typeof matcher === 'string') {
+        assert.ok(message.includes(matcher), `message "${message}" should include "${matcher}"`);
+      } else {
+        assert.match(message, matcher);
+      }
+      if (expected?.line !== undefined) {
+        assert.equal(error.line, expected.line);
+      }
+      if (expected?.col !== undefined) {
+        assert.equal(error.col, expected.col);
+      }
+      return true;
+    },
+  );
+}
+
+export function expectSchemaError(
+  source: string,
+  matcher: RegExp | string,
+  expected?: { line?: number; col?: number },
+): void {
+  assert.throws(
+    () => parse(source),
+    (error: unknown) => {
+      assert.ok(error instanceof SchemaError, `expected SchemaError, got ${error}`);
       const message = error.message;
       if (typeof matcher === 'string') {
         assert.ok(message.includes(matcher), `message "${message}" should include "${matcher}"`);

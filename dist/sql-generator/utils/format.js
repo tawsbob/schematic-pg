@@ -4,7 +4,7 @@ export function joinSection(header, statements) {
     }
     return `-- ${header}\n\n${statements.join('\n\n')}\n`;
 }
-export function formatCreateTable(tableName, blocks) {
+export function formatCreateTable(tableName, blocks, options) {
     const renderedBlocks = blocks.map((lines, blockIndex) => {
         const isLastBlock = blockIndex === blocks.length - 1;
         const renderedLines = lines.map((line, lineIndex) => {
@@ -17,5 +17,6 @@ export function formatCreateTable(tableName, blocks) {
         });
         return renderedLines.join('\n');
     });
-    return `CREATE TABLE ${tableName} (\n${renderedBlocks.join('\n')}\n);`;
+    const partitionSuffix = options?.partitionBy ? ` ${options.partitionBy}` : '';
+    return `CREATE TABLE ${tableName} (\n${renderedBlocks.join('\n')}\n)${partitionSuffix};`;
 }

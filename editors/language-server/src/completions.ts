@@ -12,6 +12,9 @@ import {
   INDEX_KEYS,
   INDEX_TYPES,
   MODEL_DIRECTIVES,
+  PARTITION_BOUNDS,
+  PARTITION_KEYS,
+  PARTITION_STRATEGIES,
   PG_TYPES,
   POLICY_KEYS,
   POLICY_OPERATIONS,
@@ -89,6 +92,15 @@ export function getCompletions(
       ...TRIGGER_TIMINGS.map((value) => item(value, CompletionItemKind.Enum)),
       ...TRIGGER_EVENTS.map((value) => item(value, CompletionItemKind.Enum)),
       ...TRIGGER_LEVELS.map((value) => item(value, CompletionItemKind.Enum)),
+    ];
+  }
+
+  if (/@@partition\s*\{[^}]*$/.test(prefix) || /partition\s+\w+\s*\{[^}]*$/.test(prefix)) {
+    return [
+      ...PARTITION_KEYS.map((key) => item(key, CompletionItemKind.Property)),
+      ...PARTITION_STRATEGIES.map((value) => item(value, CompletionItemKind.Enum, 'partition strategy')),
+      ...PARTITION_BOUNDS.map((value) => item(value, CompletionItemKind.Enum, 'range bound')),
+      item('partition', CompletionItemKind.Keyword, 'child partition'),
     ];
   }
 

@@ -91,6 +91,23 @@ edit app.schema
 
 After `db:migrate`, commit the updated `.schema-state/app.schema` so the next `db:diff` starts from the applied baseline.
 
+### Partitions
+
+`@@partition` children are first-class migration objects:
+
+| Schema change | Diff result |
+|---------------|-------------|
+| Add a `partition Name { … }` | `CREATE TABLE … PARTITION OF …` |
+| Remove a `partition Name { … }` | `ALTER TABLE … DETACH PARTITION …` then `DROP TABLE … CASCADE` (destructive) |
+| New partitioned model | `CREATE TABLE` parent (`PARTITION BY`) + create each child |
+| Drop partitioned model | `DROP TABLE parent CASCADE` only (children go with it) |
+| Rename a partition | Drop old + create new (data loss unless you edit the SQL) |
+| Change `by` / `fields` / `expression` / HASH `count` | **Error** — unsupported rewrite; write a manual `migrations/*.sql` |
+| Convert a normal table to partitioned (or back) | **Error** — unsupported; manual migration required |
+| Change bounds/`in`/remainder on the same name | **Error** — drop the old name and add a new one |
+
+`DropPartition` is included in the destructive-change warning from `db:diff`. You can delete the `DROP TABLE` line after `DETACH` if you want to keep the data as a standalone table.
+
 ---
 
 ## 3. Dev vs production

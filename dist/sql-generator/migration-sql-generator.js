@@ -3,6 +3,7 @@ import { generateCreateExtension, generateDropExtension } from './generators/ext
 import { generateForeignKey } from './generators/foreign-keys.js';
 import { generateCreateFunction, generateDropFunction, } from './generators/functions.js';
 import { generateCreateIndex, generateDropIndex, } from './generators/indexes.js';
+import { flattenPartitions, formatDetachAndDropPartition, formatPartitionOfClause, } from './generators/partitions.js';
 import { generateColumnDefinition, generateTable } from './generators/tables.js';
 import { generateCreateTrigger, generateDropTrigger, } from './generators/triggers.js';
 import { getDirectives, getDefaultExpression, getEnumNames, getModelNames, getStoredFields, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, parseForeignKeySignature, } from './utils/ast-helpers.js';
@@ -13,19 +14,21 @@ const MIGRATION_ORDER = {
     AddEnumValue: 2,
     CreateTable: 3,
     AddColumn: 4,
-    AlterColumn: 5,
-    AddConstraint: 6,
-    DropColumn: 7,
-    DropConstraint: 8,
-    DropIndex: 9,
-    CreateIndex: 10,
-    DropFunction: 11,
-    CreateFunction: 12,
-    ReplaceFunction: 13,
-    CreateTrigger: 14,
-    DropTrigger: 15,
-    DropTable: 16,
-    DropExtension: 17,
+    CreatePartition: 5,
+    AlterColumn: 6,
+    AddConstraint: 7,
+    DropColumn: 8,
+    DropConstraint: 9,
+    DropIndex: 10,
+    CreateIndex: 11,
+    DropFunction: 12,
+    CreateFunction: 13,
+    ReplaceFunction: 14,
+    CreateTrigger: 15,
+    DropTrigger: 16,
+    DropPartition: 17,
+    DropTable: 18,
+    DropExtension: 19,
 };
 export class MigrationSqlGenerator {
     generate(migrations, newSchema) {
@@ -113,6 +116,26 @@ export class MigrationSqlGenerator {
                 const tableName = quoteIdentifier(toTableName(migration.modelName));
                 return `DROP TABLE IF EXISTS ${tableName} CASCADE;`;
             }
+            case 'CreatePartition': {
+                const model = modelMap.get(migration.modelName);
+                if (!model) {
+                    throw new Error(`Model "${migration.modelName}" not found in new schema`);
+                }
+                const partition = flattenPartitions(model).find((item) => item.name === migration.partitionName);
+                if (!partition) {
+                    throw new Error(`Partition "${migration.partitionName}" not found on model "${migration.modelName}"`);
+                }
+                return formatPartitionOfClause(partition);
+            }
+            case 'DropPartition':
+                return formatDetachAndDropPartition({
+                    modelName: migration.modelName,
+                    name: migration.partitionName,
+                    tableName: migration.tableName,
+                    parentTable: migration.parentTable,
+                    values: { kind: 'default' },
+                    signature: '',
+                });
             case 'CreateIndex': {
                 const model = modelMap.get(migration.modelName);
                 if (!model) {

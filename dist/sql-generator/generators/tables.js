@@ -2,11 +2,19 @@ import { collectValidationComments, getDefaultExpression, getEnumNames, getModel
 import { formatCreateTable, joinSection } from '../utils/format.js';
 import { mapColumnType } from '../utils/type-mapper.js';
 import { quoteIdentifier, toSnakeCase, toTableName } from '../utils/snake-case.js';
+import { flattenPartitions, formatPartitionBy, formatPartitionOfClause, } from './partitions.js';
 export function generateTables(schema) {
     const enumNames = getEnumNames(schema);
     const modelNames = getModelNames(schema);
-    const statements = schema.models.map((model) => generateTable(model, enumNames, modelNames));
+    const statements = schema.models.flatMap((model) => generateTableWithPartitions(model, enumNames, modelNames));
     return joinSection('Create tables', statements);
+}
+export function generateTableWithPartitions(model, enumNames, modelNames) {
+    const statements = [generateTable(model, enumNames, modelNames)];
+    for (const partition of flattenPartitions(model)) {
+        statements.push(formatPartitionOfClause(partition));
+    }
+    return statements;
 }
 export function generateTable(model, enumNames, modelNames) {
     const primaryKey = getPrimaryKey(model);
@@ -39,7 +47,8 @@ export function generateTable(model, enumNames, modelNames) {
         blocks.push([`PRIMARY KEY (${pkColumns})`]);
     }
     const tableName = quoteIdentifier(toTableName(model.name));
-    return formatCreateTable(tableName, blocks);
+    const partitionBy = model.partition ? formatPartitionBy(model.partition) : undefined;
+    return formatCreateTable(tableName, blocks, { partitionBy });
 }
 export function generateColumnDefinition(field, model, enumNames, modelNames) {
     const primaryKey = getPrimaryKey(model);

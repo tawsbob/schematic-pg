@@ -53,6 +53,22 @@ export function getDocumentSymbols(schema: Schema): DocumentSymbol[] {
       );
     }
 
+    if (model.partition) {
+      children.push(
+        DocumentSymbol.create('@@partition', LspSymbolKind.Event, modelSymbol.range, modelSymbol.range),
+      );
+      for (const partition of model.partition.partitions) {
+        children.push(
+          DocumentSymbol.create(
+            `partition ${partition.name}`,
+            LspSymbolKind.Object,
+            modelSymbol.range,
+            modelSymbol.range,
+          ),
+        );
+      }
+    }
+
     symbols.push(
       DocumentSymbol.create(
         model.name,

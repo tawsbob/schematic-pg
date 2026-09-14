@@ -1,4 +1,4 @@
-import { LexError, ParseError, parse, type Schema } from 'schematic-pg/schema-dsl';
+import { LexError, ParseError, SchemaError, parse, type Schema } from 'schematic-pg/schema-dsl';
 import { Diagnostic, DiagnosticSeverity, Range } from 'vscode-languageserver';
 
 export interface ParseResult {
@@ -11,7 +11,7 @@ export function parseDocument(source: string): ParseResult {
     const schema = parse(source);
     return { schema, diagnostics: [] };
   } catch (error) {
-    if (error instanceof LexError || error instanceof ParseError) {
+    if (error instanceof LexError || error instanceof ParseError || error instanceof SchemaError) {
       const line = Math.max(error.line - 1, 0);
       const character = Math.max(error.col - 1, 0);
       return {

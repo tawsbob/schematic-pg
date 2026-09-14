@@ -17,6 +17,11 @@ describe('toSnakeCase', () => {
     assert.equal(toSnakeCase('activeUsersNameIdx'), 'active_users_name_idx');
   });
 
+  it('converts letter-digit boundaries', () => {
+    assert.equal(toSnakeCase('Log2024'), 'log_2024');
+    assert.equal(toSnakeCase('MetricP0'), 'metric_p_0');
+  });
+
   it('leaves lowercase strings unchanged', () => {
     assert.equal(toSnakeCase('email'), 'email');
   });

@@ -34,8 +34,37 @@ export interface Model {
   fields: Field[];
   attributes: Attribute[];
   directives: Directive[];
+  partition?: PartitionSpec;
   loc: SourceLocation;
 }
+
+export type PartitionStrategy = 'RANGE' | 'LIST' | 'HASH';
+
+export interface PartitionSpec {
+  kind: 'PartitionSpec';
+  by: PartitionStrategy;
+  fields?: string[];
+  expression?: string;
+  count?: number;
+  partitions: Partition[];
+  loc: SourceLocation;
+}
+
+export interface Partition {
+  kind: 'Partition';
+  name: string;
+  sqlName?: string;
+  from?: PartitionBound;
+  to?: PartitionBound;
+  in?: Value[];
+  default?: boolean;
+  modulus?: number;
+  remainder?: number;
+  partition?: PartitionSpec;
+  loc: SourceLocation;
+}
+
+export type PartitionBound = Value;
 
 export interface SqlFunction {
   kind: 'SqlFunction';

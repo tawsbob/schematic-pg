@@ -10,6 +10,10 @@ import type {
   FunctionReturn,
   KeyValuePair,
   Model,
+  Partition,
+  PartitionBound,
+  PartitionSpec,
+  PartitionStrategy,
   Schema,
   SourceLocation,
   SqlFunction,
@@ -385,9 +389,17 @@ export class Parser {
     const fields: Field[] = [];
     const attributes: Attribute[] = [];
     const directives: Directive[] = [];
+    let partition: PartitionSpec | undefined;
 
     while (!this.check(TokenType.RBRACE)) {
       if (this.check(TokenType.ATAT)) {
+        if (this.peekType(1) === TokenType.IDENT && this.tokens[this.index + 1]?.value === 'partition') {
+          if (partition) {
+            throw new ParseError('at most one @@partition per model', this.current());
+          }
+          partition = this.parsePartitionDirective();
+          continue;
+        }
         directives.push(this.parseDirective());
         continue;
       }
@@ -406,8 +418,224 @@ export class Parser {
       fields,
       attributes,
       directives,
+      partition,
       loc: this.loc(start),
     };
+  }
+
+  private parsePartitionDirective(): PartitionSpec {
+    const start = this.expect(TokenType.ATAT, "'@@'");
+    this.expect(TokenType.IDENT, "'partition'");
+    this.expect(TokenType.LBRACE, "'{'");
+    const spec = this.parsePartitionSpecBody(start);
+    this.expect(TokenType.RBRACE, "'}'");
+    return spec;
+  }
+
+  private parsePartitionSpecBody(start: Token, depth = 0): PartitionSpec {
+    if (depth > 1) {
+      throw new ParseError('at most one level of nested @@partition', this.current());
+    }
+
+    let by: PartitionStrategy | undefined;
+    let fields: string[] | undefined;
+    let expression: string | undefined;
+    let count: number | undefined;
+    const partitions: Partition[] = [];
+
+    while (!this.check(TokenType.RBRACE)) {
+      if (
+        this.check(TokenType.IDENT) &&
+        this.current().value === 'partition' &&
+        this.peekType(1) === TokenType.IDENT
+      ) {
+        partitions.push(this.parsePartitionChild(depth));
+        this.match(TokenType.COMMA);
+        continue;
+      }
+
+      if (this.check(TokenType.ATAT)) {
+        throw new ParseError("partition child or key ('by', 'fields', …)", this.current());
+      }
+
+      const keyToken = this.expect(TokenType.IDENT, 'partition key');
+      this.expect(TokenType.COLON, "':'");
+
+      switch (keyToken.value) {
+        case 'by': {
+          const value = this.expect(TokenType.IDENT, 'RANGE, LIST, or HASH');
+          const strategy = value.value.toUpperCase();
+          if (strategy !== 'RANGE' && strategy !== 'LIST' && strategy !== 'HASH') {
+            throw new ParseError('RANGE, LIST, or HASH', value);
+          }
+          by = strategy;
+          break;
+        }
+        case 'fields': {
+          const value = this.parseValue();
+          if (value.kind !== 'ArrayLiteral') {
+            throw new ParseError('array of field names', keyToken);
+          }
+          fields = value.elements.map((element) => {
+            if (element.kind !== 'Identifier') {
+              throw new ParseError('field identifier', keyToken);
+            }
+            return element.name;
+          });
+          break;
+        }
+        case 'expression': {
+          const value = this.parseValue();
+          if (value.kind !== 'StringLiteral') {
+            throw new ParseError('string expression', keyToken);
+          }
+          expression = value.value;
+          break;
+        }
+        case 'count': {
+          const value = this.parseValue();
+          if (value.kind !== 'NumberLiteral' || !Number.isInteger(value.value) || value.value < 1) {
+            throw new ParseError('positive integer count', keyToken);
+          }
+          count = value.value;
+          break;
+        }
+        default:
+          throw new ParseError("'by', 'fields', 'expression', 'count', or partition", keyToken);
+      }
+
+      this.match(TokenType.COMMA);
+    }
+
+    if (!by) {
+      throw new ParseError("'by: RANGE | LIST | HASH'", this.current());
+    }
+
+    return {
+      kind: 'PartitionSpec',
+      by,
+      fields,
+      expression,
+      count,
+      partitions,
+      loc: this.loc(start),
+    };
+  }
+
+  private parsePartitionChild(parentDepth: number): Partition {
+    const start = this.expect(TokenType.IDENT, "'partition'");
+    if (start.value !== 'partition') {
+      throw new ParseError("'partition'", start);
+    }
+    const nameToken = this.expect(TokenType.IDENT, 'partition name');
+    this.expect(TokenType.LBRACE, "'{'");
+
+    let sqlName: string | undefined;
+    let from: PartitionBound | undefined;
+    let to: PartitionBound | undefined;
+    let inValues: Value[] | undefined;
+    let isDefault: boolean | undefined;
+    let modulus: number | undefined;
+    let remainder: number | undefined;
+    let nested: PartitionSpec | undefined;
+
+    while (!this.check(TokenType.RBRACE)) {
+      if (this.check(TokenType.ATAT)) {
+        const atat = this.current();
+        if (this.peekType(1) === TokenType.IDENT && this.tokens[this.index + 1]?.value === 'partition') {
+          if (nested) {
+            throw new ParseError('at most one nested @@partition', atat);
+          }
+          this.expect(TokenType.ATAT, "'@@'");
+          this.expect(TokenType.IDENT, "'partition'");
+          this.expect(TokenType.LBRACE, "'{'");
+          nested = this.parsePartitionSpecBody(atat, parentDepth + 1);
+          this.expect(TokenType.RBRACE, "'}'");
+          this.match(TokenType.COMMA);
+          continue;
+        }
+        throw new ParseError("'@@partition'", atat);
+      }
+
+      const keyToken = this.expect(TokenType.IDENT, 'partition property');
+      this.expect(TokenType.COLON, "':'");
+
+      switch (keyToken.value) {
+        case 'name': {
+          const value = this.parseValue();
+          if (value.kind !== 'StringLiteral') {
+            throw new ParseError('string table name', keyToken);
+          }
+          sqlName = value.value;
+          break;
+        }
+        case 'from':
+          from = this.parsePartitionBound();
+          break;
+        case 'to':
+          to = this.parsePartitionBound();
+          break;
+        case 'in': {
+          const value = this.parseValue();
+          if (value.kind !== 'ArrayLiteral') {
+            throw new ParseError('array of values', keyToken);
+          }
+          inValues = value.elements;
+          break;
+        }
+        case 'default': {
+          const value = this.parseValue();
+          if (value.kind !== 'BooleanLiteral') {
+            throw new ParseError('boolean', keyToken);
+          }
+          isDefault = value.value;
+          break;
+        }
+        case 'modulus': {
+          const value = this.parseValue();
+          if (value.kind !== 'NumberLiteral' || !Number.isInteger(value.value) || value.value < 1) {
+            throw new ParseError('positive integer modulus', keyToken);
+          }
+          modulus = value.value;
+          break;
+        }
+        case 'remainder': {
+          const value = this.parseValue();
+          if (value.kind !== 'NumberLiteral' || !Number.isInteger(value.value) || value.value < 0) {
+            throw new ParseError('non-negative integer remainder', keyToken);
+          }
+          remainder = value.value;
+          break;
+        }
+        default:
+          throw new ParseError(
+            "'name', 'from', 'to', 'in', 'default', 'modulus', 'remainder', or @@partition",
+            keyToken,
+          );
+      }
+
+      this.match(TokenType.COMMA);
+    }
+
+    this.expect(TokenType.RBRACE, "'}'");
+
+    return {
+      kind: 'Partition',
+      name: nameToken.value,
+      sqlName,
+      from,
+      to,
+      in: inValues,
+      default: isDefault,
+      modulus,
+      remainder,
+      partition: nested,
+      loc: this.loc(start),
+    };
+  }
+
+  private parsePartitionBound(): PartitionBound {
+    return this.parseValue();
   }
 
   private parseTypeExpr(): TypeExpr {

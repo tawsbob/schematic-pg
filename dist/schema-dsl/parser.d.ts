@@ -28,6 +28,10 @@ export declare class Parser {
     private parseFunctionParam;
     private parseFunctionBody;
     private parseModelBody;
+    private parsePartitionDirective;
+    private parsePartitionSpecBody;
+    private parsePartitionChild;
+    private parsePartitionBound;
     private parseTypeExpr;
     private parseFieldAttributes;
     private parseAttributeInternal;

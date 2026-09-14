@@ -57,7 +57,7 @@ enums {
 
 ### Models
 
-A model is a table plus its relations, policies, indexes, and triggers.
+A model is a table plus its relations, policies, indexes, partitions, and triggers.
 
 ```ts
 models {
@@ -346,6 +346,43 @@ model User {
 | `name` | No | Explicit index name |
 | `type` | No | `BTREE`, `GIN`, `GIST`, `HASH`, `BRIN` |
 | `unique` | No | Unique index |
+
+### Partitions (`@@partition`)
+
+A model may be a PostgreSQL partitioned table. Children share the parent's columns and are invisible to the DB client and REST API — you still query `Log` / `/logs`. Postgres routes rows by the partition key.
+
+```ts
+model Log {
+  id:        UUID      @id @default(gen_random_uuid())
+  message:   TEXT
+  createdAt: TIMESTAMP @default(now())
+
+  @@id(fields: [id, createdAt])
+
+  @@partition {
+    by: RANGE
+    fields: [createdAt]
+
+    partition Log2024 { from: "2024-01-01", to: "2025-01-01" }
+    partition Log2025 { from: "2025-01-01", to: "2026-01-01" }
+    partition LogFuture { from: "2026-01-01", to: MAXVALUE }
+  }
+}
+```
+
+| Argument | Required | Purpose |
+|----------|----------|---------|
+| `by` | Yes | `RANGE`, `LIST`, or `HASH` |
+| `fields` | One of `fields` / `expression` | Partition-key columns |
+| `expression` | One of `fields` / `expression` | Raw SQL partition expression |
+| `count` | HASH only | Auto-create `N` hash partitions |
+| `partition Name { … }` | No | Named child tables |
+
+RANGE bounds are half-open `[from, to)`. Use `MINVALUE` / `MAXVALUE`. LIST uses `in: [...]` or one `default: true` child. HASH uses `count: N` or explicit `modulus` / `remainder` blocks.
+
+The primary key and every unique constraint must include the partition key columns (PostgreSQL). Incoming foreign keys must reference that same key — prefer partitioning tables that are not FK targets. Nested `@@partition` inside a child is allowed one level deep.
+
+`db:diff` adds and removes child partitions (`CREATE TABLE … PARTITION OF` / `DETACH` + `DROP`). Changing strategy, key, or converting a table to/from partitioned requires a manual migration. See [Migrations](docs/migrations.md#partitions).
 
 ### Triggers (`@@trigger`)
 

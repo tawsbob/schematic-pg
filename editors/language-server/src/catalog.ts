@@ -36,7 +36,7 @@ export const FIELD_ATTRIBUTES = [
 
 export const MODEL_ATTRIBUTES = ['policy', 'rest'] as const;
 
-export const MODEL_DIRECTIVES = ['index', 'trigger', 'id'] as const;
+export const MODEL_DIRECTIVES = ['index', 'trigger', 'id', 'partition'] as const;
 
 export const RELATION_KEYS = ['name', 'fields', 'references', 'onDelete', 'onUpdate'] as const;
 
@@ -71,6 +71,24 @@ export const REFERENCE_ACTIONS = ['CASCADE', 'SET_NULL', 'RESTRICT', 'NO_ACTION'
 export const INDEX_TYPES = ['BTREE', 'GIN', 'GIST', 'HASH', 'BRIN'] as const;
 
 export const INDEX_KEYS = ['fields', 'where', 'name', 'type', 'unique'] as const;
+
+export const PARTITION_KEYS = [
+  'by',
+  'fields',
+  'expression',
+  'count',
+  'from',
+  'to',
+  'in',
+  'default',
+  'modulus',
+  'remainder',
+  'name',
+] as const;
+
+export const PARTITION_STRATEGIES = ['RANGE', 'LIST', 'HASH'] as const;
+
+export const PARTITION_BOUNDS = ['MINVALUE', 'MAXVALUE'] as const;
 
 export const DEFAULT_FUNCTIONS = ['gen_random_uuid', 'now'] as const;
 

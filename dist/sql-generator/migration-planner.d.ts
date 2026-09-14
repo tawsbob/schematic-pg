@@ -5,6 +5,9 @@ export declare class MigrationPlanner {
     private diffExtensions;
     private diffEnums;
     private diffModels;
+    private diffPartitions;
+    private isDescendantOfDropped;
+    private isUnderParent;
     private diffField;
     private diffConstraints;
     private diffIndexes;

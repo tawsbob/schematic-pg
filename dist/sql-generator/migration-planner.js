@@ -1,3 +1,4 @@
+import { flattenPartitions, partitionStrategySignature, } from './generators/partitions.js';
 import { collectForeignKeys, functionIdentity, functionSignature, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, serializeColumnType, serializeDefault, serializeForeignKey, } from './utils/ast-helpers.js';
 export class MigrationPlanner {
     generateMigration(oldSchema, newSchema) {
@@ -5,6 +6,7 @@ export class MigrationPlanner {
         migrations.push(...this.diffExtensions(oldSchema, newSchema));
         migrations.push(...this.diffEnums(oldSchema, newSchema));
         migrations.push(...this.diffModels(oldSchema, newSchema));
+        migrations.push(...this.diffPartitions(oldSchema, newSchema));
         migrations.push(...this.diffConstraints(oldSchema, newSchema));
         migrations.push(...this.diffIndexes(oldSchema, newSchema));
         migrations.push(...this.diffFunctions(oldSchema, newSchema));
@@ -89,6 +91,102 @@ export class MigrationPlanner {
             }
         }
         return migrations;
+    }
+    diffPartitions(oldSchema, newSchema) {
+        const migrations = [];
+        const oldModels = new Map(oldSchema.models.map((model) => [model.name, model]));
+        const newModels = new Map(newSchema.models.map((model) => [model.name, model]));
+        for (const [modelName, newModel] of newModels) {
+            const oldModel = oldModels.get(modelName);
+            if (!oldModel) {
+                for (const partition of flattenPartitions(newModel)) {
+                    migrations.push({
+                        kind: 'CreatePartition',
+                        modelName,
+                        partitionName: partition.name,
+                    });
+                }
+                continue;
+            }
+            const oldStrategy = partitionStrategySignature(oldModel.partition);
+            const newStrategy = partitionStrategySignature(newModel.partition);
+            if (oldStrategy !== newStrategy) {
+                if (oldStrategy === null || newStrategy === null) {
+                    throw new Error(`Unsupported partition change on model "${modelName}": converting to/from a partitioned table requires a manual migration.`);
+                }
+                throw new Error(`Unsupported partition change on model "${modelName}": changing partition strategy or key requires a manual migration.`);
+            }
+            if (!newModel.partition) {
+                continue;
+            }
+            const oldPartitions = new Map(flattenPartitions(oldModel).map((partition) => [partition.name, partition]));
+            const newPartitions = new Map(flattenPartitions(newModel).map((partition) => [partition.name, partition]));
+            const droppedNames = new Set();
+            for (const [name] of oldPartitions) {
+                if (!newPartitions.has(name)) {
+                    droppedNames.add(name);
+                }
+            }
+            for (const [name, newPartition] of newPartitions) {
+                const oldPartition = oldPartitions.get(name);
+                if (!oldPartition) {
+                    migrations.push({
+                        kind: 'CreatePartition',
+                        modelName,
+                        partitionName: name,
+                    });
+                    continue;
+                }
+                if (oldPartition.signature !== newPartition.signature) {
+                    throw new Error(`Unsupported partition change on model "${modelName}": partition "${name}" bounds/values changed. Drop the old partition and add a new one (manual data move if needed).`);
+                }
+            }
+            for (const [name, oldPartition] of oldPartitions) {
+                if (!newPartitions.has(name)) {
+                    if (this.isDescendantOfDropped(oldPartition, oldPartitions, droppedNames)) {
+                        continue;
+                    }
+                    migrations.push({
+                        kind: 'DropPartition',
+                        modelName,
+                        partitionName: name,
+                        parentTable: oldPartition.parentTable,
+                        tableName: oldPartition.tableName,
+                    });
+                }
+            }
+        }
+        return migrations;
+    }
+    isDescendantOfDropped(partition, all, droppedNames) {
+        for (const name of droppedNames) {
+            if (name === partition.name) {
+                continue;
+            }
+            const ancestor = all.get(name);
+            if (!ancestor) {
+                continue;
+            }
+            if (this.isUnderParent(partition, ancestor.tableName, all)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    isUnderParent(partition, ancestorTable, all) {
+        let current = partition;
+        const visited = new Set();
+        while (current) {
+            if (current.parentTable === ancestorTable) {
+                return true;
+            }
+            if (visited.has(current.name)) {
+                break;
+            }
+            visited.add(current.name);
+            current = [...all.values()].find((item) => item.tableName === current.parentTable);
+        }
+        return false;
     }
     diffField(modelName, oldField, newField, oldEnumNames, newEnumNames) {
         const migrations = [];

@@ -6,7 +6,11 @@ export function joinSection(header: string, statements: string[]): string {
   return `-- ${header}\n\n${statements.join('\n\n')}\n`;
 }
 
-export function formatCreateTable(tableName: string, blocks: string[][]): string {
+export function formatCreateTable(
+  tableName: string,
+  blocks: string[][],
+  options?: { partitionBy?: string },
+): string {
   const renderedBlocks = blocks.map((lines, blockIndex) => {
     const isLastBlock = blockIndex === blocks.length - 1;
     const renderedLines = lines.map((line, lineIndex) => {
@@ -22,5 +26,6 @@ export function formatCreateTable(tableName: string, blocks: string[][]): string
     return renderedLines.join('\n');
   });
 
-  return `CREATE TABLE ${tableName} (\n${renderedBlocks.join('\n')}\n);`;
+  const partitionSuffix = options?.partitionBy ? ` ${options.partitionBy}` : '';
+  return `CREATE TABLE ${tableName} (\n${renderedBlocks.join('\n')}\n)${partitionSuffix};`;
 }

@@ -16,7 +16,9 @@ export type Migration =
   | ReplaceFunction
   | DropFunction
   | CreateTrigger
-  | DropTrigger;
+  | DropTrigger
+  | CreatePartition
+  | DropPartition;
 
 export interface CreateTable {
   kind: 'CreateTable';
@@ -123,4 +125,18 @@ export interface DropFunction {
   kind: 'DropFunction';
   functionName: string;
   signature: string;
+}
+
+export interface CreatePartition {
+  kind: 'CreatePartition';
+  modelName: string;
+  partitionName: string;
+}
+
+export interface DropPartition {
+  kind: 'DropPartition';
+  modelName: string;
+  partitionName: string;
+  parentTable: string;
+  tableName: string;
 }
