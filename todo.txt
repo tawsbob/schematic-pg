@@ -17,3 +17,4 @@
 - [ ] create a make file or a way to run dev comand and run all process (docker-compose up, generate, db:bootstrap, dev)
 - [x] add scalar docs.
 - [ ] thinking in a seed approac.
+- [ ] auto generated endpoints to list/query to partitions.

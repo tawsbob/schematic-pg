@@ -32,7 +32,6 @@
           "name": "string.quoted.triple.schema-dsl",
           "begin": "\"\"\"",
           "end": "\"\"\"",
-          "applyEndPatternLast": true,
           "contentName": "source.sql.embedded.schema-dsl",
           "patterns": [
             { "include": "source.sql" }
