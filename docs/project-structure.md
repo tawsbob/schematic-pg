@@ -4,7 +4,11 @@ After `schematic-pg init` and `schematic-pg generate`, a typical application loo
 
 ```
 my-app/
-├── app.schema              # Your single source of truth
+├── app.schema              # Starter single-file schema (from init)
+├── schema/                 # Optional: split into *.schema fragments
+│   ├── extensions.schema
+│   ├── user.schema
+│   └── …
 ├── schema.sql              # Generated PostgreSQL DDL
 ├── .env                    # DATABASE_URL, JWT_*, CORS_ORIGIN
 ├── docker-compose.yml      # Local PostgreSQL (optional)
@@ -30,6 +34,8 @@ my-app/
         └── User.ts         # Lifecycle hooks → POST/PUT/DELETE /users
 ```
 
+The schema source of truth is either `app.schema` or `schema/*.schema` (fragments win when that directory has files). See [Schema fragments](schema-fragments.md).
+
 Framework runtime (query builder, auth middleware, validation, hook registry) is **not** copied into your project — it is imported from `node_modules/schematic-pg` at runtime. Only `generated/`, `src/routes/`, and `src/hooks/` contain project-specific code.
 
 ## This repository (framework source)
@@ -37,7 +43,8 @@ Framework runtime (query builder, auth middleware, validation, hook registry) is
 ```
 postgrest.js/
 ├── src/
-│   ├── schema-dsl/         # Lexer, parser, AST
+│   ├── schema-dsl/         # Lexer, parser, AST, merge
+│   ├── schema-source/      # File / fragment discovery + load
 │   ├── sql-generator/      # DDL + migration planner
 │   ├── db/                 # Query builder + client runtime + include eager-loading
 │   ├── api/                # Hono runtime (published as schematic-pg/api/*)
@@ -45,7 +52,7 @@ postgrest.js/
 │   ├── cli/                # init templates + command helpers
 │   └── cli.ts              # schematic-pg CLI entry point
 ├── dist/                   # Compiled output (npm publish target)
-├── generated/              # Sample output from app.schema (this repo)
-├── app.schema              # Sample schema
+├── generated/              # Sample output from schema/ (this repo)
+├── schema/                 # Sample multi-file schema fragments
 └── editors/                # VS Code extension + language server
 ```

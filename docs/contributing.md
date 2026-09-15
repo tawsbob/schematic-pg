@@ -6,7 +6,7 @@ Contributors working on the framework itself clone the repo and use npm scripts 
 cp .env.example .env          # configure DATABASE_URL
 npm run build                 # compile src/ → dist/ (required for schematic-pg/* imports)
 npm run docker:up             # PostgreSQL on :5432
-npm run generate              # write schema.sql from app.schema
+npm run generate              # write schema.sql from schema/ (or app.schema)
 npm run generate:client       # write generated/db*.ts
 npm run generate:api          # write generated/app.ts, routes/, schemas/
 npm run db:bootstrap          # apply DDL + snapshot schema state
