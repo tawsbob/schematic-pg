@@ -473,15 +473,26 @@ export class OpenApiGenerator {
       case 'SERIAL':
       case 'SMALLINT':
         return { type: 'integer' };
+      case 'REAL':
+      case 'DOUBLE':
+        return { type: 'number' };
       case 'BOOLEAN':
         return { type: 'boolean' };
       case 'TIMESTAMP':
+      case 'DATE':
+      case 'TIME':
         return { type: 'string', format: 'date-time' };
+      case 'BIGINT':
+      case 'BIGSERIAL':
       case 'DECIMAL':
-        // Matches Zod create/update mapping (z.string()).
+      case 'NUMERIC':
+      case 'INTERVAL':
+        // Matches Zod create/update mapping (z.string()) for precision-safe integers/decimals.
         return { type: 'string' };
       case 'JSONB':
         return { type: 'object', additionalProperties: true };
+      case 'BYTEA':
+        return { type: 'string', format: 'binary' };
       case 'POINT':
         return {};
       default:

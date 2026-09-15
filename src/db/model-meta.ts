@@ -57,7 +57,17 @@ export interface ModelMeta {
   relationByName: Map<string, RelationMeta>;
 }
 
-const NUMERIC_TYPES = new Set(['INTEGER', 'SERIAL', 'SMALLINT', 'DECIMAL']);
+const NUMERIC_TYPES = new Set([
+  'INTEGER',
+  'SERIAL',
+  'SMALLINT',
+  'BIGINT',
+  'BIGSERIAL',
+  'DECIMAL',
+  'NUMERIC',
+  'REAL',
+  'DOUBLE',
+]);
 const STRING_TYPES = new Set(['UUID', 'VARCHAR', 'TEXT']);
 
 export function buildModelMeta(model: Model, schema: Schema): ModelMeta {

@@ -178,6 +178,20 @@ describe('validateMergedSchema', () => {
     );
   });
 
+  it('accepts documented PostgreSQL primitives such as BIGINT', () => {
+    const schema = parseFragment(
+      `models {
+  model Wallet {
+    id: UUID @id
+    balance: BIGINT @default(0)
+  }
+}`,
+      'app.schema',
+    );
+
+    assert.doesNotThrow(() => validateMergedSchema(schema));
+  });
+
   it('allows relation fields that reference other models', () => {
     const { schema } = mergeFragments([
       fragment(

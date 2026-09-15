@@ -20,6 +20,7 @@ export const PG_TYPES = [
   'DATE',
   'TIME',
   'INTERVAL',
+  'BIGSERIAL',
 ] as const;
 
 export const FIELD_ATTRIBUTES = [

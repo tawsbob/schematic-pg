@@ -21,7 +21,17 @@ export interface FilterFieldMeta {
 }
 
 const STRING_TYPES = new Set(['UUID', 'VARCHAR', 'TEXT']);
-const NUMERIC_TYPES = new Set(['INTEGER', 'SERIAL', 'SMALLINT', 'DECIMAL']);
+const NUMERIC_TYPES = new Set([
+  'INTEGER',
+  'SERIAL',
+  'SMALLINT',
+  'BIGINT',
+  'BIGSERIAL',
+  'DECIMAL',
+  'NUMERIC',
+  'REAL',
+  'DOUBLE',
+]);
 
 export function getFilterFieldKind(field: Field, schema: Schema): FilterFieldKind {
   const typeName = field.type.name;
@@ -128,11 +138,20 @@ export function toFilterZodType(
     case 'SERIAL':
     case 'SMALLINT':
       return `${prefix}number().int()`;
+    case 'REAL':
+    case 'DOUBLE':
+      return `${prefix}number()`;
     case 'BOOLEAN':
       return toQueryBooleanZodType();
     case 'TIMESTAMP':
+    case 'DATE':
+    case 'TIME':
       return 'z.coerce.date()';
+    case 'BIGINT':
+    case 'BIGSERIAL':
     case 'DECIMAL':
+    case 'NUMERIC':
+    case 'INTERVAL':
       return `${prefix}string()`;
     case 'JSONB':
       return 'z.string()';
