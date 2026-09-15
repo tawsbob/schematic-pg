@@ -126,7 +126,7 @@ curl http://localhost:3000/openapi.json
 
 On start, the generated app also logs `API docs at http://localhost:${PORT}/docs`.
 
-**Documented in v1:** schema-generated CRUD for every model, shared error shape `{ "error": string }`, Bearer JWT (`components.securitySchemes.bearerAuth`), list filters / `limit` / `offset` / `sort` / `include`, and — when `src/routes/auth.ts` is present — the known `createAuthRouter` endpoints (`POST /auth/register`, `POST /auth/login`, `GET /auth/me`).
+**Documented in v1:** schema-generated CRUD for every model, shared error shape `{ "error": string }` (validation failures also include `issues`), Bearer JWT (`components.securitySchemes.bearerAuth`), list filters / `limit` / `offset` / `sort` / `include`, and — when `src/routes/auth.ts` is present — the known `createAuthRouter` endpoints (`POST /auth/register`, `POST /auth/login`, `GET /auth/me`).
 
 **Not documented in v1:** other hand-written custom routes under `src/routes/`.
 
@@ -396,10 +396,13 @@ email: z.string().regex(/^[\w.-]+@[\w.-]+\.\w+$/, { message: 'Invalid email addr
 age:   z.number().int().min(1, { message: 'Age must be between 1 and 120' }).max(120, { message: 'Age must be between 1 and 120' }).nullable().optional(),
 ```
 
-Validation runs through middleware in `src/api/middleware/validate.ts`. On failure the API responds with:
+Validation runs through middleware in `src/api/middleware/validate.ts`. On failure the API responds with every invalid field:
 
 ```json
-{ "error": "Invalid email address" }
+{
+  "error": "email: Invalid email address",
+  "issues": [{ "path": "email", "message": "Invalid email address" }]
+}
 ```
 
 Fields with `@default` or optional (`?`) types are optional on create. Update schemas make all non-PK fields optional (partial updates).
@@ -440,7 +443,7 @@ curl http://localhost:3000/product-orders/{orderId}/{productId}
 
 | Status | When |
 |--------|------|
-| `400` | Zod validation failure or foreign key violation |
+| `400` | Zod validation failure (includes `issues` with field paths) or foreign key violation |
 | `401` | Malformed or invalid JWT (when `Authorization: Bearer` is present) |
 | `403` | Role not allowed for the requested operation (`@policy` denial) |
 | `404` | Record not found on `GET`, delete/update returned no rows, or HTTP method disabled by `@rest` |

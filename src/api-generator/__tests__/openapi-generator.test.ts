@@ -48,6 +48,7 @@ describe('OpenApiGenerator', () => {
     assert.equal(schemas.UserUpdate, undefined);
     assert.ok(schemas.ProductCreate?.properties);
     assert.ok(schemas.Error?.properties?.error);
+    assert.ok(schemas.Error?.properties?.issues);
 
     const createResponses = (
       paths['/products'].post as {
@@ -55,13 +56,18 @@ describe('OpenApiGenerator', () => {
           string,
           {
             description: string;
-            content: { 'application/json': { example: { error: string } } };
+            content: {
+              'application/json': {
+                example: { error: string; issues?: Array<{ path: string; message: string }> };
+              };
+            };
           }
         >;
       }
     ).responses;
     assert.deepEqual(createResponses['400'].content['application/json'].example, {
-      error: 'Validation failed',
+      error: 'email: Invalid input: expected string, received number',
+      issues: [{ path: 'email', message: 'Invalid input: expected string, received number' }],
     });
     assert.deepEqual(createResponses['409'].content['application/json'].example, {
       error: 'Unique constraint violation on email',

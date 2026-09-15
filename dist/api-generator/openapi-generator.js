@@ -4,17 +4,23 @@ import { getFilterableFields, getIncludableRelationFields, getOmittedFields, get
 import { buildFilterFieldMeta, queryParamKey } from './utils/filter-operators.js';
 import { hasRestOperation, isRestEnabled } from './utils/rest.js';
 const ERROR_REF = { $ref: '#/components/schemas/Error' };
-const ERROR_EXAMPLE_VALIDATION = 'Validation failed';
+const ERROR_EXAMPLE_VALIDATION = {
+    error: 'email: Invalid input: expected string, received number',
+    issues: [{ path: 'email', message: 'Invalid input: expected string, received number' }],
+};
 const ERROR_EXAMPLE_FORBIDDEN = 'Role "USER" is not allowed to list this resource';
 const ERROR_EXAMPLE_CONFLICT = 'Unique constraint violation on email';
 const OPTIONAL_BEARER_SECURITY = [{}, { bearerAuth: [] }];
-function errorResponse(description, exampleMessage = description) {
+function errorExample(example) {
+    return typeof example === 'string' ? { error: example } : example;
+}
+function errorResponse(description, example = description) {
     return {
         description,
         content: {
             'application/json': {
                 schema: ERROR_REF,
-                example: { error: exampleMessage },
+                example: errorExample(example),
             },
         },
     };
@@ -41,7 +47,25 @@ export class OpenApiGenerator {
                 properties: {
                     error: {
                         type: 'string',
-                        description: 'Human-readable error message',
+                        description: 'Human-readable error message. Validation failures prefix the field path when present.',
+                    },
+                    issues: {
+                        type: 'array',
+                        description: 'Per-field validation issues. Present on Zod request validation failures.',
+                        items: {
+                            type: 'object',
+                            required: ['path', 'message'],
+                            properties: {
+                                path: {
+                                    type: 'string',
+                                    description: 'Dot-separated field path (empty for the request root)',
+                                },
+                                message: {
+                                    type: 'string',
+                                    description: 'Validation message for this path',
+                                },
+                            },
+                        },
                     },
                 },
             },

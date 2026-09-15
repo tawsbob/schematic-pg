@@ -162,7 +162,14 @@ model User {
 }
 ```
 
-Failed validation responds with `{ "error": "Invalid email address" }`.
+Failed validation responds with the field path and message:
+
+```json
+{
+  "error": "email: Invalid email address",
+  "issues": [{ "path": "email", "message": "Invalid email address" }]
+}
+```
 
 ### Response shaping (`@omit`)
 
