@@ -10,12 +10,17 @@ import type {
 export class SchemaError extends Error {
   readonly line: number;
   readonly col: number;
+  readonly file?: string;
 
   constructor(message: string, loc: SourceLocation) {
-    super(`Schema error at line ${loc.line}, col ${loc.col}: ${message}`);
+    const location = loc.file
+      ? `${loc.file}:${loc.line}:${loc.col}`
+      : `line ${loc.line}, col ${loc.col}`;
+    super(`Schema error at ${location}: ${message}`);
     this.name = 'SchemaError';
     this.line = loc.line;
     this.col = loc.col;
+    this.file = loc.file;
   }
 }
 

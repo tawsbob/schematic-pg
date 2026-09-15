@@ -1,8 +1,11 @@
 export interface SourceLocation {
+  file?: string;
   line: number;
   col: number;
   endLine?: number;
   endCol?: number;
+  start: number;
+  end: number;
 }
 
 export interface Schema {

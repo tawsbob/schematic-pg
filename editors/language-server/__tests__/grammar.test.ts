@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { loadSchemaFromArg } from '../../../src/schema-source/index.js';
 
 const grammarPath = join(process.cwd(), 'syntaxes/schema-dsl.tmLanguage.json');
-const appSchemaPath = join(process.cwd(), 'app.schema');
 
 describe('Schema DSL TextMate grammar', () => {
   it('loads grammar with expected scope name and file type', () => {
@@ -22,8 +22,8 @@ describe('Schema DSL TextMate grammar', () => {
     assert.ok(grammar.repository['language-constants']);
   });
 
-  it('app.schema contains constructs covered by grammar', () => {
-    const source = readFileSync(appSchemaPath, 'utf8');
+  it('merged schema contains constructs covered by grammar', () => {
+    const { canonicalSource: source } = loadSchemaFromArg();
     assert.match(source, /@policy/);
     assert.match(source, /@rest/);
     assert.match(source, /@@index/);

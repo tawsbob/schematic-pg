@@ -1,8 +1,8 @@
-import { join } from 'node:path';
+import { loadSchemaFromArg } from '../schema-source/index.js';
 import { DatabaseClient } from './client.js';
 import { listPendingMigrations, readMigrationSql, recordAppliedMigration, } from './migrations.js';
-import { writeSnapshot } from './schema-state.js';
-export async function applyPendingMigrations(schemaPath = join(process.cwd(), 'app.schema'), client = new DatabaseClient(), cwd = process.cwd()) {
+import { writeSnapshotSource } from './schema-state.js';
+export async function applyPendingMigrations(schemaPath, client = new DatabaseClient(), cwd = process.cwd()) {
     const applied = [];
     await client.withClient(async (pgClient) => {
         const pending = await listPendingMigrations(pgClient, cwd);
@@ -13,7 +13,8 @@ export async function applyPendingMigrations(schemaPath = join(process.cwd(), 'a
             await applyMigration(pgClient, migration);
             applied.push(migration);
         }
-        writeSnapshot(schemaPath, cwd);
+        const { canonicalSource } = loadSchemaFromArg(schemaPath, cwd);
+        writeSnapshotSource(canonicalSource, cwd);
     });
     return applied;
 }

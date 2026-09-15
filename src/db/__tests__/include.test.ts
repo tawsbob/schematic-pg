@@ -1,16 +1,13 @@
 // Run: npm test
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, it } from 'node:test';
-import { parse } from '../../schema-dsl/index.js';
+import { loadRepoSchema } from '../../__tests__/helpers/repo-schema.js';
 import { stitch } from '../include/hydrator.js';
 import { buildLoadPlan } from '../include/planner.js';
 import { buildModelMeta, buildModelMetas } from '../model-meta.js';
 
-const schemaSource = readFileSync(path.resolve('app.schema'), 'utf8');
-const schema = parse(schemaSource);
+const { schema } = loadRepoSchema();
 const metas = buildModelMetas(schema);
 const registry = new Map(metas.map((meta) => [meta.name, meta]));
 const userMeta = registry.get('User');

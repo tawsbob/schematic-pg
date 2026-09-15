@@ -1,11 +1,11 @@
 // Run: npm test
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { Hono } from 'hono';
+import { loadRepoSchema } from '../../__tests__/helpers/repo-schema.js';
 import { parse } from '../../schema-dsl/index.js';
+import { Hono } from 'hono';
 import type { AppEnv } from '../../api/types.js';
 import { generateAppFile } from '../app-generator.js';
 import { discoverCustomRoutes, partitionCustomRoutes } from '../custom-route-scanner.js';
@@ -15,8 +15,7 @@ import { generatePoliciesFile } from '../policy-generator.js';
 import { generateRouteFiles, getRouteMountEntries } from '../route-generator.js';
 import { generateValidationSchemas } from '../zod-schema-generator.js';
 
-const schemaSource = readFileSync(path.resolve('app.schema'), 'utf8');
-const schema = parse(schemaSource);
+const { schema } = loadRepoSchema();
 const missingCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/missing-routes');
 const fixtureCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/custom-routes');
 const fixtureOverlayRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/custom-routes-overlay');
@@ -204,7 +203,7 @@ models {
 
     assert.deepEqual(
       mounts.map((entry) => entry.basePath),
-      ['users', 'profiles', 'orders', 'logs', 'products', 'product-orders'],
+      ['logs', 'orders', 'products', 'product-orders', 'profiles', 'users'],
     );
   });
 

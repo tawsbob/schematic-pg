@@ -14,8 +14,8 @@ export class SqlGenerator {
             generateEnums(schema),
             generateDropTables(schema),
             generateTables(schema),
-            generateForeignKeys(schema),
             generateIndexes(schema),
+            generateForeignKeys(schema),
             generateFunctions(schema),
             generateTriggers(schema),
         ];

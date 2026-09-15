@@ -1,5 +1,5 @@
 type StartOptions = {
-    schemaPath: string;
+    schemaArg?: string;
     migrate: boolean;
 };
 export declare function parseStartArgs(args: string[]): StartOptions;

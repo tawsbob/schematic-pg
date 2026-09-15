@@ -1,17 +1,16 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { parse } from '../schema-dsl/index.js';
+import { loadSchemaFromArg } from '../schema-source/index.js';
 import { MigrationPlanner, MigrationSqlGenerator } from '../sql-generator/index.js';
 import { DESTRUCTIVE_MIGRATION_KINDS } from './migrations.js';
 import { readSnapshotSource } from './schema-state.js';
+import { join } from 'node:path';
 export function generateSchemaDiff(schemaPath, cwd = process.cwd()) {
     const snapshotSource = readSnapshotSource(cwd);
     if (!snapshotSource) {
         throw new Error(`No schema snapshot found at .schema-state/app.schema. Run db:bootstrap or copy app.schema to initialize the snapshot.`);
     }
     const oldSchema = parse(snapshotSource);
-    const newSource = readFileSync(schemaPath, 'utf8');
-    const newSchema = parse(newSource);
+    const { schema: newSchema } = loadSchemaFromArg(schemaPath, cwd);
     const planner = new MigrationPlanner();
     const migrations = planner.generateMigration(oldSchema, newSchema);
     const sql = new MigrationSqlGenerator().generate(migrations, newSchema);

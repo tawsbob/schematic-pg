@@ -4,10 +4,13 @@ import { generateSchemaDiff, summarizeMigrations } from '../db/diff.js';
 import { applyPendingMigrations } from '../db/migrate.js';
 import { createMigration, getAppliedMigrationFilenames, listMigrationFiles } from '../db/migrations.js';
 import { snapshotExists } from '../db/schema-state.js';
-import { resolveSchemaPath } from './paths.js';
+import { describeSchemaSource, resolveSchemaSource, } from '../schema-source/index.js';
 import { waitForDatabase } from './wait-for-database.js';
+function resolveSchemaArg(arg) {
+    return arg;
+}
 function parseDiffArgs(args) {
-    let schemaPath = resolveSchemaPath();
+    let schemaPath;
     let name;
     let print = false;
     for (let index = 0; index < args.length; index++) {
@@ -22,7 +25,7 @@ function parseDiffArgs(args) {
             continue;
         }
         if (!arg.startsWith('--')) {
-            schemaPath = resolveSchemaPath(arg);
+            schemaPath = arg;
         }
     }
     return { schemaPath, name, print };
@@ -30,7 +33,7 @@ function parseDiffArgs(args) {
 function parseMigrateArgs(args) {
     const command = args[0] === 'status' ? 'status' : 'migrate';
     const schemaArg = args.find((arg) => !arg.startsWith('--') && arg !== 'status');
-    const schemaPath = resolveSchemaPath(schemaArg);
+    const schemaPath = resolveSchemaArg(schemaArg);
     return { command, schemaPath };
 }
 export async function runDbPing() {
@@ -48,12 +51,13 @@ export async function runDbPing() {
     }
 }
 export async function runDbBootstrap(schemaPath) {
-    const resolvedSchemaPath = resolveSchemaPath(schemaPath);
+    const source = resolveSchemaSource(schemaPath);
+    const label = describeSchemaSource(source);
     const client = new DatabaseClient();
     try {
         await waitForDatabase({ client });
-        await bootstrapDatabase(resolvedSchemaPath, client);
-        process.stdout.write(`Database bootstrapped from ${resolvedSchemaPath}\n`);
+        await bootstrapDatabase(schemaPath, client);
+        process.stdout.write(`Database bootstrapped from ${label}\n`);
     }
     finally {
         await client.close();
@@ -79,7 +83,7 @@ export async function runDbDiff(args) {
 async function showMigrationStatus(schemaPath, client) {
     if (!snapshotExists()) {
         process.stdout.write('Snapshot: missing (.schema-state/app.schema)\n');
-        process.stdout.write('\nPending schema changes (snapshot vs app.schema):\n');
+        process.stdout.write('\nPending schema changes (snapshot vs current schema):\n');
         process.stdout.write('  (snapshot not initialized — run db:bootstrap first)\n');
     }
     else {
@@ -87,7 +91,7 @@ async function showMigrationStatus(schemaPath, client) {
         try {
             const diff = generateSchemaDiff(schemaPath);
             const counts = summarizeMigrations(diff.migrations);
-            process.stdout.write('\nPending schema changes (snapshot vs app.schema):\n');
+            process.stdout.write('\nPending schema changes (snapshot vs current schema):\n');
             if (counts.size === 0) {
                 process.stdout.write('  (none)\n');
             }
@@ -138,7 +142,8 @@ export async function runDbMigrate(args) {
         for (const migration of applied) {
             process.stdout.write(`Applied ${migration.filename}\n`);
         }
-        process.stdout.write(`Snapshot updated from ${schemaPath}\n`);
+        const label = describeSchemaSource(resolveSchemaSource(schemaPath));
+        process.stdout.write(`Snapshot updated from ${label}\n`);
     }
     finally {
         await client.close();

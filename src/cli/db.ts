@@ -4,11 +4,18 @@ import { generateSchemaDiff, summarizeMigrations } from '../db/diff.js';
 import { applyPendingMigrations } from '../db/migrate.js';
 import { createMigration, getAppliedMigrationFilenames, listMigrationFiles } from '../db/migrations.js';
 import { snapshotExists } from '../db/schema-state.js';
-import { resolveSchemaPath } from './paths.js';
+import {
+  describeSchemaSource,
+  resolveSchemaSource,
+} from '../schema-source/index.js';
 import { waitForDatabase } from './wait-for-database.js';
 
-function parseDiffArgs(args: string[]): { schemaPath: string; name?: string; print: boolean } {
-  let schemaPath = resolveSchemaPath();
+function resolveSchemaArg(arg?: string): string | undefined {
+  return arg;
+}
+
+function parseDiffArgs(args: string[]): { schemaPath?: string; name?: string; print: boolean } {
+  let schemaPath: string | undefined;
   let name: string | undefined;
   let print = false;
 
@@ -24,17 +31,17 @@ function parseDiffArgs(args: string[]): { schemaPath: string; name?: string; pri
       continue;
     }
     if (!arg.startsWith('--')) {
-      schemaPath = resolveSchemaPath(arg);
+      schemaPath = arg;
     }
   }
 
   return { schemaPath, name, print };
 }
 
-function parseMigrateArgs(args: string[]): { command: 'migrate' | 'status'; schemaPath: string } {
+function parseMigrateArgs(args: string[]): { command: 'migrate' | 'status'; schemaPath?: string } {
   const command = args[0] === 'status' ? 'status' : 'migrate';
   const schemaArg = args.find((arg) => !arg.startsWith('--') && arg !== 'status');
-  const schemaPath = resolveSchemaPath(schemaArg);
+  const schemaPath = resolveSchemaArg(schemaArg);
 
   return { command, schemaPath };
 }
@@ -57,13 +64,14 @@ export async function runDbPing(): Promise<void> {
 }
 
 export async function runDbBootstrap(schemaPath?: string): Promise<void> {
-  const resolvedSchemaPath = resolveSchemaPath(schemaPath);
+  const source = resolveSchemaSource(schemaPath);
+  const label = describeSchemaSource(source);
   const client = new DatabaseClient();
 
   try {
     await waitForDatabase({ client });
-    await bootstrapDatabase(resolvedSchemaPath, client);
-    process.stdout.write(`Database bootstrapped from ${resolvedSchemaPath}\n`);
+    await bootstrapDatabase(schemaPath, client);
+    process.stdout.write(`Database bootstrapped from ${label}\n`);
   } finally {
     await client.close();
   }
@@ -91,10 +99,10 @@ export async function runDbDiff(args: string[]): Promise<void> {
   process.stdout.write(`Migration written to ${migration.path}\n`);
 }
 
-async function showMigrationStatus(schemaPath: string, client: DatabaseClient): Promise<void> {
+async function showMigrationStatus(schemaPath: string | undefined, client: DatabaseClient): Promise<void> {
   if (!snapshotExists()) {
     process.stdout.write('Snapshot: missing (.schema-state/app.schema)\n');
-    process.stdout.write('\nPending schema changes (snapshot vs app.schema):\n');
+    process.stdout.write('\nPending schema changes (snapshot vs current schema):\n');
     process.stdout.write('  (snapshot not initialized — run db:bootstrap first)\n');
   } else {
     process.stdout.write('Snapshot: present\n');
@@ -103,7 +111,7 @@ async function showMigrationStatus(schemaPath: string, client: DatabaseClient): 
       const diff = generateSchemaDiff(schemaPath);
       const counts = summarizeMigrations(diff.migrations);
 
-      process.stdout.write('\nPending schema changes (snapshot vs app.schema):\n');
+      process.stdout.write('\nPending schema changes (snapshot vs current schema):\n');
       if (counts.size === 0) {
         process.stdout.write('  (none)\n');
       } else {
@@ -159,7 +167,8 @@ export async function runDbMigrate(args: string[]): Promise<void> {
     for (const migration of applied) {
       process.stdout.write(`Applied ${migration.filename}\n`);
     }
-    process.stdout.write(`Snapshot updated from ${schemaPath}\n`);
+    const label = describeSchemaSource(resolveSchemaSource(schemaPath));
+    process.stdout.write(`Snapshot updated from ${label}\n`);
   } finally {
     await client.close();
   }

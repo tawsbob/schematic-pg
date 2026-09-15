@@ -1,15 +1,12 @@
 // Run: npm test
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, it } from 'node:test';
-import { parse } from '../../schema-dsl/index.js';
+import { loadRepoSchema } from '../../__tests__/helpers/repo-schema.js';
 import { buildModelMeta } from '../model-meta.js';
 import { buildRelations } from '../utils/relations.js';
 
-const schemaSource = readFileSync(path.resolve('app.schema'), 'utf8');
-const schema = parse(schemaSource);
+const { schema } = loadRepoSchema();
 
 describe('buildRelations', () => {
   it('builds inverse hasMany and hasOne relations', () => {

@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { parse } from '../schema-dsl/index.js';
+import { loadSchemaFromArg } from '../schema-source/index.js';
 import { MigrationPlanner, MigrationSqlGenerator } from '../sql-generator/index.js';
 import type { Migration } from '../sql-generator/migration-types.js';
 import { DESTRUCTIVE_MIGRATION_KINDS } from './migrations.js';
-import { readSnapshotSchema, readSnapshotSource } from './schema-state.js';
+import { readSnapshotSource } from './schema-state.js';
+import { join } from 'node:path';
 
 export interface DiffResult {
   migrations: Migration[];
@@ -13,7 +13,7 @@ export interface DiffResult {
 }
 
 export function generateSchemaDiff(
-  schemaPath: string,
+  schemaPath?: string,
   cwd = process.cwd(),
 ): DiffResult {
   const snapshotSource = readSnapshotSource(cwd);
@@ -24,8 +24,7 @@ export function generateSchemaDiff(
   }
 
   const oldSchema = parse(snapshotSource);
-  const newSource = readFileSync(schemaPath, 'utf8');
-  const newSchema = parse(newSource);
+  const { schema: newSchema } = loadSchemaFromArg(schemaPath, cwd);
 
   const planner = new MigrationPlanner();
   const migrations = planner.generateMigration(oldSchema, newSchema);

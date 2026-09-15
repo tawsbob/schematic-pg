@@ -1,17 +1,5 @@
+import { PRIMITIVE_TYPES } from '../../schema-dsl/primitives.js';
 import { toSnakeCase } from './snake-case.js';
-const PRIMITIVE_TYPES = new Set([
-    'UUID',
-    'TEXT',
-    'INTEGER',
-    'SERIAL',
-    'BOOLEAN',
-    'JSONB',
-    'POINT',
-    'SMALLINT',
-    'VARCHAR',
-    'DECIMAL',
-    'TIMESTAMP',
-]);
 export function mapColumnType(type, enumNames) {
     if (type.name === 'TRIGGER' || type.name === 'VOID') {
         return type.name;

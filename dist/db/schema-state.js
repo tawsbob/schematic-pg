@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parse } from '../schema-dsl/index.js';
 const SNAPSHOT_DIR = '.schema-state';
@@ -20,10 +20,13 @@ export function readSnapshotSchema(cwd = process.cwd()) {
     const source = readSnapshotSource(cwd);
     return source ? parse(source) : null;
 }
-export function writeSnapshot(sourcePath, cwd = process.cwd()) {
+export function writeSnapshotSource(source, cwd = process.cwd()) {
     const snapshotPath = getSnapshotPath(cwd);
     mkdirSync(dirname(snapshotPath), { recursive: true });
-    copyFileSync(sourcePath, snapshotPath);
+    writeFileSync(snapshotPath, source, 'utf8');
+}
+export function writeSnapshot(sourcePath, cwd = process.cwd()) {
+    writeSnapshotSource(readFileSync(sourcePath, 'utf8'), cwd);
 }
 export function ensureSnapshot(schemaPath, cwd = process.cwd()) {
     if (!snapshotExists(cwd)) {

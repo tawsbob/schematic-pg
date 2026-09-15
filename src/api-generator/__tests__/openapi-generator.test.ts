@@ -1,16 +1,15 @@
 // Run: npm test
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+import { loadRepoSchema } from '../../__tests__/helpers/repo-schema.js';
 import { parse } from '../../schema-dsl/index.js';
 import { generateApiFiles } from '../index.js';
 import { OpenApiGenerator } from '../openapi-generator.js';
 import { generateAppFile } from '../app-generator.js';
 
-const schemaSource = readFileSync(path.resolve('app.schema'), 'utf8');
-const schema = parse(schemaSource);
+const { schema } = loadRepoSchema();
 const missingCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/missing-routes');
 const fixtureCustomRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/custom-routes');
 const fixtureAuthRoutesDir = path.resolve('src/api-generator/__tests__/fixtures/custom-routes-auth');

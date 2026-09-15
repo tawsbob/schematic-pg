@@ -1,17 +1,17 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { runDbMigrate } from './db.js';
-import { DEFAULT_OUTPUT_DIR, resolveSchemaPath } from './paths.js';
+import { DEFAULT_OUTPUT_DIR } from './paths.js';
 import { runAppServerUntilExit } from './server.js';
 import { waitForDatabase } from './wait-for-database.js';
 
 type StartOptions = {
-  schemaPath: string;
+  schemaArg?: string;
   migrate: boolean;
 };
 
 export function parseStartArgs(args: string[]): StartOptions {
-  let schemaPath = resolveSchemaPath();
+  let schemaArg: string | undefined;
   let migrate = true;
 
   for (const arg of args) {
@@ -21,15 +21,15 @@ export function parseStartArgs(args: string[]): StartOptions {
     }
 
     if (!arg.startsWith('--')) {
-      schemaPath = resolveSchemaPath(arg);
+      schemaArg = arg;
     }
   }
 
-  return { schemaPath, migrate };
+  return { schemaArg, migrate };
 }
 
 export async function runStart(args: string[] = []): Promise<void> {
-  const { schemaPath, migrate } = parseStartArgs(args);
+  const { schemaArg, migrate } = parseStartArgs(args);
   const appPath = path.resolve(DEFAULT_OUTPUT_DIR, 'app.ts');
 
   if (!existsSync(appPath)) {
@@ -41,7 +41,7 @@ export async function runStart(args: string[] = []): Promise<void> {
   await waitForDatabase();
 
   if (migrate) {
-    await runDbMigrate([schemaPath]);
+    await runDbMigrate(schemaArg ? [schemaArg] : []);
   }
 
   const exitCode = await runAppServerUntilExit(appPath, { NODE_ENV: 'production' });

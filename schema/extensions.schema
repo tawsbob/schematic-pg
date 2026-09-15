@@ -1,0 +1,4 @@
+extensions {
+  pgcrypto { version: "1.3" }
+  uuid-ossp
+}

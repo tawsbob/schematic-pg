@@ -1,11 +1,11 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { select } from '@inquirer/prompts';
 import { discoverHooks } from '../api-generator/hook-scanner.js';
 import { PACKAGE_NAME } from '../constants.js';
-import { parse } from '../schema-dsl/index.js';
-import { DEFAULT_HOOKS_DIR, resolveSchemaPath } from './paths.js';
+import { loadSchemaFromArg } from '../schema-source/index.js';
+import { DEFAULT_HOOKS_DIR } from './paths.js';
 import { createHookFileTemplate } from './templates.js';
 function parseModelFlag(args) {
     const modelIndex = args.indexOf('--model');
@@ -66,10 +66,9 @@ async function promptForModel(models, hooksDir, schema) {
     });
 }
 export async function runHooksAdd(args, options = {}) {
-    const schemaPath = resolveSchemaPath(options.schemaPath ?? resolveSchemaArg(args));
+    const schemaArg = options.schemaPath ?? resolveSchemaArg(args);
     const hooksDir = options.hooksDir ?? DEFAULT_HOOKS_DIR;
-    const source = await readFile(schemaPath, 'utf8');
-    const schema = parse(source);
+    const { schema } = loadSchemaFromArg(schemaArg);
     if (schema.models.length === 0) {
         throw new Error('Schema has no models');
     }

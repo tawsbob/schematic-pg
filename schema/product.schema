@@ -1,0 +1,57 @@
+models {
+  model Log {
+    id:        UUID      @id @default(gen_random_uuid())
+    message:   TEXT
+    createdAt: TIMESTAMP @default(now())
+  }
+
+  model Product {
+    id:          UUID        @id @default(gen_random_uuid())
+    name:        VARCHAR(255)
+    description: TEXT
+    price:       DECIMAL(10, 2)
+    stock:       INTEGER
+    category:    VARCHAR(100)
+    tags:        TEXT[]
+    metadata:    JSONB       @unfilterable
+    createdAt:   TIMESTAMP   @default(now())
+    updatedAt:   TIMESTAMP?
+
+    orders:      ProductOrder[]
+
+    @@trigger {
+      timing: AFTER,
+      event: UPDATE,
+      level: ROW,
+      execute: """
+        IF (OLD.stock <> NEW.stock) THEN
+          INSERT INTO Log (message) VALUES ('Product stock changed');
+        END IF;
+        RETURN NEW;
+      """
+    }
+
+    @@trigger {
+      timing: BEFORE,
+      event: UPDATE,
+      level: ROW,
+      execute: """
+        IF (OLD.price <> NEW.price) THEN
+          INSERT INTO Log (message) VALUES ('Product price changed');
+        END IF;
+        RETURN NEW;
+      """
+    }
+  }
+}
+
+functions {
+  function searchProducts(query: TEXT): TABLE(id: UUID, name: TEXT, price: DECIMAL) {
+    language: sql
+    volatility: STABLE
+    execute: """
+      SELECT id, name, price FROM product
+      WHERE name ILIKE '%' || query || '%'
+    """
+  }
+}

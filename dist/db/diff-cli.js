@@ -1,8 +1,8 @@
 import { createMigration } from './migrations.js';
-import { defaultSchemaPath, generateSchemaDiff } from './diff.js';
+import { generateSchemaDiff } from './diff.js';
 function parseArgs(argv) {
     const args = argv.slice(2);
-    let schemaPath = defaultSchemaPath();
+    let schemaPath;
     let name;
     let print = false;
     for (let index = 0; index < args.length; index++) {

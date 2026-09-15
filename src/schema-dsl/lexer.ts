@@ -50,62 +50,63 @@ export class Lexer {
   private scanToken(): Token {
     this.skipWhitespaceAndComments();
 
+    const startPos = this.pos;
     const startLine = this.line;
     const startCol = this.col;
 
     if (this.isAtEnd()) {
-      return this.makeToken(TokenType.EOF, '', startLine, startCol);
+      return this.makeToken(TokenType.EOF, '', startLine, startCol, startPos);
     }
 
     const char = this.advance();
 
     switch (char) {
       case '{':
-        return this.makeToken(TokenType.LBRACE, char, startLine, startCol);
+        return this.makeToken(TokenType.LBRACE, char, startLine, startCol, startPos);
       case '}':
-        return this.makeToken(TokenType.RBRACE, char, startLine, startCol);
+        return this.makeToken(TokenType.RBRACE, char, startLine, startCol, startPos);
       case '[':
-        return this.makeToken(TokenType.LBRACKET, char, startLine, startCol);
+        return this.makeToken(TokenType.LBRACKET, char, startLine, startCol, startPos);
       case ']':
-        return this.makeToken(TokenType.RBRACKET, char, startLine, startCol);
+        return this.makeToken(TokenType.RBRACKET, char, startLine, startCol, startPos);
       case '(':
-        return this.makeToken(TokenType.LPAREN, char, startLine, startCol);
+        return this.makeToken(TokenType.LPAREN, char, startLine, startCol, startPos);
       case ')':
-        return this.makeToken(TokenType.RPAREN, char, startLine, startCol);
+        return this.makeToken(TokenType.RPAREN, char, startLine, startCol, startPos);
       case ':':
-        return this.makeToken(TokenType.COLON, char, startLine, startCol);
+        return this.makeToken(TokenType.COLON, char, startLine, startCol, startPos);
       case ',':
-        return this.makeToken(TokenType.COMMA, char, startLine, startCol);
+        return this.makeToken(TokenType.COMMA, char, startLine, startCol, startPos);
       case '?':
-        return this.makeToken(TokenType.QUESTION, char, startLine, startCol);
+        return this.makeToken(TokenType.QUESTION, char, startLine, startCol, startPos);
       case '@':
         if (this.match('@')) {
-          return this.makeToken(TokenType.ATAT, '@@', startLine, startCol);
+          return this.makeToken(TokenType.ATAT, '@@', startLine, startCol, startPos);
         }
-        return this.makeToken(TokenType.AT, char, startLine, startCol);
+        return this.makeToken(TokenType.AT, char, startLine, startCol, startPos);
       case '"':
         if (this.match('"') && this.match('"')) {
-          return this.scanTripleString(startLine, startCol);
+          return this.scanTripleString(startLine, startCol, startPos);
         }
-        return this.scanString(startLine, startCol);
+        return this.scanString(startLine, startCol, startPos);
       default:
         if (this.isDigit(char)) {
-          return this.scanNumber(startLine, startCol);
+          return this.scanNumber(startLine, startCol, startPos);
         }
         if (this.isIdentStart(char)) {
-          return this.scanIdentifier(startLine, startCol);
+          return this.scanIdentifier(startLine, startCol, startPos);
         }
         throw new LexError(`Unexpected character '${char}'`, startLine, startCol);
     }
   }
 
-  private scanString(startLine: number, startCol: number): Token {
+  private scanString(startLine: number, startCol: number, startPos: number): Token {
     let value = '';
 
     while (!this.isAtEnd()) {
       const char = this.advance();
       if (char === '"') {
-        return this.makeToken(TokenType.STRING, value, startLine, startCol);
+        return this.makeToken(TokenType.STRING, value, startLine, startCol, startPos);
       }
       if (char === '\\') {
         if (this.isAtEnd()) {
@@ -143,7 +144,7 @@ export class Lexer {
     throw new LexError('Unterminated string', startLine, startCol);
   }
 
-  private scanTripleString(startLine: number, startCol: number): Token {
+  private scanTripleString(startLine: number, startCol: number, startPos: number): Token {
     let value = '';
 
     while (!this.isAtEnd()) {
@@ -151,7 +152,7 @@ export class Lexer {
         this.advance();
         this.advance();
         this.advance();
-        return this.makeToken(TokenType.TRIPLE_STRING, value, startLine, startCol);
+        return this.makeToken(TokenType.TRIPLE_STRING, value, startLine, startCol, startPos);
       }
 
       value += this.advance();
@@ -160,7 +161,7 @@ export class Lexer {
     throw new LexError('Unterminated triple-quoted string', startLine, startCol);
   }
 
-  private scanNumber(startLine: number, startCol: number): Token {
+  private scanNumber(startLine: number, startCol: number, startPos: number): Token {
     let value = this.source[this.pos - 1];
 
     while (!this.isAtEnd() && this.isDigit(this.peekChar())) {
@@ -174,10 +175,10 @@ export class Lexer {
       }
     }
 
-    return this.makeToken(TokenType.NUMBER, value, startLine, startCol);
+    return this.makeToken(TokenType.NUMBER, value, startLine, startCol, startPos);
   }
 
-  private scanIdentifier(startLine: number, startCol: number): Token {
+  private scanIdentifier(startLine: number, startCol: number, startPos: number): Token {
     let value = this.source[this.pos - 1];
 
     while (!this.isAtEnd() && this.isIdentPart(this.peekChar())) {
@@ -185,22 +186,15 @@ export class Lexer {
     }
 
     const type = keywordTokenType(value);
-    return this.makeToken(type, value, startLine, startCol);
+    return this.makeToken(type, value, startLine, startCol, startPos);
   }
 
   private skipWhitespaceAndComments(): void {
     while (!this.isAtEnd()) {
       const char = this.peekChar();
 
-      if (char === ' ' || char === '\t' || char === '\r') {
+      if (char === ' ' || char === '\t' || char === '\r' || char === '\n') {
         this.advance();
-        continue;
-      }
-
-      if (char === '\n') {
-        this.advance();
-        this.line += 1;
-        this.col = 1;
         continue;
       }
 
@@ -215,8 +209,14 @@ export class Lexer {
     }
   }
 
-  private makeToken(type: TokenType, value: string, line: number, col: number): Token {
-    return { type, value, line, col };
+  private makeToken(
+    type: TokenType,
+    value: string,
+    line: number,
+    col: number,
+    start: number,
+  ): Token {
+    return { type, value, line, col, start, end: this.pos };
   }
 
   private isAtEnd(): boolean {
@@ -230,7 +230,10 @@ export class Lexer {
   private advance(): string {
     const char = this.source[this.pos];
     this.pos += 1;
-    if (char !== '\n') {
+    if (char === '\n') {
+      this.line += 1;
+      this.col = 1;
+    } else {
       this.col += 1;
     }
     return char;

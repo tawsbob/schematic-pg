@@ -1,22 +1,22 @@
 import { DatabaseClient } from './client.js';
 import { applyPendingMigrations } from './migrate.js';
 import { getAppliedMigrationFilenames, listMigrationFiles } from './migrations.js';
-import { defaultSchemaPath, generateSchemaDiff, summarizeMigrations } from './diff.js';
+import { generateSchemaDiff, summarizeMigrations } from './diff.js';
 import { snapshotExists } from './schema-state.js';
+import { describeSchemaSource, resolveSchemaSource } from '../schema-source/index.js';
 
-function parseArgs(argv: string[]): { command: 'migrate' | 'status'; schemaPath: string } {
+function parseArgs(argv: string[]): { command: 'migrate' | 'status'; schemaPath?: string } {
   const args = argv.slice(2);
   const command = args[0] === 'status' ? 'status' : 'migrate';
   const schemaArg = args.find((arg) => !arg.startsWith('--') && arg !== 'status');
-  const schemaPath = schemaArg ?? defaultSchemaPath();
 
-  return { command, schemaPath };
+  return { command, schemaPath: schemaArg };
 }
 
-async function showStatus(schemaPath: string, client: DatabaseClient): Promise<void> {
+async function showStatus(schemaPath: string | undefined, client: DatabaseClient): Promise<void> {
   if (!snapshotExists()) {
     process.stdout.write('Snapshot: missing (.schema-state/app.schema)\n');
-    process.stdout.write('\nPending schema changes (snapshot vs app.schema):\n');
+    process.stdout.write('\nPending schema changes (snapshot vs current schema):\n');
     process.stdout.write('  (snapshot not initialized — run db:bootstrap first)\n');
   } else {
     process.stdout.write('Snapshot: present\n');
@@ -25,7 +25,7 @@ async function showStatus(schemaPath: string, client: DatabaseClient): Promise<v
       const diff = generateSchemaDiff(schemaPath);
       const counts = summarizeMigrations(diff.migrations);
 
-      process.stdout.write('\nPending schema changes (snapshot vs app.schema):\n');
+      process.stdout.write('\nPending schema changes (snapshot vs current schema):\n');
       if (counts.size === 0) {
         process.stdout.write('  (none)\n');
       } else {
@@ -61,7 +61,7 @@ async function showStatus(schemaPath: string, client: DatabaseClient): Promise<v
   }
 }
 
-async function runMigrate(schemaPath: string, client: DatabaseClient): Promise<void> {
+async function runMigrate(schemaPath: string | undefined, client: DatabaseClient): Promise<void> {
   const applied = await applyPendingMigrations(schemaPath, client);
 
   if (applied.length === 0) {
@@ -72,7 +72,8 @@ async function runMigrate(schemaPath: string, client: DatabaseClient): Promise<v
   for (const migration of applied) {
     process.stdout.write(`Applied ${migration.filename}\n`);
   }
-  process.stdout.write(`Snapshot updated from ${schemaPath}\n`);
+  const label = describeSchemaSource(resolveSchemaSource(schemaPath));
+  process.stdout.write(`Snapshot updated from ${label}\n`);
 }
 
 async function main(): Promise<void> {

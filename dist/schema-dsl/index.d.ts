@@ -2,6 +2,8 @@ import type { Schema } from './ast.js';
 export { Lexer, LexError } from './lexer.js';
 export { Parser, ParseError } from './parser.js';
 export { SchemaError, validateSchema } from './validate.js';
+export { validateMergedSchema } from './validate-merged.js';
+export { parseFragment, mergeFragments, type SchemaFragment, type MergedSchema, } from './merge.js';
 export { inspect } from './inspect.js';
 export * from './ast.js';
 export * from './tokens.js';

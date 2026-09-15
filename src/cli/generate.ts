@@ -1,26 +1,23 @@
-import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { parse } from '../schema-dsl/index.js';
 import { generateApiFiles } from '../api-generator/index.js';
 import { generateDbClientFiles } from '../db/db-client-generator.js';
-import { SqlGenerator } from '../sql-generator/sql-generator.js';
 import {
-  DEFAULT_CUSTOM_ROUTES_DIR,
-  DEFAULT_OUTPUT_DIR,
-  resolveSchemaPath,
-} from './paths.js';
+  describeSchemaSource,
+  loadSchemaFromArg,
+  resolveSchemaSource,
+} from '../schema-source/index.js';
+import { SqlGenerator } from '../sql-generator/sql-generator.js';
+import { DEFAULT_CUSTOM_ROUTES_DIR, DEFAULT_OUTPUT_DIR } from './paths.js';
 
 export async function generateSql(schemaPath?: string): Promise<string> {
-  const resolvedSchemaPath = resolveSchemaPath(schemaPath);
-  const source = await readFile(resolvedSchemaPath, 'utf8');
-  return new SqlGenerator().generateFromSource(source);
+  const { schema } = loadSchemaFromArg(schemaPath);
+  return new SqlGenerator().generate(schema);
 }
 
 export async function generateClient(schemaPath?: string): Promise<void> {
-  const resolvedSchemaPath = resolveSchemaPath(schemaPath);
   const outputDir = path.resolve(DEFAULT_OUTPUT_DIR);
-  const source = await readFile(resolvedSchemaPath, 'utf8');
-  const schema = parse(source);
+  const { schema } = loadSchemaFromArg(schemaPath);
   const files = generateDbClientFiles(schema);
 
   await mkdir(outputDir, { recursive: true });
@@ -32,12 +29,10 @@ export async function generateClient(schemaPath?: string): Promise<void> {
 }
 
 export async function generateApi(schemaPath?: string): Promise<void> {
-  const resolvedSchemaPath = resolveSchemaPath(schemaPath);
   const outputDir = path.resolve(DEFAULT_OUTPUT_DIR);
   const routesDir = path.join(outputDir, 'routes');
   const schemasDir = path.join(outputDir, 'schemas');
-  const source = await readFile(resolvedSchemaPath, 'utf8');
-  const schema = parse(source);
+  const { schema } = loadSchemaFromArg(schemaPath);
   const files = generateApiFiles(schema, { customRoutesDir: DEFAULT_CUSTOM_ROUTES_DIR });
 
   await mkdir(routesDir, { recursive: true });
@@ -72,11 +67,12 @@ export async function syncGeneratedRouteFiles(
 }
 
 export async function generateAll(schemaPath?: string): Promise<void> {
-  const resolvedSchemaPath = resolveSchemaPath(schemaPath);
-  const sql = await generateSql(resolvedSchemaPath);
+  const source = resolveSchemaSource(schemaPath);
+  const label = describeSchemaSource(source);
+  const sql = await generateSql(schemaPath);
   await writeFile(path.resolve('schema.sql'), sql, 'utf8');
-  console.log('Generated schema.sql');
+  console.log(`Generated schema.sql from ${label}`);
 
-  await generateClient(resolvedSchemaPath);
-  await generateApi(resolvedSchemaPath);
+  await generateClient(schemaPath);
+  await generateApi(schemaPath);
 }

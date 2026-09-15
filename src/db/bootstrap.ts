@@ -1,20 +1,20 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { SqlGenerator } from '../sql-generator/sql-generator.js';
+import { loadSchemaFromArg } from '../schema-source/index.js';
 import { DatabaseClient } from './client.js';
 import { resetPublicSchema } from './reset-database.js';
-import { writeSnapshot } from './schema-state.js';
+import { writeSnapshotSource } from './schema-state.js';
 
-export function generateBootstrapSql(schemaPath: string): string {
-  const source = readFileSync(schemaPath, 'utf8');
-  return new SqlGenerator().generateFromSource(source);
+export function generateBootstrapSql(schemaPath?: string): string {
+  const { schema } = loadSchemaFromArg(schemaPath);
+  return new SqlGenerator().generate(schema);
 }
 
 export async function bootstrapDatabase(
-  schemaPath = join(process.cwd(), 'app.schema'),
+  schemaPath?: string,
   client: Pick<DatabaseClient, 'withClient'> = new DatabaseClient(),
 ): Promise<void> {
-  const sql = generateBootstrapSql(schemaPath);
+  const { schema, canonicalSource } = loadSchemaFromArg(schemaPath);
+  const sql = new SqlGenerator().generate(schema);
 
   await client.withClient(async (pgClient) => {
     // Bootstrap is greenfield: wipe existing objects so re-runs (e.g. `dev` watch) are idempotent.
@@ -22,5 +22,5 @@ export async function bootstrapDatabase(
     await pgClient.query(sql);
   });
 
-  writeSnapshot(schemaPath);
+  writeSnapshotSource(canonicalSource);
 }

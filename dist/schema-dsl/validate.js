@@ -1,11 +1,16 @@
 export class SchemaError extends Error {
     line;
     col;
+    file;
     constructor(message, loc) {
-        super(`Schema error at line ${loc.line}, col ${loc.col}: ${message}`);
+        const location = loc.file
+            ? `${loc.file}:${loc.line}:${loc.col}`
+            : `line ${loc.line}, col ${loc.col}`;
+        super(`Schema error at ${location}: ${message}`);
         this.name = 'SchemaError';
         this.line = loc.line;
         this.col = loc.col;
+        this.file = loc.file;
     }
 }
 export function validateSchema(schema) {

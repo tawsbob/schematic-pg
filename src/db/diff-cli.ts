@@ -1,10 +1,9 @@
-import { join } from 'node:path';
 import { createMigration } from './migrations.js';
-import { defaultSchemaPath, generateSchemaDiff } from './diff.js';
+import { generateSchemaDiff } from './diff.js';
 
-function parseArgs(argv: string[]): { schemaPath: string; name?: string; print: boolean } {
+function parseArgs(argv: string[]): { schemaPath?: string; name?: string; print: boolean } {
   const args = argv.slice(2);
-  let schemaPath = defaultSchemaPath();
+  let schemaPath: string | undefined;
   let name: string | undefined;
   let print = false;
 
