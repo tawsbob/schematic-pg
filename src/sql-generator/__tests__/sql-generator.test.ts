@@ -2,16 +2,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
+import { loadRepoSchema } from '../../__tests__/helpers/repo-schema.js';
 import { parse } from '../../schema-dsl/index.js';
-import { SqlGenerator } from '../sql-generator.js';
 import { wrapFunctions } from '../../schema-dsl/__tests__/helpers.js';
+import { SqlGenerator } from '../sql-generator.js';
 
-const appSchemaPath = join(process.cwd(), 'app.schema');
 const fixturePath = join(process.cwd(), 'src/sql-generator/__tests__/fixtures/app.schema.sql');
 
 describe('SqlGenerator — app.schema', () => {
-  const source = readFileSync(appSchemaPath, 'utf8');
-  const schema = parse(source);
+  const { schema } = loadRepoSchema();
   const sql = new SqlGenerator().generate(schema);
   const expected = readFileSync(fixturePath, 'utf8');
 
@@ -25,13 +24,21 @@ describe('SqlGenerator — app.schema', () => {
       '-- Enums',
       '-- Drop tables',
       '-- Create tables',
-      '-- Alter tables (foreign keys)',
       '-- Create indexes',
+      '-- Alter tables (foreign keys)',
       '-- Create functions',
       '-- Create triggers',
     ]) {
       assert.ok(sql.includes(header), `missing section ${header}`);
     }
+  });
+
+  it('emits indexes before foreign keys', () => {
+    const indexesHeader = sql.indexOf('-- Create indexes');
+    const foreignKeysHeader = sql.indexOf('-- Alter tables (foreign keys)');
+    assert.ok(indexesHeader >= 0);
+    assert.ok(foreignKeysHeader >= 0);
+    assert.ok(indexesHeader < foreignKeysHeader);
   });
 
   it('generates extensions, enums, tables, foreign keys, indexes, and triggers', () => {

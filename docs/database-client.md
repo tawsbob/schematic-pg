@@ -87,7 +87,7 @@ await db.user.deleteMany({ where: { role: 'PUBLIC' } });
 
 ## Per-model API
 
-Each model in `app.schema` becomes a camelCase property on the client (`User` → `db.user`, `ProductOrder` → `db.productOrder`) with these methods:
+Each model in the schema becomes a camelCase property on the client (`User` → `db.user`, `ProductOrder` → `db.productOrder`) with these methods:
 
 | Method | SQL shape |
 |--------|-----------|
@@ -383,7 +383,7 @@ One command starts Docker Postgres, generates the client and API, and runs all i
 npm run test:integration
 ```
 
-This resets the `public` schema, bootstraps from `app.schema`, seeds test data, and exercises:
+This resets the `public` schema, bootstraps from the loaded schema, seeds test data, and exercises:
 
 - **DB client** — CRUD, filters, nested `include` eager-loading, `$transaction` (commit, rollback, constraint errors), and error handling ([`src/db/__tests__/db-client.integration.test.ts`](../src/db/__tests__/db-client.integration.test.ts))
 - **ACL over HTTP** — role checks, row-level filters, JWT auth, and open endpoints ([`src/api/__tests__/acl.integration.test.ts`](../src/api/__tests__/acl.integration.test.ts); see [Access control](access-control.md))

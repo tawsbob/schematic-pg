@@ -26,16 +26,21 @@ import { Token, TokenType } from './tokens.js';
 export class ParseError extends Error {
   readonly line: number;
   readonly col: number;
+  readonly file?: string;
   readonly expected: string;
   readonly found: Token;
 
-  constructor(expected: string, found: Token) {
+  constructor(expected: string, found: Token, file?: string) {
+    const location = file
+      ? `${file}:${found.line}:${found.col}`
+      : `line ${found.line}, col ${found.col}`;
     super(
-      `Parse error at line ${found.line}, col ${found.col}: expected ${expected}, found ${found.type} (${found.value || 'EOF'})`,
+      `Parse error at ${location}: expected ${expected}, found ${found.type} (${found.value || 'EOF'})`,
     );
     this.name = 'ParseError';
     this.line = found.line;
     this.col = found.col;
+    this.file = file;
     this.expected = expected;
     this.found = found;
   }
@@ -43,19 +48,30 @@ export class ParseError extends Error {
 
 export class Parser {
   private readonly tokens: Token[];
+  private readonly file?: string;
   private index = 0;
 
-  constructor(tokens: Token[]) {
+  constructor(tokens: Token[], file?: string) {
     this.tokens = tokens;
+    this.file = file;
   }
 
   parseSchema(): Schema {
     const start = this.current();
-    const extensions = this.parseExtensionsSection();
-    const enums = this.parseEnumsSection();
-    const models = this.parseModelsSection();
+    const extensions = this.check(TokenType.EXTENSIONS) ? this.parseExtensionsSection() : [];
+    const enums = this.check(TokenType.ENUMS) ? this.parseEnumsSection() : [];
+    const models = this.check(TokenType.MODELS) ? this.parseModelsSection() : [];
     const functions = this.check(TokenType.FUNCTIONS) ? this.parseFunctionsSection() : [];
-    this.expect(TokenType.EOF, 'end of schema');
+
+    if (!this.isAtEnd()) {
+      const unexpected = this.current();
+      const sectionHint = this.sectionOrderHint(unexpected.type);
+      throw new ParseError(
+        sectionHint ?? 'end of schema',
+        unexpected,
+        this.file,
+      );
+    }
 
     return {
       kind: 'Schema',
@@ -67,13 +83,31 @@ export class Parser {
     };
   }
 
+  private sectionOrderHint(type: TokenType): string | null {
+    switch (type) {
+      case TokenType.EXTENSIONS:
+        return "sections in order 'extensions', 'enums', 'models', 'functions' (extensions must come first)";
+      case TokenType.ENUMS:
+        return "sections in order 'extensions', 'enums', 'models', 'functions' (enums before models/functions)";
+      case TokenType.MODELS:
+        return "sections in order 'extensions', 'enums', 'models', 'functions' (models before functions)";
+      case TokenType.FUNCTIONS:
+        return "sections in order 'extensions', 'enums', 'models', 'functions'";
+      default:
+        return null;
+    }
+  }
+
   parseModel(): Model {
-    this.expect(TokenType.MODEL, "'model'");
+    const start = this.expect(TokenType.MODEL, "'model'");
     const nameToken = this.expect(TokenType.IDENT, 'model name');
     this.expect(TokenType.LBRACE, "'{'");
-    const model = this.parseModelBody(nameToken.value, nameToken);
+    const model = this.parseModelBody(nameToken.value);
     this.expect(TokenType.RBRACE, "'}'");
-    return model;
+    return {
+      ...model,
+      loc: this.loc(start),
+    };
   }
 
   parseField(): Field {
@@ -182,7 +216,7 @@ export class Parser {
     const start = this.expect(TokenType.FUNCTION, "'function'");
     const nameToken = this.expect(TokenType.IDENT, 'function name');
     if (existingNames?.has(nameToken.value)) {
-      throw new ParseError(`unique function name, "${nameToken.value}" already defined`, nameToken);
+      throw new ParseError(`unique function name, "${nameToken.value}" already defined`, nameToken, this.file);
     }
     existingNames?.add(nameToken.value);
     this.expect(TokenType.LPAREN, "'('");
@@ -218,7 +252,7 @@ export class Parser {
     }
 
     if (current.type === TokenType.IDENT && current.value === 'TABLE') {
-      throw new ParseError("TABLE column list '(...)'", current);
+      throw new ParseError("TABLE column list '(...)'", current, this.file);
     }
 
     return this.parseTypeExpr();
@@ -229,7 +263,7 @@ export class Parser {
     this.expect(TokenType.LPAREN, "'('");
 
     if (this.check(TokenType.RPAREN)) {
-      throw new ParseError('at least one TABLE column', this.current());
+      throw new ParseError('at least one TABLE column', this.current(), this.file);
     }
 
     const columns: FunctionParam[] = [];
@@ -242,12 +276,14 @@ export class Parser {
         throw new ParseError(
           `unique TABLE column name, "${nameToken.value}" already defined`,
           nameToken,
+          this.file,
         );
       }
       if (paramNames.has(nameToken.value)) {
         throw new ParseError(
           `TABLE column name distinct from parameter "${nameToken.value}"`,
           nameToken,
+          this.file,
         );
       }
       columnNames.add(nameToken.value);
@@ -306,7 +342,7 @@ export class Parser {
     execute: string;
   } {
     if (this.check(TokenType.RBRACE)) {
-      throw new ParseError("function body key 'execute'", this.current());
+      throw new ParseError("function body key 'execute'", this.current(), this.file);
     }
 
     let language: string | undefined;
@@ -323,18 +359,18 @@ export class Parser {
       switch (keyToken.value) {
         case 'language': {
           if (value.kind !== 'Identifier') {
-            throw new ParseError("'sql' or 'plpgsql'", valueToken);
+            throw new ParseError("'sql' or 'plpgsql'", valueToken, this.file);
           }
           const languageName = value.name.toLowerCase();
           if (languageName !== 'sql' && languageName !== 'plpgsql') {
-            throw new ParseError("'sql' or 'plpgsql'", valueToken);
+            throw new ParseError("'sql' or 'plpgsql'", valueToken, this.file);
           }
           language = languageName;
           break;
         }
         case 'volatility': {
           if (value.kind !== 'Identifier') {
-            throw new ParseError("'VOLATILE', 'STABLE', or 'IMMUTABLE'", valueToken);
+            throw new ParseError("'VOLATILE', 'STABLE', or 'IMMUTABLE'", valueToken, this.file);
           }
           const volatilityName = value.name.toUpperCase();
           if (
@@ -342,29 +378,29 @@ export class Parser {
             volatilityName !== 'STABLE' &&
             volatilityName !== 'IMMUTABLE'
           ) {
-            throw new ParseError("'VOLATILE', 'STABLE', or 'IMMUTABLE'", valueToken);
+            throw new ParseError("'VOLATILE', 'STABLE', or 'IMMUTABLE'", valueToken, this.file);
           }
           volatility = volatilityName;
           break;
         }
         case 'security': {
           if (value.kind !== 'Identifier') {
-            throw new ParseError("'INVOKER' or 'DEFINER'", valueToken);
+            throw new ParseError("'INVOKER' or 'DEFINER'", valueToken, this.file);
           }
           const securityName = value.name.toUpperCase();
           if (securityName !== 'INVOKER' && securityName !== 'DEFINER') {
-            throw new ParseError("'INVOKER' or 'DEFINER'", valueToken);
+            throw new ParseError("'INVOKER' or 'DEFINER'", valueToken, this.file);
           }
           security = securityName;
           break;
         }
         case 'execute': {
           if (value.kind !== 'TripleStringLiteral') {
-            throw new ParseError('triple-quoted execute body', valueToken);
+            throw new ParseError('triple-quoted execute body', valueToken, this.file);
           }
           execute = value.value.trim();
           if (execute.length === 0) {
-            throw new ParseError('non-empty execute body', valueToken);
+            throw new ParseError('non-empty execute body', valueToken, this.file);
           }
           break;
         }
@@ -372,6 +408,7 @@ export class Parser {
           throw new ParseError(
             "function body key 'language', 'volatility', 'security', or 'execute'",
             keyToken,
+            this.file,
           );
       }
 
@@ -379,13 +416,13 @@ export class Parser {
     } while (!this.check(TokenType.RBRACE));
 
     if (!execute) {
-      throw new ParseError("function body key 'execute'", this.current());
+      throw new ParseError("function body key 'execute'", this.current(), this.file);
     }
 
     return { language, volatility, security, execute };
   }
 
-  private parseModelBody(name: string, start: Token): Model {
+  private parseModelBody(name: string): Model {
     const fields: Field[] = [];
     const attributes: Attribute[] = [];
     const directives: Directive[] = [];
@@ -395,7 +432,7 @@ export class Parser {
       if (this.check(TokenType.ATAT)) {
         if (this.peekType(1) === TokenType.IDENT && this.tokens[this.index + 1]?.value === 'partition') {
           if (partition) {
-            throw new ParseError('at most one @@partition per model', this.current());
+            throw new ParseError('at most one @@partition per model', this.current(), this.file);
           }
           partition = this.parsePartitionDirective();
           continue;
@@ -419,7 +456,7 @@ export class Parser {
       attributes,
       directives,
       partition,
-      loc: this.loc(start),
+      loc: this.loc(this.current()),
     };
   }
 
@@ -434,7 +471,7 @@ export class Parser {
 
   private parsePartitionSpecBody(start: Token, depth = 0): PartitionSpec {
     if (depth > 1) {
-      throw new ParseError('at most one level of nested @@partition', this.current());
+      throw new ParseError('at most one level of nested @@partition', this.current(), this.file);
     }
 
     let by: PartitionStrategy | undefined;
@@ -455,7 +492,7 @@ export class Parser {
       }
 
       if (this.check(TokenType.ATAT)) {
-        throw new ParseError("partition child or key ('by', 'fields', …)", this.current());
+        throw new ParseError("partition child or key ('by', 'fields', …)", this.current(), this.file);
       }
 
       const keyToken = this.expect(TokenType.IDENT, 'partition key');
@@ -466,7 +503,7 @@ export class Parser {
           const value = this.expect(TokenType.IDENT, 'RANGE, LIST, or HASH');
           const strategy = value.value.toUpperCase();
           if (strategy !== 'RANGE' && strategy !== 'LIST' && strategy !== 'HASH') {
-            throw new ParseError('RANGE, LIST, or HASH', value);
+            throw new ParseError('RANGE, LIST, or HASH', value, this.file);
           }
           by = strategy;
           break;
@@ -474,11 +511,11 @@ export class Parser {
         case 'fields': {
           const value = this.parseValue();
           if (value.kind !== 'ArrayLiteral') {
-            throw new ParseError('array of field names', keyToken);
+            throw new ParseError('array of field names', keyToken, this.file);
           }
           fields = value.elements.map((element) => {
             if (element.kind !== 'Identifier') {
-              throw new ParseError('field identifier', keyToken);
+              throw new ParseError('field identifier', keyToken, this.file);
             }
             return element.name;
           });
@@ -487,7 +524,7 @@ export class Parser {
         case 'expression': {
           const value = this.parseValue();
           if (value.kind !== 'StringLiteral') {
-            throw new ParseError('string expression', keyToken);
+            throw new ParseError('string expression', keyToken, this.file);
           }
           expression = value.value;
           break;
@@ -495,20 +532,20 @@ export class Parser {
         case 'count': {
           const value = this.parseValue();
           if (value.kind !== 'NumberLiteral' || !Number.isInteger(value.value) || value.value < 1) {
-            throw new ParseError('positive integer count', keyToken);
+            throw new ParseError('positive integer count', keyToken, this.file);
           }
           count = value.value;
           break;
         }
         default:
-          throw new ParseError("'by', 'fields', 'expression', 'count', or partition", keyToken);
+          throw new ParseError("'by', 'fields', 'expression', 'count', or partition", keyToken, this.file);
       }
 
       this.match(TokenType.COMMA);
     }
 
     if (!by) {
-      throw new ParseError("'by: RANGE | LIST | HASH'", this.current());
+      throw new ParseError("'by: RANGE | LIST | HASH'", this.current(), this.file);
     }
 
     return {
@@ -525,7 +562,7 @@ export class Parser {
   private parsePartitionChild(parentDepth: number): Partition {
     const start = this.expect(TokenType.IDENT, "'partition'");
     if (start.value !== 'partition') {
-      throw new ParseError("'partition'", start);
+      throw new ParseError("'partition'", start, this.file);
     }
     const nameToken = this.expect(TokenType.IDENT, 'partition name');
     this.expect(TokenType.LBRACE, "'{'");
@@ -544,7 +581,7 @@ export class Parser {
         const atat = this.current();
         if (this.peekType(1) === TokenType.IDENT && this.tokens[this.index + 1]?.value === 'partition') {
           if (nested) {
-            throw new ParseError('at most one nested @@partition', atat);
+            throw new ParseError('at most one nested @@partition', atat, this.file);
           }
           this.expect(TokenType.ATAT, "'@@'");
           this.expect(TokenType.IDENT, "'partition'");
@@ -554,7 +591,7 @@ export class Parser {
           this.match(TokenType.COMMA);
           continue;
         }
-        throw new ParseError("'@@partition'", atat);
+        throw new ParseError("'@@partition'", atat, this.file);
       }
 
       const keyToken = this.expect(TokenType.IDENT, 'partition property');
@@ -564,7 +601,7 @@ export class Parser {
         case 'name': {
           const value = this.parseValue();
           if (value.kind !== 'StringLiteral') {
-            throw new ParseError('string table name', keyToken);
+            throw new ParseError('string table name', keyToken, this.file);
           }
           sqlName = value.value;
           break;
@@ -578,7 +615,7 @@ export class Parser {
         case 'in': {
           const value = this.parseValue();
           if (value.kind !== 'ArrayLiteral') {
-            throw new ParseError('array of values', keyToken);
+            throw new ParseError('array of values', keyToken, this.file);
           }
           inValues = value.elements;
           break;
@@ -586,7 +623,7 @@ export class Parser {
         case 'default': {
           const value = this.parseValue();
           if (value.kind !== 'BooleanLiteral') {
-            throw new ParseError('boolean', keyToken);
+            throw new ParseError('boolean', keyToken, this.file);
           }
           isDefault = value.value;
           break;
@@ -594,7 +631,7 @@ export class Parser {
         case 'modulus': {
           const value = this.parseValue();
           if (value.kind !== 'NumberLiteral' || !Number.isInteger(value.value) || value.value < 1) {
-            throw new ParseError('positive integer modulus', keyToken);
+            throw new ParseError('positive integer modulus', keyToken, this.file);
           }
           modulus = value.value;
           break;
@@ -602,7 +639,7 @@ export class Parser {
         case 'remainder': {
           const value = this.parseValue();
           if (value.kind !== 'NumberLiteral' || !Number.isInteger(value.value) || value.value < 0) {
-            throw new ParseError('non-negative integer remainder', keyToken);
+            throw new ParseError('non-negative integer remainder', keyToken, this.file);
           }
           remainder = value.value;
           break;
@@ -611,6 +648,7 @@ export class Parser {
           throw new ParseError(
             "'name', 'from', 'to', 'in', 'default', 'modulus', 'remainder', or @@partition",
             keyToken,
+            this.file,
           );
       }
 
@@ -756,7 +794,7 @@ export class Parser {
       case TokenType.IDENT:
         return this.parseIdentOrCall();
       default:
-        throw new ParseError('value', token);
+        throw new ParseError('value', token, this.file);
     }
   }
 
@@ -856,10 +894,13 @@ export class Parser {
   private loc(start: Token): SourceLocation {
     const prev = this.previous();
     return {
+      file: this.file,
       line: start.line,
       col: start.col,
       endLine: prev.line,
       endCol: prev.col + prev.value.length,
+      start: start.start,
+      end: prev.end,
     };
   }
 
@@ -897,7 +938,7 @@ export class Parser {
   private expect(type: TokenType, description: string): Token {
     const token = this.current();
     if (token.type !== type) {
-      throw new ParseError(description, token);
+      throw new ParseError(description, token, this.file);
     }
     this.advance();
     return token;
@@ -909,11 +950,14 @@ export class Parser {
 
   private eofToken(): Token {
     const last = this.tokens[this.tokens.length - 1];
+    const offset = last?.end ?? 0;
     return {
       type: TokenType.EOF,
       value: '',
       line: last?.line ?? 1,
       col: last?.col ?? 1,
+      start: offset,
+      end: offset,
     };
   }
 }

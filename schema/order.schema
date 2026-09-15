@@ -1,0 +1,34 @@
+enums {
+  OrderStatus { PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED }
+}
+
+models {
+  model Order {
+    id:          UUID        @id @default(gen_random_uuid())
+    userId:      UUID
+    status:      OrderStatus @default(PENDING)
+    totalAmount: DECIMAL(10, 2)
+    items:       JSONB
+    createdAt:   TIMESTAMP   @default(now())
+    updatedAt:   TIMESTAMP?
+
+    user:        User        @relation(fields: [userId], references: [id])
+    products:    ProductOrder[]
+
+    @@index(fields: [userId])
+    @@index(fields: [status, createdAt], name: "order_status_created_idx")
+  }
+
+  model ProductOrder {
+    id:        SERIAL
+    orderId:   UUID
+    productId: UUID
+    quantity:  INTEGER
+    price:     DECIMAL(10, 2)
+
+    order:     Order   @relation(fields: [orderId], references: [id])
+    product:   Product @relation(fields: [productId], references: [id])
+
+    @@id(fields: [orderId, productId])
+  }
+}

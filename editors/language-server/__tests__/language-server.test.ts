@@ -1,16 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { parseDocument } from '../src/diagnostics.js';
 import { getCompletions } from '../src/completions.js';
 import { buildSchemaIndex, findDefinition, findReferences } from '../src/schema-index.js';
 import { getDocumentSymbols } from '../src/symbols.js';
 import { KNOWN_DECORATORS } from '../src/catalog.js';
 import { Position } from 'vscode-languageserver';
+import { loadSchemaFromArg } from '../../../src/schema-source/index.js';
 
-const appSchemaPath = join(process.cwd(), 'app.schema');
-const appSchema = readFileSync(appSchemaPath, 'utf8');
+const { canonicalSource: appSchema } = loadSchemaFromArg();
 
 describe('Schema DSL language server', () => {
   it('parses app.schema without diagnostics', () => {

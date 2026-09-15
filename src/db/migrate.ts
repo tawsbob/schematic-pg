@@ -1,5 +1,5 @@
-import { join } from 'node:path';
 import type { PoolClient } from 'pg';
+import { loadSchemaFromArg } from '../schema-source/index.js';
 import { DatabaseClient } from './client.js';
 import {
   listPendingMigrations,
@@ -7,10 +7,10 @@ import {
   recordAppliedMigration,
   type MigrationFile,
 } from './migrations.js';
-import { writeSnapshot } from './schema-state.js';
+import { writeSnapshotSource } from './schema-state.js';
 
 export async function applyPendingMigrations(
-  schemaPath = join(process.cwd(), 'app.schema'),
+  schemaPath?: string,
   client: Pick<DatabaseClient, 'withClient'> = new DatabaseClient(),
   cwd = process.cwd(),
 ): Promise<MigrationFile[]> {
@@ -27,7 +27,8 @@ export async function applyPendingMigrations(
       applied.push(migration);
     }
 
-    writeSnapshot(schemaPath, cwd);
+    const { canonicalSource } = loadSchemaFromArg(schemaPath, cwd);
+    writeSnapshotSource(canonicalSource, cwd);
   });
 
   return applied;

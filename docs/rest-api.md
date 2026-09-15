@@ -96,7 +96,7 @@ Do not edit `generated/app.ts` to add CORS — it is overwritten on every genera
 
 ## Routes
 
-Each model in `app.schema` maps to a kebab-case plural base path. Handlers delegate to the generated DB client — no ORM, same parameterized SQL as the client layer.
+Each model in the schema maps to a kebab-case plural base path. Handlers delegate to the generated DB client — no ORM, same parameterized SQL as the client layer.
 
 | Model | Base path | Primary key route |
 |-------|-----------|-------------------|

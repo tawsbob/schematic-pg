@@ -1,11 +1,13 @@
-import { join } from 'node:path';
 import { bootstrapDatabase } from './bootstrap.js';
 import { DatabaseClient } from './client.js';
-const schemaPath = process.argv[2] ?? join(process.cwd(), 'app.schema');
+import { describeSchemaSource, resolveSchemaSource } from '../schema-source/index.js';
+const schemaArg = process.argv[2];
+const source = resolveSchemaSource(schemaArg);
+const label = describeSchemaSource(source);
 const client = new DatabaseClient();
-bootstrapDatabase(schemaPath, client)
+bootstrapDatabase(schemaArg, client)
     .then(() => {
-    process.stdout.write(`Database bootstrapped from ${schemaPath}\n`);
+    process.stdout.write(`Database bootstrapped from ${label}\n`);
 })
     .catch((error) => {
     const message = error instanceof Error ? error.message : String(error);

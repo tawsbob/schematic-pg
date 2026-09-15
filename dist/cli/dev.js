@@ -1,12 +1,14 @@
 import { watch } from 'node:fs';
 import path from 'node:path';
+import { describeSchemaSource, resolveSchemaSource, } from '../schema-source/index.js';
 import { runDbBootstrap } from './db.js';
 import { generateAll } from './generate.js';
-import { DEFAULT_OUTPUT_DIR, resolveSchemaPath } from './paths.js';
+import { DEFAULT_OUTPUT_DIR } from './paths.js';
 import { startAppServer, stopAppServer, waitForAppServerExit } from './server.js';
 const WATCH_DEBOUNCE_MS = 300;
+const SCHEMA_EXTENSION = '.schema';
 function parseDevArgs(args) {
-    let schemaPath = resolveSchemaPath();
+    let schemaArg;
     let watchSchema = true;
     for (const arg of args) {
         if (arg === '--no-watch') {
@@ -14,10 +16,10 @@ function parseDevArgs(args) {
             continue;
         }
         if (!arg.startsWith('--')) {
-            schemaPath = resolveSchemaPath(arg);
+            schemaArg = arg;
         }
     }
-    return { schemaPath, watchSchema };
+    return { schemaArg, watchSchema };
 }
 function createDebouncer(fn, ms) {
     let timer;
@@ -28,8 +30,24 @@ function createDebouncer(fn, ms) {
         }, ms);
     };
 }
+function isSchemaFileChange(filename) {
+    return filename === null || filename.endsWith(SCHEMA_EXTENSION);
+}
+function watchSchemaSource(source, onChange) {
+    if (source.kind === 'file') {
+        watch(source.path, onChange);
+        return;
+    }
+    watch(source.dir, { recursive: true }, (_eventType, filename) => {
+        if (isSchemaFileChange(filename)) {
+            onChange();
+        }
+    });
+}
 export async function runDev(args = []) {
-    const { schemaPath, watchSchema } = parseDevArgs(args);
+    const { schemaArg, watchSchema } = parseDevArgs(args);
+    const schemaSource = resolveSchemaSource(schemaArg);
+    const schemaLabel = describeSchemaSource(schemaSource);
     const appPath = path.resolve(DEFAULT_OUTPUT_DIR, 'app.ts');
     let serverProcess = null;
     let syncInProgress = false;
@@ -41,8 +59,8 @@ export async function runDev(args = []) {
         }
         syncInProgress = true;
         try {
-            await generateAll(schemaPath);
-            await runDbBootstrap(schemaPath);
+            await generateAll(schemaArg);
+            await runDbBootstrap(schemaArg);
             await stopAppServer(serverProcess);
             serverProcess = startAppServer(appPath);
             serverProcess.on('exit', (code, signal) => {
@@ -73,7 +91,7 @@ export async function runDev(args = []) {
         if (shuttingDown || syncInProgress) {
             return;
         }
-        process.stderr.write('\nSchema changed — regenerating, bootstrapping, and restarting...\n');
+        process.stderr.write(`\nSchema changed (${schemaLabel}) — regenerating, bootstrapping, and restarting...\n`);
         restarting = true;
         try {
             await syncAndServe();
@@ -107,7 +125,7 @@ export async function runDev(args = []) {
         }
         return;
     }
-    watch(schemaPath, scheduleReload);
+    watchSchemaSource(schemaSource, scheduleReload);
     await new Promise((resolve) => {
         const interval = setInterval(() => {
             if (shuttingDown) {

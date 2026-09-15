@@ -5,12 +5,12 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
 import { serve } from '@hono/node-server';
-import usersRouter from './routes/users.js';
-import profilesRouter from './routes/profiles.js';
-import ordersRouter from './routes/orders.js';
 import logsRouter from './routes/logs.js';
+import ordersRouter from './routes/orders.js';
 import productsRouter from './routes/products.js';
 import productOrdersRouter from './routes/product-orders.js';
+import profilesRouter from './routes/profiles.js';
+import usersRouter from './routes/users.js';
 import authRouter from '../src/routes/auth.js';
 import healthRouter from '../src/routes/health.js';
 import { createDbClient } from './db.js';
@@ -46,12 +46,12 @@ export function createApp(options: CreateAppOptions = {}): Hono<AppEnv> {
   app.use(createAuthMiddleware(options.authResolver ?? createJwtResolver()));
   app.onError(handleError);
 
-  app.route('/users', usersRouter);
-  app.route('/profiles', profilesRouter);
-  app.route('/orders', ordersRouter);
   app.route('/logs', logsRouter);
+  app.route('/orders', ordersRouter);
   app.route('/products', productsRouter);
   app.route('/product-orders', productOrdersRouter);
+  app.route('/profiles', profilesRouter);
+  app.route('/users', usersRouter);
   app.route('/auth', authRouter);
   app.route('/health', healthRouter);
 

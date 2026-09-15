@@ -1,15 +1,12 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { parse } from '../schema-dsl/index.js';
+import { loadSchemaFromArg } from '../schema-source/index.js';
 import { generateDbClientFiles } from './db-client-generator.js';
 
-const DEFAULT_SCHEMA_PATH = path.resolve('app.schema');
 const OUTPUT_DIR = path.resolve('generated');
 
 async function main(): Promise<void> {
-  const schemaPath = process.argv[2] ?? DEFAULT_SCHEMA_PATH;
-  const source = await readFile(schemaPath, 'utf8');
-  const schema = parse(source);
+  const { schema } = loadSchemaFromArg(process.argv[2]);
   const files = generateDbClientFiles(schema);
 
   await mkdir(OUTPUT_DIR, { recursive: true });

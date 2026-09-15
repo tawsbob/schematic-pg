@@ -1,6 +1,6 @@
 # Migrations tutorial
 
-schema-driven migrations: edit `app.schema`, generate SQL from the diff against a local snapshot, commit numbered `.sql` files, then apply them in staging/production.
+schema-driven migrations: edit the schema (`app.schema` or `schema/*.schema`), generate SQL from the diff against a local snapshot, commit numbered `.sql` files, then apply them in staging/production.
 
 ## Mental model
 
@@ -8,15 +8,15 @@ Three pieces stay in sync:
 
 | Piece | Role |
 |--------|------|
-| `app.schema` | Desired schema (source of truth you edit) |
-| `.schema-state/app.schema` | Snapshot of the schema **last applied** to the DB |
+| Schema source (`app.schema` or `schema/*.schema`) | Desired schema (source of truth you edit) |
+| `.schema-state/app.schema` | Merged snapshot of the schema **last applied** to the DB |
 | `migrations/*.sql` | Ordered SQL that moves the DB from old → new |
 
-`db:diff` compares **snapshot vs `app.schema`**, not live Postgres introspection.
+`db:diff` compares **snapshot vs the current loaded schema**, not live Postgres introspection. With fragments, the snapshot is always the merged canonical text (see [Schema fragments](schema-fragments.md)).
 
 Apply tracking uses the `_schema_migrations` table (`id`, `name`, `filename`, `applied_at`). Filenames look like `0001_add_users.sql`.
 
-**Commit both** `migrations/` and `.schema-state/` in app repositories so CI and teammates share the same baseline. A missing snapshot blocks `db:diff` until you run `db:bootstrap` (or copy `app.schema` into `.schema-state/`).
+**Commit both** `migrations/` and `.schema-state/` in app repositories so CI and teammates share the same baseline. A missing snapshot blocks `db:diff` until you run `db:bootstrap` (which writes the merged snapshot).
 
 ---
 
@@ -32,10 +32,10 @@ npx schematic-pg db:bootstrap
 That:
 
 1. Resets the `public` schema (`DROP SCHEMA ... CASCADE`)
-2. Generates full DDL from `app.schema` and runs it against `DATABASE_URL`
-3. Writes `.schema-state/app.schema` as the baseline
+2. Generates full DDL from the loaded schema and runs it against `DATABASE_URL`
+3. Writes `.schema-state/app.schema` as the baseline (merged canonical text)
 
-No `migrations/` files are required at this stage. Prefer bootstrap for greenfield local/dev setups — including `dev` watch reloads, which re-bootstrap on every `app.schema` change.
+No `migrations/` files are required at this stage. Prefer bootstrap for greenfield local/dev setups — including `dev` watch reloads, which re-bootstrap on every schema change.
 
 ---
 
@@ -43,7 +43,7 @@ No `migrations/` files are required at this stage. Prefer bootstrap for greenfie
 
 ### Edit
 
-Change `app.schema` (add a model, field, constraint, etc.).
+Change the schema source (add a model, field, constraint, etc. in `app.schema` or a fragment under `schema/`).
 
 ### Preview
 
@@ -51,7 +51,7 @@ Change `app.schema` (add a model, field, constraint, etc.).
 npx schematic-pg db:diff
 ```
 
-Prints the SQL that would bring the snapshot in line with `app.schema`. If the plan includes drops, the CLI warns about destructive changes.
+Prints the SQL that would bring the snapshot in line with the current schema. If the plan includes drops, the CLI warns about destructive changes.
 
 ### Write a migration file
 
@@ -68,7 +68,7 @@ Review the generated SQL before committing—especially after a destructive warn
 npx schematic-pg db:migrate
 ```
 
-Each pending file runs in a transaction. On success it is recorded in `_schema_migrations`. After all pending files apply, the snapshot is refreshed from the current `app.schema`.
+Each pending file runs in a transaction. On success it is recorded in `_schema_migrations`. After all pending files apply, the snapshot is refreshed from the current loaded schema.
 
 ### Check status
 
@@ -76,15 +76,15 @@ Each pending file runs in a transaction. On success it is recorded in `_schema_m
 npx schematic-pg db:migrate:status
 ```
 
-Shows snapshot presence, pending schema drift (snapshot vs `app.schema`), and which migration files are `applied` / `pending`.
+Shows snapshot presence, pending schema drift (snapshot vs current schema), and which migration files are `applied` / `pending`.
 
 ### Typical local loop
 
 ```text
-edit app.schema
+edit schema (app.schema or schema/*.schema)
   → db:diff                 # review SQL
   → db:diff --name foo      # write migrations/NNNN_foo.sql
-  → commit migrations/ + .schema-state/ + app.schema
+  → commit migrations/ + .schema-state/ + schema source
   → db:migrate              # apply locally (+ refresh snapshot)
   → generate                # refresh API/client if needed
 ```
@@ -144,7 +144,7 @@ npx schematic-pg start      # wait for DB → migrate → serve
 
 ```bash
 schematic-pg db:bootstrap          # greenfield: DDL + snapshot
-schematic-pg db:diff               # print SQL for snapshot → app.schema
+schematic-pg db:diff               # print SQL for snapshot → current schema
 schematic-pg db:diff --name name   # write migrations/NNNN_name.sql
 schematic-pg db:migrate            # apply pending .sql files + update snapshot
 schematic-pg db:migrate:status     # snapshot drift + file status
@@ -266,7 +266,7 @@ Gate `production` with required reviewers so a human approves before SQL runs.
 
 ### Optional: fail CI when migrations are missing
 
-Catch “edited `app.schema` but forgot `db:diff --name`”:
+Catch “edited the schema but forgot `db:diff --name`”:
 
 ```yaml
 - name: Ensure schema matches committed migrations baseline
@@ -281,7 +281,7 @@ Catch “edited `app.schema` but forgot `db:diff --name`”:
     fi
 ```
 
-Run this on pull requests that touch `app.schema` or `migrations/`.
+Run this on pull requests that touch `app.schema`, `schema/`, or `migrations/`.
 
 ### Combined migrate + start on a long-lived runner
 

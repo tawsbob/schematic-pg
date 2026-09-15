@@ -1,33 +1,30 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, it } from 'node:test';
+import { loadRepoSchema } from '../../__tests__/helpers/repo-schema.js';
 import {
   assertKeyValueArgs,
   getAttr,
   getDirective,
   getField,
   getKvPair,
-  parseSnippet,
 } from './helpers.js';
 
-const appSchemaPath = join(process.cwd(), 'app.schema');
+describe('Integration — schema fragments', () => {
+  const { schema } = loadRepoSchema();
 
-describe('Integration — app.schema', () => {
-  const source = readFileSync(appSchemaPath, 'utf8');
-  const schema = parseSnippet(source);
-
-  it('parses app.schema without error', () => {
+  it('loads the merged schema without error', () => {
     assert.equal(schema.kind, 'Schema');
   });
 
-  it('has 2 extensions, 2 enums, 6 models, and 1 function', () => {
+  it('has 2 extensions, 2 enums, 6 models, and 2 functions', () => {
     assert.equal(schema.extensions.length, 2);
     assert.equal(schema.enums.length, 2);
     assert.equal(schema.models.length, 6);
     assert.equal(schema.functions.length, 2);
-    assert.equal(schema.functions[0].name, 'getUserBalance');
-    assert.equal(schema.functions[1].name, 'searchProducts');
+    assert.deepEqual(
+      schema.functions.map((fn) => fn.name),
+      ['getUserBalance', 'searchProducts'],
+    );
   });
 
   it('includes uuid-ossp and pgcrypto with version block', () => {

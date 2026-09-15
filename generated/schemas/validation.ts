@@ -2,229 +2,30 @@
 import { z } from 'zod';
 import { validateIncludePaths } from 'schematic-pg/api/utils/include-query';
 import type {
-  User,
-  Profile,
-  Order,
   Log,
+  Order,
   Product,
   ProductOrder,
+  Profile,
+  User,
 } from '../db-types.js';
 
-export const UserCreateSchema = z.object({
-  email: z.string().regex(/^[\w.-]+@[\w.-]+\.\w+$/, { message: 'Invalid email address' }),
-  name: z.string(),
-  role: z.enum(['ADMIN', 'USER', 'PUBLIC']).optional(),
-  age: z.number().int().min(1, { message: 'Age must be between 1 and 120' }).max(120, { message: 'Age must be between 1 and 120' }).nullable().optional(),
-  balance: z.number().int(),
-  isActive: z.boolean().optional(),
+export const LogCreateSchema = z.object({
+  message: z.string(),
   createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().nullable().optional(),
-  passwordHash: z.string().nullable().optional(),
 });
 
-export const UserUpdateSchema = z.object({
-  email: z.string().regex(/^[\w.-]+@[\w.-]+\.\w+$/, { message: 'Invalid email address' }).optional(),
-  name: z.string().optional(),
-  role: z.enum(['ADMIN', 'USER', 'PUBLIC']).optional(),
-  age: z.number().int().min(1, { message: 'Age must be between 1 and 120' }).max(120, { message: 'Age must be between 1 and 120' }).nullable().optional(),
-  balance: z.number().int().optional(),
-  isActive: z.boolean().optional(),
+export const LogUpdateSchema = z.object({
+  message: z.string().optional(),
   createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().nullable().optional(),
-  passwordHash: z.string().nullable().optional(),
 });
 
-export const UserParamSchema = z.object({
+export const LogParamSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const USER_SORTABLE_FIELDS = ['id', 'email', 'name', 'role', 'age', 'balance', 'isActive', 'createdAt', 'updatedAt', 'passwordHash'] as const;
-export const USER_LIST_QUERY_FIELDS = [
-  {
-    "name": "email",
-    "kind": "string",
-    "operators": [
-      "equals",
-      "contains",
-      "startsWith",
-      "endsWith"
-    ]
-  },
-  {
-    "name": "name",
-    "kind": "string",
-    "operators": [
-      "equals",
-      "contains",
-      "startsWith",
-      "endsWith"
-    ]
-  },
-  {
-    "name": "role",
-    "kind": "enum",
-    "operators": [
-      "equals",
-      "in"
-    ],
-    "enumValues": [
-      "ADMIN",
-      "USER",
-      "PUBLIC"
-    ]
-  },
-  {
-    "name": "age",
-    "kind": "numeric",
-    "operators": [
-      "equals",
-      "gt",
-      "gte",
-      "lt",
-      "lte"
-    ]
-  },
-  {
-    "name": "balance",
-    "kind": "numeric",
-    "operators": [
-      "equals",
-      "gt",
-      "gte",
-      "lt",
-      "lte"
-    ]
-  },
-  {
-    "name": "isActive",
-    "kind": "boolean",
-    "operators": [
-      "equals"
-    ]
-  },
-  {
-    "name": "createdAt",
-    "kind": "timestamp",
-    "operators": [
-      "equals"
-    ]
-  }
-] as const;
-export const USER_INCLUDABLE_RELATIONS = {
-  "profile": {
-    "user": {}
-  },
-  "orders": {
-    "user": {},
-    "products": {
-      "order": {},
-      "product": {
-        "orders": {}
-      }
-    }
-  }
-} as const;
-export const USER_OMIT_FIELDS = ["passwordHash"] as const;
-export type UserResponse = Omit<User, 'passwordHash'>;
-
-export const UserGetQuerySchema = z
-  .object({
-    include: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.include === undefined) {
-      return;
-    }
-    const includeError = validateIncludePaths(data.include, USER_INCLUDABLE_RELATIONS);
-    if (includeError) {
-      ctx.addIssue({
-        code: 'custom',
-        message: includeError,
-        path: ['include'],
-      });
-    }
-  });
-
-
-
-export const UserListQuerySchema = z
-  .object({
-    email: z.coerce.string().optional(),
-    email_contains: z.coerce.string().optional(),
-    email_startsWith: z.coerce.string().optional(),
-    email_endsWith: z.coerce.string().optional(),
-    name: z.coerce.string().optional(),
-    name_contains: z.coerce.string().optional(),
-    name_startsWith: z.coerce.string().optional(),
-    name_endsWith: z.coerce.string().optional(),
-    role: z.enum(['ADMIN', 'USER', 'PUBLIC']).optional(),
-    role_in: z.coerce.string().optional(),
-    age: z.coerce.number().int().optional(),
-    age_gt: z.coerce.number().int().optional(),
-    age_gte: z.coerce.number().int().optional(),
-    age_lt: z.coerce.number().int().optional(),
-    age_lte: z.coerce.number().int().optional(),
-    balance: z.coerce.number().int().optional(),
-    balance_gt: z.coerce.number().int().optional(),
-    balance_gte: z.coerce.number().int().optional(),
-    balance_lt: z.coerce.number().int().optional(),
-    balance_lte: z.coerce.number().int().optional(),
-    isActive: z.preprocess(
-    (value) => (typeof value === 'string' ? value.toLowerCase() : value),
-    z.union([z.boolean(), z.enum(['true', 'false'])]).transform((value) => value === true || value === 'true'),
-  ).optional(),
-    createdAt: z.coerce.date().optional(),
-    limit: z.coerce.number().int().min(1).max(100).optional(),
-    offset: z.coerce.number().int().min(0).optional(),
-    sort: z.string().optional(),
-    include: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.sort !== undefined) {
-      const descending = data.sort.startsWith('-');
-      const field = descending ? data.sort.slice(1) : data.sort;
-      if (!(USER_SORTABLE_FIELDS as readonly string[]).includes(field)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `Invalid sort field "${field}"`,
-          path: ['sort'],
-        });
-      }
-    }
-    if (data.include !== undefined) {
-      const includeError = validateIncludePaths(data.include, USER_INCLUDABLE_RELATIONS);
-      if (includeError) {
-        ctx.addIssue({
-          code: 'custom',
-          message: includeError,
-          path: ['include'],
-        });
-      }
-    }
-  });
-
-
-
-export const ProfileCreateSchema = z.object({
-  userId: z.string(),
-  bio: z.string(),
-  avatar: z.string(),
-  location: z.unknown(),
-});
-
-export const ProfileUpdateSchema = z.object({
-  userId: z.string().optional(),
-  bio: z.string().optional(),
-  avatar: z.string().optional(),
-  location: z.unknown().optional(),
-});
-
-export const ProfileParamSchema = z.object({
-  id: z.string().uuid(),
-});
-
-export const PROFILE_SORTABLE_FIELDS = ['id', 'userId', 'bio', 'avatar', 'location'] as const;
-export const PROFILE_LIST_QUERY_FIELDS = [
+export const LOG_SORTABLE_FIELDS = ['id', 'message', 'createdAt'] as const;
+export const LOG_LIST_QUERY_FIELDS = [
   {
     "name": "id",
     "kind": "string",
@@ -236,7 +37,7 @@ export const PROFILE_LIST_QUERY_FIELDS = [
     ]
   },
   {
-    "name": "userId",
+    "name": "message",
     "kind": "string",
     "operators": [
       "equals",
@@ -246,51 +47,18 @@ export const PROFILE_LIST_QUERY_FIELDS = [
     ]
   },
   {
-    "name": "bio",
-    "kind": "string",
-    "operators": [
-      "equals",
-      "contains",
-      "startsWith",
-      "endsWith"
-    ]
-  },
-  {
-    "name": "avatar",
-    "kind": "string",
-    "operators": [
-      "equals",
-      "contains",
-      "startsWith",
-      "endsWith"
-    ]
-  },
-  {
-    "name": "location",
-    "kind": "json",
+    "name": "createdAt",
+    "kind": "timestamp",
     "operators": [
       "equals"
     ]
   }
 ] as const;
-export const PROFILE_INCLUDABLE_RELATIONS = {
-  "user": {
-    "profile": {},
-    "orders": {
-      "user": {},
-      "products": {
-        "order": {},
-        "product": {
-          "orders": {}
-        }
-      }
-    }
-  }
-} as const;
-export const PROFILE_OMIT_FIELDS = [] as const;
-export type ProfileResponse = Profile;
+export const LOG_INCLUDABLE_RELATIONS = {} as const;
+export const LOG_OMIT_FIELDS = [] as const;
+export type LogResponse = Log;
 
-export const ProfileGetQuerySchema = z
+export const LogGetQuerySchema = z
   .object({
     include: z.string().optional(),
   })
@@ -298,7 +66,7 @@ export const ProfileGetQuerySchema = z
     if (data.include === undefined) {
       return;
     }
-    const includeError = validateIncludePaths(data.include, PROFILE_INCLUDABLE_RELATIONS);
+    const includeError = validateIncludePaths(data.include, LOG_INCLUDABLE_RELATIONS);
     if (includeError) {
       ctx.addIssue({
         code: 'custom',
@@ -310,25 +78,17 @@ export const ProfileGetQuerySchema = z
 
 
 
-export const ProfileListQuerySchema = z
+export const LogListQuerySchema = z
   .object({
     id: z.coerce.string().optional(),
     id_contains: z.coerce.string().optional(),
     id_startsWith: z.coerce.string().optional(),
     id_endsWith: z.coerce.string().optional(),
-    userId: z.coerce.string().optional(),
-    userId_contains: z.coerce.string().optional(),
-    userId_startsWith: z.coerce.string().optional(),
-    userId_endsWith: z.coerce.string().optional(),
-    bio: z.coerce.string().optional(),
-    bio_contains: z.coerce.string().optional(),
-    bio_startsWith: z.coerce.string().optional(),
-    bio_endsWith: z.coerce.string().optional(),
-    avatar: z.coerce.string().optional(),
-    avatar_contains: z.coerce.string().optional(),
-    avatar_startsWith: z.coerce.string().optional(),
-    avatar_endsWith: z.coerce.string().optional(),
-    location: z.string().optional(),
+    message: z.coerce.string().optional(),
+    message_contains: z.coerce.string().optional(),
+    message_startsWith: z.coerce.string().optional(),
+    message_endsWith: z.coerce.string().optional(),
+    createdAt: z.coerce.date().optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
     offset: z.coerce.number().int().min(0).optional(),
     sort: z.string().optional(),
@@ -338,7 +98,7 @@ export const ProfileListQuerySchema = z
     if (data.sort !== undefined) {
       const descending = data.sort.startsWith('-');
       const field = descending ? data.sort.slice(1) : data.sort;
-      if (!(PROFILE_SORTABLE_FIELDS as readonly string[]).includes(field)) {
+      if (!(LOG_SORTABLE_FIELDS as readonly string[]).includes(field)) {
         ctx.addIssue({
           code: 'custom',
           message: `Invalid sort field "${field}"`,
@@ -347,7 +107,7 @@ export const ProfileListQuerySchema = z
       }
     }
     if (data.include !== undefined) {
-      const includeError = validateIncludePaths(data.include, PROFILE_INCLUDABLE_RELATIONS);
+      const includeError = validateIncludePaths(data.include, LOG_INCLUDABLE_RELATIONS);
       if (includeError) {
         ctx.addIssue({
           code: 'custom',
@@ -528,116 +288,6 @@ export const OrderListQuerySchema = z
     }
     if (data.include !== undefined) {
       const includeError = validateIncludePaths(data.include, ORDER_INCLUDABLE_RELATIONS);
-      if (includeError) {
-        ctx.addIssue({
-          code: 'custom',
-          message: includeError,
-          path: ['include'],
-        });
-      }
-    }
-  });
-
-
-
-export const LogCreateSchema = z.object({
-  message: z.string(),
-  createdAt: z.coerce.date().optional(),
-});
-
-export const LogUpdateSchema = z.object({
-  message: z.string().optional(),
-  createdAt: z.coerce.date().optional(),
-});
-
-export const LogParamSchema = z.object({
-  id: z.string().uuid(),
-});
-
-export const LOG_SORTABLE_FIELDS = ['id', 'message', 'createdAt'] as const;
-export const LOG_LIST_QUERY_FIELDS = [
-  {
-    "name": "id",
-    "kind": "string",
-    "operators": [
-      "equals",
-      "contains",
-      "startsWith",
-      "endsWith"
-    ]
-  },
-  {
-    "name": "message",
-    "kind": "string",
-    "operators": [
-      "equals",
-      "contains",
-      "startsWith",
-      "endsWith"
-    ]
-  },
-  {
-    "name": "createdAt",
-    "kind": "timestamp",
-    "operators": [
-      "equals"
-    ]
-  }
-] as const;
-export const LOG_INCLUDABLE_RELATIONS = {} as const;
-export const LOG_OMIT_FIELDS = [] as const;
-export type LogResponse = Log;
-
-export const LogGetQuerySchema = z
-  .object({
-    include: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.include === undefined) {
-      return;
-    }
-    const includeError = validateIncludePaths(data.include, LOG_INCLUDABLE_RELATIONS);
-    if (includeError) {
-      ctx.addIssue({
-        code: 'custom',
-        message: includeError,
-        path: ['include'],
-      });
-    }
-  });
-
-
-
-export const LogListQuerySchema = z
-  .object({
-    id: z.coerce.string().optional(),
-    id_contains: z.coerce.string().optional(),
-    id_startsWith: z.coerce.string().optional(),
-    id_endsWith: z.coerce.string().optional(),
-    message: z.coerce.string().optional(),
-    message_contains: z.coerce.string().optional(),
-    message_startsWith: z.coerce.string().optional(),
-    message_endsWith: z.coerce.string().optional(),
-    createdAt: z.coerce.date().optional(),
-    limit: z.coerce.number().int().min(1).max(100).optional(),
-    offset: z.coerce.number().int().min(0).optional(),
-    sort: z.string().optional(),
-    include: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.sort !== undefined) {
-      const descending = data.sort.startsWith('-');
-      const field = descending ? data.sort.slice(1) : data.sort;
-      if (!(LOG_SORTABLE_FIELDS as readonly string[]).includes(field)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `Invalid sort field "${field}"`,
-          path: ['sort'],
-        });
-      }
-    }
-    if (data.include !== undefined) {
-      const includeError = validateIncludePaths(data.include, LOG_INCLUDABLE_RELATIONS);
       if (includeError) {
         ctx.addIssue({
           code: 'custom',
@@ -1035,34 +685,384 @@ export const ProductOrderListQuerySchema = z
 
 
 
+export const ProfileCreateSchema = z.object({
+  userId: z.string(),
+  bio: z.string(),
+  avatar: z.string(),
+  location: z.unknown(),
+});
+
+export const ProfileUpdateSchema = z.object({
+  userId: z.string().optional(),
+  bio: z.string().optional(),
+  avatar: z.string().optional(),
+  location: z.unknown().optional(),
+});
+
+export const ProfileParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const PROFILE_SORTABLE_FIELDS = ['id', 'userId', 'bio', 'avatar', 'location'] as const;
+export const PROFILE_LIST_QUERY_FIELDS = [
+  {
+    "name": "id",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "userId",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "bio",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "avatar",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "location",
+    "kind": "json",
+    "operators": [
+      "equals"
+    ]
+  }
+] as const;
+export const PROFILE_INCLUDABLE_RELATIONS = {
+  "user": {
+    "profile": {},
+    "orders": {
+      "user": {},
+      "products": {
+        "order": {},
+        "product": {
+          "orders": {}
+        }
+      }
+    }
+  }
+} as const;
+export const PROFILE_OMIT_FIELDS = [] as const;
+export type ProfileResponse = Profile;
+
+export const ProfileGetQuerySchema = z
+  .object({
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.include === undefined) {
+      return;
+    }
+    const includeError = validateIncludePaths(data.include, PROFILE_INCLUDABLE_RELATIONS);
+    if (includeError) {
+      ctx.addIssue({
+        code: 'custom',
+        message: includeError,
+        path: ['include'],
+      });
+    }
+  });
+
+
+
+export const ProfileListQuerySchema = z
+  .object({
+    id: z.coerce.string().optional(),
+    id_contains: z.coerce.string().optional(),
+    id_startsWith: z.coerce.string().optional(),
+    id_endsWith: z.coerce.string().optional(),
+    userId: z.coerce.string().optional(),
+    userId_contains: z.coerce.string().optional(),
+    userId_startsWith: z.coerce.string().optional(),
+    userId_endsWith: z.coerce.string().optional(),
+    bio: z.coerce.string().optional(),
+    bio_contains: z.coerce.string().optional(),
+    bio_startsWith: z.coerce.string().optional(),
+    bio_endsWith: z.coerce.string().optional(),
+    avatar: z.coerce.string().optional(),
+    avatar_contains: z.coerce.string().optional(),
+    avatar_startsWith: z.coerce.string().optional(),
+    avatar_endsWith: z.coerce.string().optional(),
+    location: z.string().optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+    sort: z.string().optional(),
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.sort !== undefined) {
+      const descending = data.sort.startsWith('-');
+      const field = descending ? data.sort.slice(1) : data.sort;
+      if (!(PROFILE_SORTABLE_FIELDS as readonly string[]).includes(field)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid sort field "${field}"`,
+          path: ['sort'],
+        });
+      }
+    }
+    if (data.include !== undefined) {
+      const includeError = validateIncludePaths(data.include, PROFILE_INCLUDABLE_RELATIONS);
+      if (includeError) {
+        ctx.addIssue({
+          code: 'custom',
+          message: includeError,
+          path: ['include'],
+        });
+      }
+    }
+  });
+
+
+
+export const UserCreateSchema = z.object({
+  email: z.string().regex(/^[\w.-]+@[\w.-]+\.\w+$/, { message: 'Invalid email address' }),
+  name: z.string(),
+  role: z.enum(['ADMIN', 'USER', 'PUBLIC']).optional(),
+  age: z.number().int().min(1, { message: 'Age must be between 1 and 120' }).max(120, { message: 'Age must be between 1 and 120' }).nullable().optional(),
+  balance: z.number().int(),
+  isActive: z.boolean().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().nullable().optional(),
+  passwordHash: z.string().nullable().optional(),
+});
+
+export const UserUpdateSchema = z.object({
+  email: z.string().regex(/^[\w.-]+@[\w.-]+\.\w+$/, { message: 'Invalid email address' }).optional(),
+  name: z.string().optional(),
+  role: z.enum(['ADMIN', 'USER', 'PUBLIC']).optional(),
+  age: z.number().int().min(1, { message: 'Age must be between 1 and 120' }).max(120, { message: 'Age must be between 1 and 120' }).nullable().optional(),
+  balance: z.number().int().optional(),
+  isActive: z.boolean().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().nullable().optional(),
+  passwordHash: z.string().nullable().optional(),
+});
+
+export const UserParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const USER_SORTABLE_FIELDS = ['id', 'email', 'name', 'role', 'age', 'balance', 'isActive', 'createdAt', 'updatedAt', 'passwordHash'] as const;
+export const USER_LIST_QUERY_FIELDS = [
+  {
+    "name": "email",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "name",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "role",
+    "kind": "enum",
+    "operators": [
+      "equals",
+      "in"
+    ],
+    "enumValues": [
+      "ADMIN",
+      "USER",
+      "PUBLIC"
+    ]
+  },
+  {
+    "name": "age",
+    "kind": "numeric",
+    "operators": [
+      "equals",
+      "gt",
+      "gte",
+      "lt",
+      "lte"
+    ]
+  },
+  {
+    "name": "balance",
+    "kind": "numeric",
+    "operators": [
+      "equals",
+      "gt",
+      "gte",
+      "lt",
+      "lte"
+    ]
+  },
+  {
+    "name": "isActive",
+    "kind": "boolean",
+    "operators": [
+      "equals"
+    ]
+  },
+  {
+    "name": "createdAt",
+    "kind": "timestamp",
+    "operators": [
+      "equals"
+    ]
+  }
+] as const;
+export const USER_INCLUDABLE_RELATIONS = {
+  "profile": {
+    "user": {}
+  },
+  "orders": {
+    "user": {},
+    "products": {
+      "order": {},
+      "product": {
+        "orders": {}
+      }
+    }
+  }
+} as const;
+export const USER_OMIT_FIELDS = ["passwordHash"] as const;
+export type UserResponse = Omit<User, 'passwordHash'>;
+
+export const UserGetQuerySchema = z
+  .object({
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.include === undefined) {
+      return;
+    }
+    const includeError = validateIncludePaths(data.include, USER_INCLUDABLE_RELATIONS);
+    if (includeError) {
+      ctx.addIssue({
+        code: 'custom',
+        message: includeError,
+        path: ['include'],
+      });
+    }
+  });
+
+
+
+export const UserListQuerySchema = z
+  .object({
+    email: z.coerce.string().optional(),
+    email_contains: z.coerce.string().optional(),
+    email_startsWith: z.coerce.string().optional(),
+    email_endsWith: z.coerce.string().optional(),
+    name: z.coerce.string().optional(),
+    name_contains: z.coerce.string().optional(),
+    name_startsWith: z.coerce.string().optional(),
+    name_endsWith: z.coerce.string().optional(),
+    role: z.enum(['ADMIN', 'USER', 'PUBLIC']).optional(),
+    role_in: z.coerce.string().optional(),
+    age: z.coerce.number().int().optional(),
+    age_gt: z.coerce.number().int().optional(),
+    age_gte: z.coerce.number().int().optional(),
+    age_lt: z.coerce.number().int().optional(),
+    age_lte: z.coerce.number().int().optional(),
+    balance: z.coerce.number().int().optional(),
+    balance_gt: z.coerce.number().int().optional(),
+    balance_gte: z.coerce.number().int().optional(),
+    balance_lt: z.coerce.number().int().optional(),
+    balance_lte: z.coerce.number().int().optional(),
+    isActive: z.preprocess(
+    (value) => (typeof value === 'string' ? value.toLowerCase() : value),
+    z.union([z.boolean(), z.enum(['true', 'false'])]).transform((value) => value === true || value === 'true'),
+  ).optional(),
+    createdAt: z.coerce.date().optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+    sort: z.string().optional(),
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.sort !== undefined) {
+      const descending = data.sort.startsWith('-');
+      const field = descending ? data.sort.slice(1) : data.sort;
+      if (!(USER_SORTABLE_FIELDS as readonly string[]).includes(field)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid sort field "${field}"`,
+          path: ['sort'],
+        });
+      }
+    }
+    if (data.include !== undefined) {
+      const includeError = validateIncludePaths(data.include, USER_INCLUDABLE_RELATIONS);
+      if (includeError) {
+        ctx.addIssue({
+          code: 'custom',
+          message: includeError,
+          path: ['include'],
+        });
+      }
+    }
+  });
+
+
+
 export const API_OMIT_FIELDS_BY_MODEL = {
+  "Log": [],
+  "Order": [],
+  "Product": [],
+  "ProductOrder": [],
+  "Profile": [],
   "User": [
     "passwordHash"
-  ],
-  "Profile": [],
-  "Order": [],
-  "Log": [],
-  "Product": [],
-  "ProductOrder": []
+  ]
 } as const;
 export const API_RELATION_TARGETS = {
-  "User": {
-    "profile": "Profile",
-    "orders": "Order"
-  },
-  "Profile": {
-    "user": "User"
-  },
+  "Log": {},
   "Order": {
     "user": "User",
     "products": "ProductOrder"
   },
-  "Log": {},
   "Product": {
     "orders": "ProductOrder"
   },
   "ProductOrder": {
     "order": "Order",
     "product": "Product"
+  },
+  "Profile": {
+    "user": "User"
+  },
+  "User": {
+    "profile": "Profile",
+    "orders": "Order"
   }
 } as const;

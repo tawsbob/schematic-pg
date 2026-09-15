@@ -1,0 +1,66 @@
+enums {
+  UserRole { ADMIN, USER, PUBLIC }
+}
+
+models {
+  model User {
+    id:           UUID        @id @default(gen_random_uuid()) @unfilterable
+    email:        VARCHAR(255) @unique @regex(pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", message: "Invalid email address")
+    name:         VARCHAR(150)
+    role:         UserRole    @default(USER)
+    age:          SMALLINT? @range(min: 1, max: 120, message: "Age must be between 1 and 120")
+    balance:      INTEGER
+    isActive:     BOOLEAN     @default(true)
+    createdAt:    TIMESTAMP   @default(now())
+    updatedAt:    TIMESTAMP?  @unfilterable
+    passwordHash: VARCHAR(255)? @omit @unfilterable
+
+    profile:    Profile?
+    orders:     Order[]
+
+    @rest(except: [create, update, delete])
+    @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
+    @policy(role: ADMIN, allow: all)
+
+    @@index(fields: [role, isActive])
+    @@index(fields: [name], where: "isActive = true", name: "active_users_name_idx", type: BTREE)
+    @@index(fields: [email], unique: true, where: "role = 'PUBLIC'")
+
+    @@trigger {
+      timing: BEFORE,
+      event: UPDATE,
+      level: ROW,
+      execute: """
+        IF (OLD.balance <> NEW.balance) THEN
+          RAISE EXCEPTION 'Balance cannot be updated directly';
+        END IF;
+        RETURN NEW;
+      """
+    }
+  }
+
+  model Profile {
+    id:       UUID        @id @default(gen_random_uuid())
+    userId:   UUID        @unique
+    bio:      TEXT
+    avatar:   VARCHAR(255)
+    location: POINT
+
+    user:     User        @relation(
+      fields: [userId],
+      references: [id],
+      onDelete: CASCADE,
+      onUpdate: SET_NULL
+    )
+  }
+}
+
+functions {
+  function getUserBalance(userId: UUID): INTEGER {
+    language: sql
+    volatility: STABLE
+    execute: """
+      SELECT balance FROM "user" WHERE id = user_id
+    """
+  }
+}

@@ -10,8 +10,18 @@ describe('Parser — errors', () => {
     expectParseError(wrapModels('model User { id: UUID'), /expected 'model'|expected '\}'/);
   });
 
-  it('throws when schema starts with models instead of extensions', () => {
-    expectParseError('models {}\nenums {}\nextensions {}', /expected 'extensions'/);
+  it('throws when sections appear out of order', () => {
+    expectParseError(
+      'models {}\nextensions {}',
+      /sections in order|expected end of schema/,
+    );
+  });
+
+  it('throws when enums appear after models', () => {
+    expectParseError(
+      'models {}\nenums {}',
+      /sections in order|expected end of schema/,
+    );
   });
 
   it('throws when enum value is not an identifier', () => {

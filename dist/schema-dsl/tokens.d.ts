@@ -28,5 +28,7 @@ export interface Token {
     value: string;
     line: number;
     col: number;
+    start: number;
+    end: number;
 }
 export declare function keywordTokenType(value: string): TokenType;

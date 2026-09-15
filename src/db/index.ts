@@ -41,4 +41,5 @@ export {
   readSnapshotSource,
   snapshotExists,
   writeSnapshot,
+  writeSnapshotSource,
 } from './schema-state.js';

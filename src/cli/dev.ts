@@ -1,20 +1,26 @@
 import { type ChildProcess } from 'node:child_process';
 import { watch } from 'node:fs';
 import path from 'node:path';
+import {
+  describeSchemaSource,
+  resolveSchemaSource,
+  type SchemaSource,
+} from '../schema-source/index.js';
 import { runDbBootstrap } from './db.js';
 import { generateAll } from './generate.js';
-import { DEFAULT_OUTPUT_DIR, resolveSchemaPath } from './paths.js';
+import { DEFAULT_OUTPUT_DIR } from './paths.js';
 import { startAppServer, stopAppServer, waitForAppServerExit } from './server.js';
 
 const WATCH_DEBOUNCE_MS = 300;
+const SCHEMA_EXTENSION = '.schema';
 
 type DevOptions = {
-  schemaPath: string;
+  schemaArg?: string;
   watchSchema: boolean;
 };
 
 function parseDevArgs(args: string[]): DevOptions {
-  let schemaPath = resolveSchemaPath();
+  let schemaArg: string | undefined;
   let watchSchema = true;
 
   for (const arg of args) {
@@ -24,11 +30,11 @@ function parseDevArgs(args: string[]): DevOptions {
     }
 
     if (!arg.startsWith('--')) {
-      schemaPath = resolveSchemaPath(arg);
+      schemaArg = arg;
     }
   }
 
-  return { schemaPath, watchSchema };
+  return { schemaArg, watchSchema };
 }
 
 function createDebouncer(fn: () => Promise<void>, ms: number): () => void {
@@ -42,8 +48,27 @@ function createDebouncer(fn: () => Promise<void>, ms: number): () => void {
   };
 }
 
+function isSchemaFileChange(filename: string | null): boolean {
+  return filename === null || filename.endsWith(SCHEMA_EXTENSION);
+}
+
+function watchSchemaSource(source: SchemaSource, onChange: () => void): void {
+  if (source.kind === 'file') {
+    watch(source.path, onChange);
+    return;
+  }
+
+  watch(source.dir, { recursive: true }, (_eventType, filename) => {
+    if (isSchemaFileChange(filename)) {
+      onChange();
+    }
+  });
+}
+
 export async function runDev(args: string[] = []): Promise<void> {
-  const { schemaPath, watchSchema } = parseDevArgs(args);
+  const { schemaArg, watchSchema } = parseDevArgs(args);
+  const schemaSource = resolveSchemaSource(schemaArg);
+  const schemaLabel = describeSchemaSource(schemaSource);
   const appPath = path.resolve(DEFAULT_OUTPUT_DIR, 'app.ts');
 
   let serverProcess: ChildProcess | null = null;
@@ -59,8 +84,8 @@ export async function runDev(args: string[] = []): Promise<void> {
     syncInProgress = true;
 
     try {
-      await generateAll(schemaPath);
-      await runDbBootstrap(schemaPath);
+      await generateAll(schemaArg);
+      await runDbBootstrap(schemaArg);
       await stopAppServer(serverProcess);
       serverProcess = startAppServer(appPath);
 
@@ -94,7 +119,9 @@ export async function runDev(args: string[] = []): Promise<void> {
       return;
     }
 
-    process.stderr.write('\nSchema changed — regenerating, bootstrapping, and restarting...\n');
+    process.stderr.write(
+      `\nSchema changed (${schemaLabel}) — regenerating, bootstrapping, and restarting...\n`,
+    );
     restarting = true;
 
     try {
@@ -136,7 +163,7 @@ export async function runDev(args: string[] = []): Promise<void> {
     return;
   }
 
-  watch(schemaPath, scheduleReload);
+  watchSchemaSource(schemaSource, scheduleReload);
 
   await new Promise<void>((resolve) => {
     const interval = setInterval(() => {

@@ -3,15 +3,18 @@ import { Token } from './tokens.js';
 export declare class ParseError extends Error {
     readonly line: number;
     readonly col: number;
+    readonly file?: string;
     readonly expected: string;
     readonly found: Token;
-    constructor(expected: string, found: Token);
+    constructor(expected: string, found: Token, file?: string);
 }
 export declare class Parser {
     private readonly tokens;
+    private readonly file?;
     private index;
-    constructor(tokens: Token[]);
+    constructor(tokens: Token[], file?: string);
     parseSchema(): Schema;
+    private sectionOrderHint;
     parseModel(): Model;
     parseField(): Field;
     parseAttribute(): Attribute;

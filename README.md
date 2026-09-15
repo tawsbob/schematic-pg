@@ -3,15 +3,15 @@
 <img width="1254" height="1254" alt="schematic" src="https://github.com/user-attachments/assets/5b8f35b3-7e99-4779-aca3-ec3dbe27be56" />
 
 
-> A single-file backend framework for PostgreSQL and Node.js. Define your database schema, ACL policies, and validations in one declarative DSL — then generate the SQL, the API, and the types.
+> A schema-driven backend framework for PostgreSQL and Node.js. Define your database schema, ACL policies, and validations in one declarative DSL — then generate the SQL, the API, and the types.
 
 ---
 
 ## Schema DSL
 
-`app.schema` is the source of truth. From it, schematic-pg generates PostgreSQL DDL, a type-safe DB client, REST routes, Zod validators, and ACL policies.
+The schema DSL is the source of truth — either a single `app.schema` file or multiple fragments under `schema/`. From it, schematic-pg generates PostgreSQL DDL, a type-safe DB client, REST routes, Zod validators, and ACL policies.
 
-A schema file has three required sections, in this order: `extensions`, `enums`, `models`. An optional `functions` section may follow.
+A schema document may include any of these sections, in this order when present: `extensions`, `enums`, `models`, `functions`. Empty sections can be omitted.
 
 ```ts
 extensions {
@@ -30,6 +30,22 @@ models {
   }
 }
 ```
+
+### Multi-file schemas
+
+For larger projects, split the schema into domain fragments:
+
+```
+schema/
+  extensions.schema
+  user.schema
+  order.schema
+  product.schema
+```
+
+Each fragment includes only the sections it needs. schematic-pg merges them (name-sorted) before codegen and migrations. If `schema/` contains any `*.schema` files, that mode wins over `app.schema`. Pass a file or directory path to override.
+
+See [Schema fragments](docs/schema-fragments.md) for discovery rules, validation, snapshots, and the `dev` watcher.
 
 Each feature below is shown in isolation. Identifiers in SQL become `snake_case` automatically (`createdAt` → `created_at`, `User` → `"user"`). API field names stay camelCase.
 
@@ -484,12 +500,12 @@ npx schematic-pg init my-app
 cd my-app
 ```
 
-Edit `app.schema`, then start the full dev loop:
+Edit the schema (`app.schema` from `init`, or split into `schema/*.schema` later), then start the full dev loop:
 
 ```bash
 make dev
 # → starts PostgreSQL, generates code, bootstraps the DB, runs the dev server,
-#   and watches app.schema for changes (regenerate + bootstrap + restart)
+#   and watches the schema source for changes (regenerate + bootstrap + restart)
 # → http://localhost:3000
 # → API docs at http://localhost:3000/docs
 ```
@@ -500,7 +516,7 @@ Or run each step individually:
 # Start PostgreSQL ( matches .env defaults)
 docker compose up -d --wait
 
-# Generate, bootstrap, start server, and watch app.schema (default)
+# Generate, bootstrap, start server, and watch schema (default)
 npx schematic-pg dev
 # → http://localhost:3000
 
@@ -521,7 +537,7 @@ The `init` command creates everything you need to get running:
 | File / directory | Purpose |
 |------------------|---------|
 | `AGENTS.md` | Agent-oriented guide for working with schematic-pg in this project |
-| `app.schema` | Starter schema (one `User` model) — edit this |
+| `app.schema` | Starter schema (one `User` model) — edit this, or split into `schema/*.schema` later |
 | `.env` | `DATABASE_URL`, JWT settings, `CORS_ORIGIN` |
 | `docker-compose.yml` | Local PostgreSQL on `:5432` |
 | `Makefile` | `make dev` — docker compose (with health wait) + `schematic-pg dev` |
@@ -624,7 +640,7 @@ Password reset, MFA, session/refresh-token management, and login rate limiting a
 
 ## CLI Reference
 
-The `schematic-pg` binary is the primary interface. Each command accepts an optional path to a schema file (defaults to `app.schema` in the current directory).
+The `schematic-pg` binary is the primary interface. Each command accepts an optional `[schema]` path to a schema **file** or a **directory** of `*.schema` fragments. With no argument, the CLI uses `./schema/*.schema` when that directory has files, otherwise `./app.schema`. See [Schema fragments](docs/schema-fragments.md).
 
 ### Project setup
 
@@ -649,7 +665,7 @@ Run `generate:client` before `generate:api` when using the split commands — ro
 schematic-pg hooks:add [schema] [--model ModelName]
 ```
 
-Reads `app.schema`, prompts for a model (or accepts `--model`), and writes `src/hooks/{Model}.ts` with all six lifecycle hooks pre-filled. Delete any hooks you do not need, then run `generate:api` to wire them into POST/PUT/DELETE routes. Existing hook files are never overwritten.
+Reads the resolved schema, prompts for a model (or accepts `--model`), and writes `src/hooks/{Model}.ts` with all six lifecycle hooks pre-filled. Delete any hooks you do not need, then run `generate:api` to wire them into POST/PUT/DELETE routes. Existing hook files are never overwritten.
 
 ### Development server
 
@@ -662,7 +678,7 @@ schematic-pg dev [schema] [--no-watch]
 1. `generate` — writes `schema.sql` and `generated/*`
 2. `db:bootstrap` — waits for Postgres, applies DDL, snapshots schema state
 3. Starts `generated/app.ts`
-4. Watches `app.schema` (default) — on change, re-runs generate, bootstrap, and server restart
+4. Watches the schema source — a single file, or the fragments directory recursively — and on change re-runs generate, bootstrap, and server restart
 
 Pass `--no-watch` for a one-shot run without file watching.
 
@@ -725,7 +741,7 @@ npm run start      # schematic-pg start
 ```bash
 schematic-pg db:ping [schema]              # Test DATABASE_URL connection (SELECT 1)
 schematic-pg db:bootstrap [schema]         # Reset public schema, apply DDL, write .schema-state snapshot
-schematic-pg db:diff [schema]              # Print pending schema changes (snapshot vs app.schema)
+schematic-pg db:diff [schema]              # Print pending schema changes (snapshot vs current schema)
 schematic-pg db:diff --name add_users      # Write a migration file under migrations/
 schematic-pg db:migrate [schema]           # Apply pending migration files
 schematic-pg db:migrate:status [schema]    # Show snapshot + migration file status
@@ -753,6 +769,7 @@ schematic-pg --help
 
 - [Philosophy & features](docs/philosophy.md)
 - [How it works](docs/how-it-works.md)
+- [Schema fragments](docs/schema-fragments.md) — multi-file `schema/*.schema` authoring
 - [Database client](docs/database-client.md)
 - [REST API](docs/rest-api.md)
 - [Access control](docs/access-control.md)

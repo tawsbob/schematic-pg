@@ -20,4 +20,4 @@ export type { DiffResult } from './diff.js';
 export { applyPendingMigrations } from './migrate.js';
 export { createMigration, ensureMigrationsDir, getMigrationsDir, listMigrationFiles, listPendingMigrations, readMigrationSql, DESTRUCTIVE_MIGRATION_KINDS, } from './migrations.js';
 export type { MigrationFile } from './migrations.js';
-export { ensureSnapshot, getSnapshotPath, readSnapshotSchema, readSnapshotSource, snapshotExists, writeSnapshot, } from './schema-state.js';
+export { ensureSnapshot, getSnapshotPath, readSnapshotSchema, readSnapshotSource, snapshotExists, writeSnapshot, writeSnapshotSource, } from './schema-state.js';

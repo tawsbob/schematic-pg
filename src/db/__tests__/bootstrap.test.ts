@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { bootstrapDatabase, generateBootstrapSql } from '../bootstrap.js';
 
-const fixtureSchemaPath = join(process.cwd(), 'app.schema');
 const goldenSqlPath = join(
   process.cwd(),
   'src/sql-generator/__tests__/fixtures/app.schema.sql',
@@ -12,7 +11,7 @@ const goldenSqlPath = join(
 
 describe('bootstrapDatabase', () => {
   it('generates SQL matching the golden fixture for app.schema', () => {
-    const generatedSql = generateBootstrapSql(fixtureSchemaPath);
+    const generatedSql = generateBootstrapSql();
     const goldenSql = readFileSync(goldenSqlPath, 'utf8');
 
     assert.equal(generatedSql, goldenSql);
@@ -31,7 +30,7 @@ describe('bootstrapDatabase', () => {
       },
     };
 
-    await bootstrapDatabase(fixtureSchemaPath, mockClient);
+    await bootstrapDatabase(undefined, mockClient);
 
     assert.equal(executedSql.length, 2);
     assert.match(executedSql[0]!, /DROP SCHEMA IF EXISTS public CASCADE/);

@@ -12,7 +12,7 @@ export const TEST_JWT_SECRET = 'integration-test-secret';
 export const dockerUnavailableMessage =
   'Database unreachable. Start Docker Postgres with: npm run docker:up';
 
-const schemaPath = join(process.cwd(), 'app.schema');
+const schemaPath = join(process.cwd(), 'schema');
 const generatedClientPath = join(process.cwd(), 'generated/db.ts');
 const generatedAppPath = join(process.cwd(), 'generated/app.ts');
 

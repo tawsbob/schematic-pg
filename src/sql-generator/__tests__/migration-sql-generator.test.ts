@@ -119,6 +119,31 @@ model Profile { id: UUID @id userId: UUID }`),
     assert.match(reverse, /ALTER TABLE profile DROP CONSTRAINT profile_user_id_fkey/);
   });
 
+  it('creates indexes before foreign key constraints', () => {
+    const sql = diffSql(
+      wrapModels('model User { id: UUID @id }'),
+      wrapModels(`model User {
+        id: UUID @id
+        email: VARCHAR(255)
+        @@index(fields: [email], unique: true)
+      }
+      model Profile {
+        id: UUID @id
+        userId: UUID
+        user: User @relation(fields: [userId], references: [id])
+      }`),
+    );
+
+    const createIndexIndex = sql.indexOf('CREATE UNIQUE INDEX');
+    const addConstraintIndex = sql.indexOf('ADD CONSTRAINT profile_user_id_fkey');
+    assert.ok(createIndexIndex >= 0);
+    assert.ok(addConstraintIndex >= 0);
+    assert.ok(
+      createIndexIndex < addConstraintIndex,
+      'expected CreateIndex before AddConstraint',
+    );
+  });
+
   it('orders destructive operations after additive ones', () => {
     const sql = diffSql(
       wrapModels(`model User { id: UUID @id oldField: TEXT }

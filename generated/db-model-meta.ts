@@ -1,10 +1,10 @@
 // Auto-generated model metadata. Do not edit manually.
 import type { ModelMetaSnapshot } from 'schematic-pg/db/model-meta';
 
-export const userModelMeta = {
-  "name": "User",
-  "tableName": "user",
-  "quotedTableName": "\"user\"",
+export const logModelMeta = {
+  "name": "Log",
+  "tableName": "log",
+  "quotedTableName": "log",
   "primaryKeyFields": [
     "id"
   ],
@@ -16,10 +16,13 @@ export const userModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 14,
-          "col": 19,
-          "endLine": 14,
-          "endCol": 23
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 3,
+          "col": 16,
+          "endLine": 3,
+          "endCol": 20,
+          "start": 38,
+          "end": 42
         }
       },
       "optional": false,
@@ -32,50 +35,19 @@ export const userModelMeta = {
       "isBoolean": false
     },
     {
-      "name": "email",
-      "columnName": "email",
+      "name": "message",
+      "columnName": "message",
       "type": {
         "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 255
-          }
-        ],
+        "name": "TEXT",
         "loc": {
-          "line": 15,
-          "col": 19,
-          "endLine": 15,
-          "endCol": 31
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "name",
-      "columnName": "name",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 150
-          }
-        ],
-        "loc": {
-          "line": 16,
-          "col": 19,
-          "endLine": 16,
-          "endCol": 31
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 4,
+          "col": 16,
+          "endLine": 4,
+          "endCol": 20,
+          "start": 95,
+          "end": 99
         }
       },
       "optional": false,
@@ -86,95 +58,6 @@ export const userModelMeta = {
       "isNumeric": false,
       "isString": true,
       "isBoolean": false
-    },
-    {
-      "name": "role",
-      "columnName": "role",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UserRole",
-        "loc": {
-          "line": 17,
-          "col": 19,
-          "endLine": 17,
-          "endCol": 27
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": true,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "age",
-      "columnName": "age",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "SMALLINT",
-        "optional": true,
-        "loc": {
-          "line": 18,
-          "col": 19,
-          "endLine": 18,
-          "endCol": 28
-        }
-      },
-      "optional": true,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": true,
-      "isString": false,
-      "isBoolean": false
-    },
-    {
-      "name": "balance",
-      "columnName": "balance",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "INTEGER",
-        "loc": {
-          "line": 19,
-          "col": 19,
-          "endLine": 19,
-          "endCol": 26
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": true,
-      "isString": false,
-      "isBoolean": false
-    },
-    {
-      "name": "isActive",
-      "columnName": "is_active",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "BOOLEAN",
-        "loc": {
-          "line": 20,
-          "col": 19,
-          "endLine": 20,
-          "endCol": 26
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": true
     },
     {
       "name": "createdAt",
@@ -183,10 +66,13 @@ export const userModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 21,
-          "col": 19,
-          "endLine": 21,
-          "endCol": 28
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 5,
+          "col": 16,
+          "endLine": 5,
+          "endCol": 25,
+          "start": 115,
+          "end": 124
         }
       },
       "optional": false,
@@ -196,58 +82,6 @@ export const userModelMeta = {
       "isEnum": false,
       "isNumeric": false,
       "isString": false,
-      "isBoolean": false
-    },
-    {
-      "name": "updatedAt",
-      "columnName": "updated_at",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TIMESTAMP",
-        "optional": true,
-        "loc": {
-          "line": 22,
-          "col": 19,
-          "endLine": 22,
-          "endCol": 29
-        }
-      },
-      "optional": true,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": false
-    },
-    {
-      "name": "passwordHash",
-      "columnName": "password_hash",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 255
-          }
-        ],
-        "optional": true,
-        "loc": {
-          "line": 23,
-          "col": 19,
-          "endLine": 23,
-          "endCol": 32
-        }
-      },
-      "optional": true,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
       "isBoolean": false
     }
   ],
@@ -259,10 +93,13 @@ export const userModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 14,
-          "col": 19,
-          "endLine": 14,
-          "endCol": 23
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 3,
+          "col": 16,
+          "endLine": 3,
+          "endCol": 20,
+          "start": 38,
+          "end": 42
         }
       },
       "optional": false,
@@ -274,51 +111,20 @@ export const userModelMeta = {
       "isString": true,
       "isBoolean": false
     },
-    "email": {
-      "name": "email",
-      "columnName": "email",
+    "message": {
+      "name": "message",
+      "columnName": "message",
       "type": {
         "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 255
-          }
-        ],
+        "name": "TEXT",
         "loc": {
-          "line": 15,
-          "col": 19,
-          "endLine": 15,
-          "endCol": 31
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "name": {
-      "name": "name",
-      "columnName": "name",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 150
-          }
-        ],
-        "loc": {
-          "line": 16,
-          "col": 19,
-          "endLine": 16,
-          "endCol": 31
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 4,
+          "col": 16,
+          "endLine": 4,
+          "endCol": 20,
+          "start": 95,
+          "end": 99
         }
       },
       "optional": false,
@@ -329,95 +135,6 @@ export const userModelMeta = {
       "isNumeric": false,
       "isString": true,
       "isBoolean": false
-    },
-    "role": {
-      "name": "role",
-      "columnName": "role",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UserRole",
-        "loc": {
-          "line": 17,
-          "col": 19,
-          "endLine": 17,
-          "endCol": 27
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": true,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "age": {
-      "name": "age",
-      "columnName": "age",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "SMALLINT",
-        "optional": true,
-        "loc": {
-          "line": 18,
-          "col": 19,
-          "endLine": 18,
-          "endCol": 28
-        }
-      },
-      "optional": true,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": true,
-      "isString": false,
-      "isBoolean": false
-    },
-    "balance": {
-      "name": "balance",
-      "columnName": "balance",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "INTEGER",
-        "loc": {
-          "line": 19,
-          "col": 19,
-          "endLine": 19,
-          "endCol": 26
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": true,
-      "isString": false,
-      "isBoolean": false
-    },
-    "isActive": {
-      "name": "isActive",
-      "columnName": "is_active",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "BOOLEAN",
-        "loc": {
-          "line": 20,
-          "col": 19,
-          "endLine": 20,
-          "endCol": 26
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": true
     },
     "createdAt": {
       "name": "createdAt",
@@ -426,340 +143,17 @@ export const userModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 21,
-          "col": 19,
-          "endLine": 21,
-          "endCol": 28
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 5,
+          "col": 16,
+          "endLine": 5,
+          "endCol": 25,
+          "start": 115,
+          "end": 124
         }
       },
       "optional": false,
       "hasDefault": true,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": false
-    },
-    "updatedAt": {
-      "name": "updatedAt",
-      "columnName": "updated_at",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TIMESTAMP",
-        "optional": true,
-        "loc": {
-          "line": 22,
-          "col": 19,
-          "endLine": 22,
-          "endCol": 29
-        }
-      },
-      "optional": true,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": false
-    },
-    "passwordHash": {
-      "name": "passwordHash",
-      "columnName": "password_hash",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 255
-          }
-        ],
-        "optional": true,
-        "loc": {
-          "line": 23,
-          "col": 19,
-          "endLine": 23,
-          "endCol": 32
-        }
-      },
-      "optional": true,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    }
-  },
-  "columnToField": {
-    "id": "id",
-    "email": "email",
-    "name": "name",
-    "role": "role",
-    "age": "age",
-    "balance": "balance",
-    "is_active": "isActive",
-    "created_at": "createdAt",
-    "updated_at": "updatedAt",
-    "password_hash": "passwordHash"
-  },
-  "relations": [
-    {
-      "name": "profile",
-      "kind": "hasOne",
-      "targetModel": "Profile",
-      "localKey": "id",
-      "foreignKey": "userId",
-      "unique": true
-    },
-    {
-      "name": "orders",
-      "kind": "hasMany",
-      "targetModel": "Order",
-      "localKey": "id",
-      "foreignKey": "userId",
-      "unique": false
-    }
-  ]
-} as const;
-export const profileModelMeta = {
-  "name": "Profile",
-  "tableName": "profile",
-  "quotedTableName": "profile",
-  "primaryKeyFields": [
-    "id"
-  ],
-  "fields": [
-    {
-      "name": "id",
-      "columnName": "id",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UUID",
-        "loc": {
-          "line": 45,
-          "col": 15,
-          "endLine": 45,
-          "endCol": 19
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": true,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "userId",
-      "columnName": "user_id",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UUID",
-        "loc": {
-          "line": 46,
-          "col": 15,
-          "endLine": 46,
-          "endCol": 19
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "bio",
-      "columnName": "bio",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TEXT",
-        "loc": {
-          "line": 47,
-          "col": 15,
-          "endLine": 47,
-          "endCol": 19
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "avatar",
-      "columnName": "avatar",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 255
-          }
-        ],
-        "loc": {
-          "line": 48,
-          "col": 15,
-          "endLine": 48,
-          "endCol": 27
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "location",
-      "columnName": "location",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "POINT",
-        "loc": {
-          "line": 49,
-          "col": 15,
-          "endLine": 49,
-          "endCol": 20
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": false
-    }
-  ],
-  "fieldByName": {
-    "id": {
-      "name": "id",
-      "columnName": "id",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UUID",
-        "loc": {
-          "line": 45,
-          "col": 15,
-          "endLine": 45,
-          "endCol": 19
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": true,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "userId": {
-      "name": "userId",
-      "columnName": "user_id",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UUID",
-        "loc": {
-          "line": 46,
-          "col": 15,
-          "endLine": 46,
-          "endCol": 19
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "bio": {
-      "name": "bio",
-      "columnName": "bio",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TEXT",
-        "loc": {
-          "line": 47,
-          "col": 15,
-          "endLine": 47,
-          "endCol": 19
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "avatar": {
-      "name": "avatar",
-      "columnName": "avatar",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "VARCHAR",
-        "args": [
-          {
-            "kind": "NumberLiteral",
-            "value": 255
-          }
-        ],
-        "loc": {
-          "line": 48,
-          "col": 15,
-          "endLine": 48,
-          "endCol": 27
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "location": {
-      "name": "location",
-      "columnName": "location",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "POINT",
-        "loc": {
-          "line": 49,
-          "col": 15,
-          "endLine": 49,
-          "endCol": 20
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
       "isId": false,
       "isUnique": false,
       "isEnum": false,
@@ -770,21 +164,10 @@ export const profileModelMeta = {
   },
   "columnToField": {
     "id": "id",
-    "user_id": "userId",
-    "bio": "bio",
-    "avatar": "avatar",
-    "location": "location"
+    "message": "message",
+    "created_at": "createdAt"
   },
-  "relations": [
-    {
-      "name": "user",
-      "kind": "belongsTo",
-      "targetModel": "User",
-      "localKey": "userId",
-      "foreignKey": "id",
-      "unique": true
-    }
-  ]
+  "relations": []
 } as const;
 export const orderModelMeta = {
   "name": "Order",
@@ -801,10 +184,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 60,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 7,
           "col": 18,
-          "endLine": 60,
-          "endCol": 22
+          "endLine": 7,
+          "endCol": 22,
+          "start": 122,
+          "end": 126
         }
       },
       "optional": false,
@@ -823,10 +209,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 61,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 8,
           "col": 18,
-          "endLine": 61,
-          "endCol": 22
+          "endLine": 8,
+          "endCol": 22,
+          "start": 183,
+          "end": 187
         }
       },
       "optional": false,
@@ -845,10 +234,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "OrderStatus",
         "loc": {
-          "line": 62,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 9,
           "col": 18,
-          "endLine": 62,
-          "endCol": 29
+          "endLine": 9,
+          "endCol": 29,
+          "start": 205,
+          "end": 216
         }
       },
       "optional": false,
@@ -877,10 +269,13 @@ export const orderModelMeta = {
           }
         ],
         "loc": {
-          "line": 63,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 10,
           "col": 18,
-          "endLine": 63,
-          "endCol": 32
+          "endLine": 10,
+          "endCol": 32,
+          "start": 252,
+          "end": 266
         }
       },
       "optional": false,
@@ -899,10 +294,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 64,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 11,
           "col": 18,
-          "endLine": 64,
-          "endCol": 23
+          "endLine": 11,
+          "endCol": 23,
+          "start": 284,
+          "end": 289
         }
       },
       "optional": false,
@@ -921,10 +319,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 65,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 12,
           "col": 18,
-          "endLine": 65,
-          "endCol": 27
+          "endLine": 12,
+          "endCol": 27,
+          "start": 307,
+          "end": 316
         }
       },
       "optional": false,
@@ -944,10 +345,13 @@ export const orderModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 66,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 13,
           "col": 18,
-          "endLine": 66,
-          "endCol": 28
+          "endLine": 13,
+          "endCol": 28,
+          "start": 352,
+          "end": 362
         }
       },
       "optional": true,
@@ -968,10 +372,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 60,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 7,
           "col": 18,
-          "endLine": 60,
-          "endCol": 22
+          "endLine": 7,
+          "endCol": 22,
+          "start": 122,
+          "end": 126
         }
       },
       "optional": false,
@@ -990,10 +397,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 61,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 8,
           "col": 18,
-          "endLine": 61,
-          "endCol": 22
+          "endLine": 8,
+          "endCol": 22,
+          "start": 183,
+          "end": 187
         }
       },
       "optional": false,
@@ -1012,10 +422,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "OrderStatus",
         "loc": {
-          "line": 62,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 9,
           "col": 18,
-          "endLine": 62,
-          "endCol": 29
+          "endLine": 9,
+          "endCol": 29,
+          "start": 205,
+          "end": 216
         }
       },
       "optional": false,
@@ -1044,10 +457,13 @@ export const orderModelMeta = {
           }
         ],
         "loc": {
-          "line": 63,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 10,
           "col": 18,
-          "endLine": 63,
-          "endCol": 32
+          "endLine": 10,
+          "endCol": 32,
+          "start": 252,
+          "end": 266
         }
       },
       "optional": false,
@@ -1066,10 +482,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 64,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 11,
           "col": 18,
-          "endLine": 64,
-          "endCol": 23
+          "endLine": 11,
+          "endCol": 23,
+          "start": 284,
+          "end": 289
         }
       },
       "optional": false,
@@ -1088,10 +507,13 @@ export const orderModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 65,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 12,
           "col": 18,
-          "endLine": 65,
-          "endCol": 27
+          "endLine": 12,
+          "endCol": 27,
+          "start": 307,
+          "end": 316
         }
       },
       "optional": false,
@@ -1111,10 +533,13 @@ export const orderModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 66,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 13,
           "col": 18,
-          "endLine": 66,
-          "endCol": 28
+          "endLine": 13,
+          "endCol": 28,
+          "start": 352,
+          "end": 362
         }
       },
       "optional": true,
@@ -1155,156 +580,6 @@ export const orderModelMeta = {
     }
   ]
 } as const;
-export const logModelMeta = {
-  "name": "Log",
-  "tableName": "log",
-  "quotedTableName": "log",
-  "primaryKeyFields": [
-    "id"
-  ],
-  "fields": [
-    {
-      "name": "id",
-      "columnName": "id",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UUID",
-        "loc": {
-          "line": 76,
-          "col": 16,
-          "endLine": 76,
-          "endCol": 20
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": true,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "message",
-      "columnName": "message",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TEXT",
-        "loc": {
-          "line": 77,
-          "col": 16,
-          "endLine": 77,
-          "endCol": 20
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    {
-      "name": "createdAt",
-      "columnName": "created_at",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TIMESTAMP",
-        "loc": {
-          "line": 78,
-          "col": 16,
-          "endLine": 78,
-          "endCol": 25
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": false
-    }
-  ],
-  "fieldByName": {
-    "id": {
-      "name": "id",
-      "columnName": "id",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "UUID",
-        "loc": {
-          "line": 76,
-          "col": 16,
-          "endLine": 76,
-          "endCol": 20
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": true,
-      "isUnique": true,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "message": {
-      "name": "message",
-      "columnName": "message",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TEXT",
-        "loc": {
-          "line": 77,
-          "col": 16,
-          "endLine": 77,
-          "endCol": 20
-        }
-      },
-      "optional": false,
-      "hasDefault": false,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": true,
-      "isBoolean": false
-    },
-    "createdAt": {
-      "name": "createdAt",
-      "columnName": "created_at",
-      "type": {
-        "kind": "TypeExpr",
-        "name": "TIMESTAMP",
-        "loc": {
-          "line": 78,
-          "col": 16,
-          "endLine": 78,
-          "endCol": 25
-        }
-      },
-      "optional": false,
-      "hasDefault": true,
-      "isId": false,
-      "isUnique": false,
-      "isEnum": false,
-      "isNumeric": false,
-      "isString": false,
-      "isBoolean": false
-    }
-  },
-  "columnToField": {
-    "id": "id",
-    "message": "message",
-    "created_at": "createdAt"
-  },
-  "relations": []
-} as const;
 export const productModelMeta = {
   "name": "Product",
   "tableName": "product",
@@ -1320,10 +595,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 82,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 9,
           "col": 18,
-          "endLine": 82,
-          "endCol": 22
+          "endLine": 9,
+          "endCol": 22,
+          "start": 181,
+          "end": 185
         }
       },
       "optional": false,
@@ -1348,10 +626,13 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 83,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 10,
           "col": 18,
-          "endLine": 83,
-          "endCol": 30
+          "endLine": 10,
+          "endCol": 30,
+          "start": 242,
+          "end": 254
         }
       },
       "optional": false,
@@ -1370,10 +651,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TEXT",
         "loc": {
-          "line": 84,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 11,
           "col": 18,
-          "endLine": 84,
-          "endCol": 22
+          "endLine": 11,
+          "endCol": 22,
+          "start": 272,
+          "end": 276
         }
       },
       "optional": false,
@@ -1402,10 +686,13 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 85,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 12,
           "col": 18,
-          "endLine": 85,
-          "endCol": 32
+          "endLine": 12,
+          "endCol": 32,
+          "start": 294,
+          "end": 308
         }
       },
       "optional": false,
@@ -1424,10 +711,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 86,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 13,
           "col": 18,
-          "endLine": 86,
-          "endCol": 25
+          "endLine": 13,
+          "endCol": 25,
+          "start": 326,
+          "end": 333
         }
       },
       "optional": false,
@@ -1452,10 +742,13 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 87,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 14,
           "col": 18,
-          "endLine": 87,
-          "endCol": 30
+          "endLine": 14,
+          "endCol": 30,
+          "start": 351,
+          "end": 363
         }
       },
       "optional": false,
@@ -1475,10 +768,13 @@ export const productModelMeta = {
         "name": "TEXT",
         "array": true,
         "loc": {
-          "line": 88,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 15,
           "col": 18,
-          "endLine": 88,
-          "endCol": 24
+          "endLine": 15,
+          "endCol": 24,
+          "start": 381,
+          "end": 387
         }
       },
       "optional": false,
@@ -1497,10 +793,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 89,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 16,
           "col": 18,
-          "endLine": 89,
-          "endCol": 23
+          "endLine": 16,
+          "endCol": 23,
+          "start": 405,
+          "end": 410
         }
       },
       "optional": false,
@@ -1519,10 +818,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 90,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 17,
           "col": 18,
-          "endLine": 90,
-          "endCol": 27
+          "endLine": 17,
+          "endCol": 27,
+          "start": 448,
+          "end": 457
         }
       },
       "optional": false,
@@ -1542,10 +844,13 @@ export const productModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 91,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 18,
           "col": 18,
-          "endLine": 91,
-          "endCol": 28
+          "endLine": 18,
+          "endCol": 28,
+          "start": 493,
+          "end": 503
         }
       },
       "optional": true,
@@ -1566,10 +871,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 82,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 9,
           "col": 18,
-          "endLine": 82,
-          "endCol": 22
+          "endLine": 9,
+          "endCol": 22,
+          "start": 181,
+          "end": 185
         }
       },
       "optional": false,
@@ -1594,10 +902,13 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 83,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 10,
           "col": 18,
-          "endLine": 83,
-          "endCol": 30
+          "endLine": 10,
+          "endCol": 30,
+          "start": 242,
+          "end": 254
         }
       },
       "optional": false,
@@ -1616,10 +927,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TEXT",
         "loc": {
-          "line": 84,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 11,
           "col": 18,
-          "endLine": 84,
-          "endCol": 22
+          "endLine": 11,
+          "endCol": 22,
+          "start": 272,
+          "end": 276
         }
       },
       "optional": false,
@@ -1648,10 +962,13 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 85,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 12,
           "col": 18,
-          "endLine": 85,
-          "endCol": 32
+          "endLine": 12,
+          "endCol": 32,
+          "start": 294,
+          "end": 308
         }
       },
       "optional": false,
@@ -1670,10 +987,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 86,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 13,
           "col": 18,
-          "endLine": 86,
-          "endCol": 25
+          "endLine": 13,
+          "endCol": 25,
+          "start": 326,
+          "end": 333
         }
       },
       "optional": false,
@@ -1698,10 +1018,13 @@ export const productModelMeta = {
           }
         ],
         "loc": {
-          "line": 87,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 14,
           "col": 18,
-          "endLine": 87,
-          "endCol": 30
+          "endLine": 14,
+          "endCol": 30,
+          "start": 351,
+          "end": 363
         }
       },
       "optional": false,
@@ -1721,10 +1044,13 @@ export const productModelMeta = {
         "name": "TEXT",
         "array": true,
         "loc": {
-          "line": 88,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 15,
           "col": 18,
-          "endLine": 88,
-          "endCol": 24
+          "endLine": 15,
+          "endCol": 24,
+          "start": 381,
+          "end": 387
         }
       },
       "optional": false,
@@ -1743,10 +1069,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "JSONB",
         "loc": {
-          "line": 89,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 16,
           "col": 18,
-          "endLine": 89,
-          "endCol": 23
+          "endLine": 16,
+          "endCol": 23,
+          "start": 405,
+          "end": 410
         }
       },
       "optional": false,
@@ -1765,10 +1094,13 @@ export const productModelMeta = {
         "kind": "TypeExpr",
         "name": "TIMESTAMP",
         "loc": {
-          "line": 90,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 17,
           "col": 18,
-          "endLine": 90,
-          "endCol": 27
+          "endLine": 17,
+          "endCol": 27,
+          "start": 448,
+          "end": 457
         }
       },
       "optional": false,
@@ -1788,10 +1120,13 @@ export const productModelMeta = {
         "name": "TIMESTAMP",
         "optional": true,
         "loc": {
-          "line": 91,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/product.schema",
+          "line": 18,
           "col": 18,
-          "endLine": 91,
-          "endCol": 28
+          "endLine": 18,
+          "endCol": 28,
+          "start": 493,
+          "end": 503
         }
       },
       "optional": true,
@@ -1843,10 +1178,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "SERIAL",
         "loc": {
-          "line": 111,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 23,
           "col": 16,
-          "endLine": 111,
-          "endCol": 22
+          "endLine": 23,
+          "endCol": 22,
+          "start": 620,
+          "end": 626
         }
       },
       "optional": false,
@@ -1865,10 +1203,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 112,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 24,
           "col": 16,
-          "endLine": 112,
-          "endCol": 20
+          "endLine": 24,
+          "endCol": 20,
+          "start": 642,
+          "end": 646
         }
       },
       "optional": false,
@@ -1887,10 +1228,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 113,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 25,
           "col": 16,
-          "endLine": 113,
-          "endCol": 20
+          "endLine": 25,
+          "endCol": 20,
+          "start": 662,
+          "end": 666
         }
       },
       "optional": false,
@@ -1909,10 +1253,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 114,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 26,
           "col": 16,
-          "endLine": 114,
-          "endCol": 23
+          "endLine": 26,
+          "endCol": 23,
+          "start": 682,
+          "end": 689
         }
       },
       "optional": false,
@@ -1941,10 +1288,13 @@ export const productOrderModelMeta = {
           }
         ],
         "loc": {
-          "line": 115,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 27,
           "col": 16,
-          "endLine": 115,
-          "endCol": 30
+          "endLine": 27,
+          "endCol": 30,
+          "start": 705,
+          "end": 719
         }
       },
       "optional": false,
@@ -1965,10 +1315,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "SERIAL",
         "loc": {
-          "line": 111,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 23,
           "col": 16,
-          "endLine": 111,
-          "endCol": 22
+          "endLine": 23,
+          "endCol": 22,
+          "start": 620,
+          "end": 626
         }
       },
       "optional": false,
@@ -1987,10 +1340,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 112,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 24,
           "col": 16,
-          "endLine": 112,
-          "endCol": 20
+          "endLine": 24,
+          "endCol": 20,
+          "start": 642,
+          "end": 646
         }
       },
       "optional": false,
@@ -2009,10 +1365,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "UUID",
         "loc": {
-          "line": 113,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 25,
           "col": 16,
-          "endLine": 113,
-          "endCol": 20
+          "endLine": 25,
+          "endCol": 20,
+          "start": 662,
+          "end": 666
         }
       },
       "optional": false,
@@ -2031,10 +1390,13 @@ export const productOrderModelMeta = {
         "kind": "TypeExpr",
         "name": "INTEGER",
         "loc": {
-          "line": 114,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 26,
           "col": 16,
-          "endLine": 114,
-          "endCol": 23
+          "endLine": 26,
+          "endCol": 23,
+          "start": 682,
+          "end": 689
         }
       },
       "optional": false,
@@ -2063,10 +1425,13 @@ export const productOrderModelMeta = {
           }
         ],
         "loc": {
-          "line": 115,
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/order.schema",
+          "line": 27,
           "col": 16,
-          "endLine": 115,
-          "endCol": 30
+          "endLine": 27,
+          "endCol": 30,
+          "start": 705,
+          "end": 719
         }
       },
       "optional": false,
@@ -2102,6 +1467,881 @@ export const productOrderModelMeta = {
       "localKey": "productId",
       "foreignKey": "id",
       "unique": true
+    }
+  ]
+} as const;
+export const profileModelMeta = {
+  "name": "Profile",
+  "tableName": "profile",
+  "quotedTableName": "profile",
+  "primaryKeyFields": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 43,
+          "col": 15,
+          "endLine": 43,
+          "endCol": 19,
+          "start": 1355,
+          "end": 1359
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "userId",
+      "columnName": "user_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 44,
+          "col": 15,
+          "endLine": 44,
+          "endCol": 19,
+          "start": 1413,
+          "end": 1417
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "bio",
+      "columnName": "bio",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TEXT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 45,
+          "col": 15,
+          "endLine": 45,
+          "endCol": 19,
+          "start": 1447,
+          "end": 1451
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "avatar",
+      "columnName": "avatar",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 46,
+          "col": 15,
+          "endLine": 46,
+          "endCol": 27,
+          "start": 1466,
+          "end": 1478
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "location",
+      "columnName": "location",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "POINT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 47,
+          "col": 15,
+          "endLine": 47,
+          "endCol": 20,
+          "start": 1493,
+          "end": 1498
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": false
+    }
+  ],
+  "fieldByName": {
+    "id": {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 43,
+          "col": 15,
+          "endLine": 43,
+          "endCol": 19,
+          "start": 1355,
+          "end": 1359
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "userId": {
+      "name": "userId",
+      "columnName": "user_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 44,
+          "col": 15,
+          "endLine": 44,
+          "endCol": 19,
+          "start": 1413,
+          "end": 1417
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "bio": {
+      "name": "bio",
+      "columnName": "bio",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TEXT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 45,
+          "col": 15,
+          "endLine": 45,
+          "endCol": 19,
+          "start": 1447,
+          "end": 1451
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "avatar": {
+      "name": "avatar",
+      "columnName": "avatar",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 46,
+          "col": 15,
+          "endLine": 46,
+          "endCol": 27,
+          "start": 1466,
+          "end": 1478
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "location": {
+      "name": "location",
+      "columnName": "location",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "POINT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 47,
+          "col": 15,
+          "endLine": 47,
+          "endCol": 20,
+          "start": 1493,
+          "end": 1498
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": false
+    }
+  },
+  "columnToField": {
+    "id": "id",
+    "user_id": "userId",
+    "bio": "bio",
+    "avatar": "avatar",
+    "location": "location"
+  },
+  "relations": [
+    {
+      "name": "user",
+      "kind": "belongsTo",
+      "targetModel": "User",
+      "localKey": "userId",
+      "foreignKey": "id",
+      "unique": true
+    }
+  ]
+} as const;
+export const userModelMeta = {
+  "name": "User",
+  "tableName": "user",
+  "quotedTableName": "\"user\"",
+  "primaryKeyFields": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 7,
+          "col": 19,
+          "endLine": 7,
+          "endCol": 23,
+          "start": 88,
+          "end": 92
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "email",
+      "columnName": "email",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 8,
+          "col": 19,
+          "endLine": 8,
+          "endCol": 31,
+          "start": 164,
+          "end": 176
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "name",
+      "columnName": "name",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 150
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 9,
+          "col": 19,
+          "endLine": 9,
+          "endCol": 31,
+          "start": 283,
+          "end": 295
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "role",
+      "columnName": "role",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UserRole",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 10,
+          "col": 19,
+          "endLine": 10,
+          "endCol": 27,
+          "start": 314,
+          "end": 322
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": true,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "age",
+      "columnName": "age",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "SMALLINT",
+        "optional": true,
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 11,
+          "col": 19,
+          "endLine": 11,
+          "endCol": 28,
+          "start": 359,
+          "end": 368
+        }
+      },
+      "optional": true,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": true,
+      "isString": false,
+      "isBoolean": false
+    },
+    {
+      "name": "balance",
+      "columnName": "balance",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "INTEGER",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 12,
+          "col": 19,
+          "endLine": 12,
+          "endCol": 26,
+          "start": 454,
+          "end": 461
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": true,
+      "isString": false,
+      "isBoolean": false
+    },
+    {
+      "name": "isActive",
+      "columnName": "is_active",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "BOOLEAN",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 13,
+          "col": 19,
+          "endLine": 13,
+          "endCol": 26,
+          "start": 480,
+          "end": 487
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": true
+    },
+    {
+      "name": "createdAt",
+      "columnName": "created_at",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TIMESTAMP",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 14,
+          "col": 19,
+          "endLine": 14,
+          "endCol": 28,
+          "start": 525,
+          "end": 534
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": false
+    },
+    {
+      "name": "updatedAt",
+      "columnName": "updated_at",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TIMESTAMP",
+        "optional": true,
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 15,
+          "col": 19,
+          "endLine": 15,
+          "endCol": 29,
+          "start": 571,
+          "end": 581
+        }
+      },
+      "optional": true,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": false
+    },
+    {
+      "name": "passwordHash",
+      "columnName": "password_hash",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "optional": true,
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 16,
+          "col": 19,
+          "endLine": 16,
+          "endCol": 32,
+          "start": 615,
+          "end": 628
+        }
+      },
+      "optional": true,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  ],
+  "fieldByName": {
+    "id": {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 7,
+          "col": 19,
+          "endLine": 7,
+          "endCol": 23,
+          "start": 88,
+          "end": 92
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "email": {
+      "name": "email",
+      "columnName": "email",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 8,
+          "col": 19,
+          "endLine": 8,
+          "endCol": 31,
+          "start": 164,
+          "end": 176
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "name": {
+      "name": "name",
+      "columnName": "name",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 150
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 9,
+          "col": 19,
+          "endLine": 9,
+          "endCol": 31,
+          "start": 283,
+          "end": 295
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "role": {
+      "name": "role",
+      "columnName": "role",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UserRole",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 10,
+          "col": 19,
+          "endLine": 10,
+          "endCol": 27,
+          "start": 314,
+          "end": 322
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": true,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "age": {
+      "name": "age",
+      "columnName": "age",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "SMALLINT",
+        "optional": true,
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 11,
+          "col": 19,
+          "endLine": 11,
+          "endCol": 28,
+          "start": 359,
+          "end": 368
+        }
+      },
+      "optional": true,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": true,
+      "isString": false,
+      "isBoolean": false
+    },
+    "balance": {
+      "name": "balance",
+      "columnName": "balance",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "INTEGER",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 12,
+          "col": 19,
+          "endLine": 12,
+          "endCol": 26,
+          "start": 454,
+          "end": 461
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": true,
+      "isString": false,
+      "isBoolean": false
+    },
+    "isActive": {
+      "name": "isActive",
+      "columnName": "is_active",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "BOOLEAN",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 13,
+          "col": 19,
+          "endLine": 13,
+          "endCol": 26,
+          "start": 480,
+          "end": 487
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": true
+    },
+    "createdAt": {
+      "name": "createdAt",
+      "columnName": "created_at",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TIMESTAMP",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 14,
+          "col": 19,
+          "endLine": 14,
+          "endCol": 28,
+          "start": 525,
+          "end": 534
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": false
+    },
+    "updatedAt": {
+      "name": "updatedAt",
+      "columnName": "updated_at",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TIMESTAMP",
+        "optional": true,
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 15,
+          "col": 19,
+          "endLine": 15,
+          "endCol": 29,
+          "start": 571,
+          "end": 581
+        }
+      },
+      "optional": true,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": false
+    },
+    "passwordHash": {
+      "name": "passwordHash",
+      "columnName": "password_hash",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "optional": true,
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
+          "line": 16,
+          "col": 19,
+          "endLine": 16,
+          "endCol": 32,
+          "start": 615,
+          "end": 628
+        }
+      },
+      "optional": true,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  },
+  "columnToField": {
+    "id": "id",
+    "email": "email",
+    "name": "name",
+    "role": "role",
+    "age": "age",
+    "balance": "balance",
+    "is_active": "isActive",
+    "created_at": "createdAt",
+    "updated_at": "updatedAt",
+    "password_hash": "passwordHash"
+  },
+  "relations": [
+    {
+      "name": "profile",
+      "kind": "hasOne",
+      "targetModel": "Profile",
+      "localKey": "id",
+      "foreignKey": "userId",
+      "unique": true
+    },
+    {
+      "name": "orders",
+      "kind": "hasMany",
+      "targetModel": "Order",
+      "localKey": "id",
+      "foreignKey": "userId",
+      "unique": false
     }
   ]
 } as const;
