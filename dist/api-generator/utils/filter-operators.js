@@ -1,5 +1,15 @@
 const STRING_TYPES = new Set(['UUID', 'VARCHAR', 'TEXT']);
-const NUMERIC_TYPES = new Set(['INTEGER', 'SERIAL', 'SMALLINT', 'DECIMAL']);
+const NUMERIC_TYPES = new Set([
+    'INTEGER',
+    'SERIAL',
+    'SMALLINT',
+    'BIGINT',
+    'BIGSERIAL',
+    'DECIMAL',
+    'NUMERIC',
+    'REAL',
+    'DOUBLE',
+]);
 export function getFilterFieldKind(field, schema) {
     const typeName = field.type.name;
     if (schema.enums.some((enumDef) => enumDef.name === typeName)) {
@@ -82,11 +92,20 @@ export function toFilterZodType(type, field, schema, operator, coerce = false) {
         case 'SERIAL':
         case 'SMALLINT':
             return `${prefix}number().int()`;
+        case 'REAL':
+        case 'DOUBLE':
+            return `${prefix}number()`;
         case 'BOOLEAN':
             return toQueryBooleanZodType();
         case 'TIMESTAMP':
+        case 'DATE':
+        case 'TIME':
             return 'z.coerce.date()';
+        case 'BIGINT':
+        case 'BIGSERIAL':
         case 'DECIMAL':
+        case 'NUMERIC':
+        case 'INTERVAL':
             return `${prefix}string()`;
         case 'JSONB':
             return 'z.string()';

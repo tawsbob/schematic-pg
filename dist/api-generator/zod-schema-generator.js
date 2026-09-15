@@ -206,14 +206,25 @@ export class ZodSchemaGenerator {
             case 'SERIAL':
             case 'SMALLINT':
                 return 'z.number().int()';
+            case 'REAL':
+            case 'DOUBLE':
+                return 'z.number()';
             case 'BOOLEAN':
                 return 'z.boolean()';
             case 'TIMESTAMP':
+            case 'DATE':
+            case 'TIME':
                 return 'z.coerce.date()';
+            case 'BIGINT':
+            case 'BIGSERIAL':
             case 'DECIMAL':
+            case 'NUMERIC':
+            case 'INTERVAL':
                 return 'z.string()';
             case 'JSONB':
                 return 'z.record(z.unknown())';
+            case 'BYTEA':
+                return 'z.instanceof(Buffer)';
             case 'POINT':
                 return 'z.unknown()';
             default:

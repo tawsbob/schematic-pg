@@ -4,17 +4,17 @@ Instructions for AI agents working in a schematic-pg project.
 
 ## Overview
 
-schematic-pg is a single-file backend framework for PostgreSQL and Node.js. **`app.schema` is the single source of truth** — it drives SQL DDL, the type-safe DB client, REST API routes, Zod validators, and ACL policies.
+schematic-pg is a schema-driven backend framework for PostgreSQL and Node.js. **The schema DSL is the source of truth** — either a single `app.schema` file or multiple fragments under `schema/*.schema`. It drives SQL DDL, the type-safe DB client, REST API routes, Zod validators, and ACL policies.
 
-- One declarative schema file replaces scattered migrations, ORM models, and route handlers.
+- One declarative schema (file or fragments) replaces scattered migrations, ORM models, and route handlers.
 - Generated code uses parameterized raw SQL (no ORM).
 - Framework runtime lives in `node_modules/schematic-pg` — it is not copied into your project.
 
 ## Golden Rules
 
 1. **Never edit `generated/`** — it is overwritten on every `generate` / `dev` run.
-2. **Regenerate after changes** to `app.schema`, `src/routes/`, or `src/hooks/` (`schematic-pg generate` or `schematic-pg dev`).
-3. **Edit `app.schema`** for models, relations, policies, indexes, triggers, partitions, and SQL functions.
+2. **Regenerate after changes** to the schema (`app.schema` or `schema/*.schema`), `src/routes/`, or `src/hooks/` (`schematic-pg generate` or `schematic-pg dev`).
+3. **Edit the schema** for models, relations, policies, indexes, triggers, partitions, and SQL functions. Prefer `schema/*.schema` fragments for larger domains; `init` scaffolds single-file `app.schema`.
 4. **Use extension points** for app-specific logic: `src/routes/` (custom HTTP) and `src/hooks/` (lifecycle hooks).
 5. **Do not hand-write SQL** for CRUD — use the generated DB client or REST API.
 
@@ -22,7 +22,11 @@ schematic-pg is a single-file backend framework for PostgreSQL and Node.js. **`a
 
 ```
 my-app/
-├── app.schema              # Source of truth — edit this
+├── app.schema              # Single-file schema (from init), or omit when using schema/
+├── schema/                 # Optional multi-file fragments (*.schema) — wins when present
+│   ├── extensions.schema
+│   ├── user.schema
+│   └── …
 ├── schema.sql              # Generated PostgreSQL DDL (read-only)
 ├── AGENTS.md               # This file
 ├── .env                    # DATABASE_URL, JWT_*, CORS_ORIGIN
@@ -48,7 +52,7 @@ docker compose up -d --wait
 npx schematic-pg dev
 ```
 
-`dev` runs: generate → db:bootstrap → start server → watch `app.schema`.
+`dev` runs: generate → db:bootstrap → start server → watch the schema source (`schema/` recursively, or `app.schema`).
 
 **Environment variables** (`.env`):
 
@@ -63,6 +67,8 @@ npx schematic-pg dev
 | `CORS_ALLOW_HEADERS` | Extra allowed request headers (comma-separated), merged with Authorization, Content-Type, X-CSRF-Token |
 
 ## Schema DSL Essentials
+
+Sections (`extensions`, `enums`, `models`, `functions`) are optional; omit empty ones. Split across `schema/*.schema` when useful — see project docs for fragment merge rules.
 
 ```ts
 extensions { pgcrypto; uuid-ossp }

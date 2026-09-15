@@ -104,15 +104,26 @@ export class TypeGenerator {
             case 'INTEGER':
             case 'SERIAL':
             case 'SMALLINT':
+            case 'REAL':
+            case 'DOUBLE':
                 return 'number';
+            case 'BIGINT':
+            case 'BIGSERIAL':
+            case 'DECIMAL':
+            case 'NUMERIC':
+                return 'string';
             case 'BOOLEAN':
                 return 'boolean';
             case 'TIMESTAMP':
+            case 'DATE':
+            case 'TIME':
                 return 'Date';
-            case 'DECIMAL':
+            case 'INTERVAL':
                 return 'string';
             case 'JSONB':
                 return 'Record<string, unknown>';
+            case 'BYTEA':
+                return 'Buffer';
             case 'POINT':
                 return 'unknown';
             default:

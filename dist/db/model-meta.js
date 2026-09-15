@@ -1,7 +1,17 @@
 import { fieldHasAttribute, getModelNames, getPrimaryKey, getStoredFields, } from '../sql-generator/utils/ast-helpers.js';
 import { buildRelations } from './utils/relations.js';
 import { toColumnName, toTableName } from './utils/naming.js';
-const NUMERIC_TYPES = new Set(['INTEGER', 'SERIAL', 'SMALLINT', 'DECIMAL']);
+const NUMERIC_TYPES = new Set([
+    'INTEGER',
+    'SERIAL',
+    'SMALLINT',
+    'BIGINT',
+    'BIGSERIAL',
+    'DECIMAL',
+    'NUMERIC',
+    'REAL',
+    'DOUBLE',
+]);
 const STRING_TYPES = new Set(['UUID', 'VARCHAR', 'TEXT']);
 export function buildModelMeta(model, schema) {
     return hydrateModelMeta(buildModelMetaSnapshot(model, schema));
