@@ -22,6 +22,8 @@ export declare class Parser {
     private parseExtension;
     private parseEnumsSection;
     private parseEnum;
+    private parsePredicatesSection;
+    private parsePredicate;
     private parseModelsSection;
     private parseFunctionsSection;
     parseFunction(existingNames?: Set<string>): SqlFunction;

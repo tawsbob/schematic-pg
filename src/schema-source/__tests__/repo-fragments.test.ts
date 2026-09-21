@@ -40,6 +40,10 @@ describe('repo schema/ fragments', () => {
       ['OrderStatus', 'UserRole'],
     );
     assert.deepEqual(
+      loaded.schema.predicates.map((item) => item.name),
+      ['activeTeamMember', 'ownUser'],
+    );
+    assert.deepEqual(
       loaded.schema.models.map((item) => item.name),
       ['Announcement', 'Log', 'Note', 'Order', 'Product', 'ProductOrder', 'Profile', 'Team', 'TeamMember', 'User'],
     );
@@ -54,10 +58,12 @@ describe('repo schema/ fragments', () => {
     const loaded = loadSchema(resolveSchemaSource(undefined, repoRoot));
     assert.match(loaded.canonicalSource, /^extensions \{/m);
     assert.match(loaded.canonicalSource, /^enums \{/m);
+    assert.match(loaded.canonicalSource, /^predicates \{/m);
     assert.match(loaded.canonicalSource, /^models \{/m);
     assert.match(loaded.canonicalSource, /^functions \{/m);
     assert.doesNotMatch(loaded.canonicalSource, /extensions \{\s*\}/);
     assert.doesNotMatch(loaded.canonicalSource, /enums \{\s*\}/);
+    assert.doesNotMatch(loaded.canonicalSource, /predicates \{\s*\}/);
     assert.doesNotMatch(loaded.canonicalSource, /models \{\s*\}/);
     assert.doesNotMatch(loaded.canonicalSource, /functions \{\s*\}/);
   });

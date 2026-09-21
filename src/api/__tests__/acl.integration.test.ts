@@ -17,6 +17,7 @@ import {
 } from '../../__tests__/helpers/jwt.js';
 import { createApp } from '../../../generated/app.js';
 import { createDbClient } from '../../../generated/db.js';
+import { POLICIES } from '../../../generated/policies.js';
 import type { AppEnv } from '../types.js';
 
 interface RequestOptions {
@@ -93,7 +94,24 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
   });
 
   describe('USER role (row-scoped access)', () => {
-    it('returns only own row on GET /users', async () => {
+    it('inlines the ownUser predicate from access.schema into generated policies', () => {
+      const userPolicies = POLICIES.User ?? [];
+      const userSelect = userPolicies.find((policy) => policy.role === 'USER');
+      assert.ok(userSelect);
+      assert.equal(userSelect.where, 'id = {{auth.user.id}}');
+    });
+
+    it('inlines the multiline activeTeamMember predicate into Note policies', () => {
+      const notePolicies = POLICIES.Note ?? [];
+      const noteUser = notePolicies.find((policy) => policy.role === 'USER');
+      assert.ok(noteUser?.where);
+      assert.match(noteUser.where, /team_id IN \(/);
+      assert.match(noteUser.where, /FROM team_member/);
+      assert.match(noteUser.where, /is_active = true/);
+      assert.match(noteUser.where, /\{\{auth\.user\.id\}\}/);
+    });
+
+    it('returns only own row on GET /users via named ownUser predicate', async () => {
       const response = await request(app, '/users', { token: aliceToken });
 
       assert.equal(response.status, 200);

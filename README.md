@@ -11,7 +11,7 @@
 
 The schema DSL is the source of truth — either a single `app.schema` file or multiple fragments under `schema/`. From it, schematic-pg generates PostgreSQL DDL, a type-safe DB client, REST routes, Zod validators, and ACL policies.
 
-A schema document may include any of these sections, in this order when present: `extensions`, `enums`, `models`, `functions`. Empty sections can be omitted.
+A schema document may include any of these sections, in this order when present: `extensions`, `enums`, `predicates`, `models`, `functions`. Empty sections can be omitted.
 
 ```ts
 extensions {
@@ -70,6 +70,24 @@ enums {
   OrderStatus { PENDING, SHIPPED, DELIVERED }
 }
 ```
+
+### Predicates
+
+Named SQL boolean expressions shared by `@policy` `where` clauses. Fragments merge them by name. Prefer unqualified column names when a predicate is reused across models.
+
+```ts
+predicates {
+  ownUser: "id = {{auth.user.id}}"
+}
+```
+
+Reference a predicate by identifier — codegen inlines the SQL into `generated/policies.ts`:
+
+```ts
+@policy(role: USER, allow: [select], where: ownUser)
+```
+
+A string `where` remains valid for one-off predicates.
 
 ### Models
 
@@ -332,7 +350,7 @@ Attach one or more policies to a model. Models without `@policy` are open. `@pol
 model User {
   id: UUID @id
 
-  @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
+  @policy(role: USER, allow: [select], where: ownUser)
   @policy(role: ADMIN, allow: all)
 }
 ```
@@ -341,11 +359,11 @@ model User {
 |----------|-------------|
 | `role` | Enum identifier (typically a `UserRole` value) |
 | `allow` | `all` or `[select, insert, update, delete]` |
-| `where` | Optional PostgreSQL boolean predicate; supports `{{auth.user.id}}` (and other `{{auth.*}}` paths) as query parameters |
+| `where` | Optional PostgreSQL boolean predicate (string) or a named `predicates` identifier; supports `{{auth.user.id}}` (and other `{{auth.*}}` paths) as query parameters |
 
 `GET` → `select`, `POST` → `insert`, `PUT` → `update`, `DELETE` → `delete`. Unauthenticated requests default to `{ role: 'PUBLIC' }`.
 
-`where` is a SQL predicate (comparisons, `AND` / `OR`, `IN`, `EXISTS`, subqueries). There is no built-in tenant model — applications express isolation in the predicate. Example:
+`where` is a SQL predicate (comparisons, `AND` / `OR`, `IN`, `EXISTS`, subqueries) or a name from the `predicates` section. There is no built-in tenant model — applications express isolation in the predicate. Example:
 
 ```ts
 @policy(

@@ -27,6 +27,7 @@ function formatSection(name, bodies) {
 export function mergeFragments(fragments) {
     const extensionEntries = [];
     const enumEntries = [];
+    const predicateEntries = [];
     const modelEntries = [];
     const functionEntries = [];
     for (const fragment of fragments) {
@@ -35,6 +36,9 @@ export function mergeFragments(fragments) {
         }
         for (const item of fragment.schema.enums) {
             enumEntries.push({ item, source: fragment.source });
+        }
+        for (const item of fragment.schema.predicates) {
+            predicateEntries.push({ item, source: fragment.source });
         }
         for (const item of fragment.schema.models) {
             modelEntries.push({ item, source: fragment.source });
@@ -45,16 +49,19 @@ export function mergeFragments(fragments) {
     }
     extensionEntries.sort((left, right) => byName(left.item, right.item));
     enumEntries.sort((left, right) => byName(left.item, right.item));
+    predicateEntries.sort((left, right) => byName(left.item, right.item));
     modelEntries.sort((left, right) => byName(left.item, right.item));
     functionEntries.sort((left, right) => byName(left.item, right.item));
     const extensions = extensionEntries.map((entry) => entry.item);
     const enums = enumEntries.map((entry) => entry.item);
+    const predicates = predicateEntries.map((entry) => entry.item);
     const models = modelEntries.map((entry) => entry.item);
     const functions = functionEntries.map((entry) => entry.item);
     const schema = {
         kind: 'Schema',
         extensions,
         enums,
+        predicates,
         models,
         functions,
         loc: {
@@ -67,6 +74,7 @@ export function mergeFragments(fragments) {
     const sections = [
         formatSection('extensions', extensionEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('enums', enumEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
+        formatSection('predicates', predicateEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('models', modelEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('functions', functionEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
     ].filter((section) => section !== null);

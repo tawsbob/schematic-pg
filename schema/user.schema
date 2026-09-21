@@ -20,7 +20,7 @@ models {
     teamMembers: TeamMember[]
 
     @rest(except: [create, update, delete])
-    @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
+    @policy(role: USER, allow: [select], where: ownUser)
     @policy(role: ADMIN, allow: all)
 
     @@index(fields: [role, isActive])

@@ -8,6 +8,7 @@
 - [x] Hono route generator with Zod validation
 - [x] Static ACL middleware generation (`@policy` → `assertPolicy` in routes)
 - [x] Row-level policy injection (`WHERE` clause from `where:` templates)
+- [x] Named policy predicates (`predicates { … }`, merge across fragments, `@policy(where: name)`)
 - [x] JWT authentication (default Bearer resolver, pluggable `AuthResolver`)
 - [x] Custom routes (`src/routes/` auto-imported into generated app)
 - [x] Lifecycle hooks (`src/hooks/` before/after create-update-delete, `hooks:add` CLI)

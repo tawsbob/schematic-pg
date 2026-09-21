@@ -21,16 +21,17 @@ schematic-pg dev                   # watches the resolved source
 
 ## Fragment shape
 
-Each fragment is a normal schema document. Include only the sections you need — empty `extensions {}` / `enums {}` / `models {}` / `functions {}` shells are unnecessary.
+Each fragment is a normal schema document. Include only the sections you need — empty `extensions {}` / `enums {}` / `predicates {}` / `models {}` / `functions {}` shells are unnecessary.
 
 When a file has more than one section, keep this order:
 
-`extensions` → `enums` → `models` → `functions`
+`extensions` → `enums` → `predicates` → `models` → `functions`
 
-Cross-file references are allowed. A model in `user.schema` may use an enum or related model declared in another fragment. Strict validation runs **once on the merged result**, so:
+Cross-file references are allowed. A model in `user.schema` may use an enum, related model, or named predicate declared in another fragment. Strict validation runs **once on the merged result**, so:
 
-- Duplicate model / enum / function / extension names fail the build (errors name both files)
+- Duplicate model / enum / predicate / function / extension names fail the build (errors name both files)
 - A field type that is not a primitive, enum, or model fails validation (no silent raw SQL fallthrough)
+- A `@policy` `where` identifier that is not a merged predicate fails validation
 
 ## Layout example
 
@@ -39,6 +40,7 @@ This repository uses domain fragments:
 ```
 schema/
   extensions.schema   # PostgreSQL extensions
+  access.schema       # Named policy predicates (ownUser, …)
   user.schema         # UserRole, User, Profile, getUserBalance
   order.schema        # OrderStatus, Order, ProductOrder
   product.schema      # Log, Product, searchProducts
@@ -104,7 +106,7 @@ functions {
 
 Fragments are parsed individually, then merged:
 
-1. Concatenate `extensions`, `enums`, `models`, and `functions`
+1. Concatenate `extensions`, `enums`, `predicates`, `models`, and `functions`
 2. Sort each list **by declaration name** (not file name or glob order)
 3. Emit a canonical schema document for snapshots
 4. Validate the merged AST once

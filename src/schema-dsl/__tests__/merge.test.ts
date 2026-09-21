@@ -116,11 +116,46 @@ functions {
     assert.match(merged.canonicalSource, /^extensions \{/m);
     assert.match(merged.canonicalSource, /^enums \{/m);
     assert.match(merged.canonicalSource, /^models \{/m);
+    assert.doesNotMatch(merged.canonicalSource, /^predicates \{/m);
     assert.doesNotMatch(merged.canonicalSource, /^functions \{/m);
     assert.match(merged.canonicalSource, /model User \{/);
     assert.match(merged.canonicalSource, /model Wallet \{/);
     assert.match(merged.canonicalSource, /pgcrypto/);
     assert.match(merged.canonicalSource, /UserRole/);
+  });
+
+  it('merges predicates by name regardless of fragment order', () => {
+    const accessFragment = `predicates {
+  ownUser: "id = {{auth.user.id}}"
+}
+`;
+    const scopeFragment = `predicates {
+  teamMember: """
+    team_id IN (
+      SELECT team_id FROM team_member
+      WHERE user_id = {{auth.user.id}}
+    )
+  """
+}
+`;
+
+    const forward = mergeFragments([
+      fragment('schema/access.schema', accessFragment),
+      fragment('schema/scope.schema', scopeFragment),
+    ]);
+    const reverse = mergeFragments([
+      fragment('schema/scope.schema', scopeFragment),
+      fragment('schema/access.schema', accessFragment),
+    ]);
+
+    assert.deepEqual(
+      forward.schema.predicates.map((predicate) => predicate.name),
+      ['ownUser', 'teamMember'],
+    );
+    assert.equal(forward.canonicalSource, reverse.canonicalSource);
+    assert.match(forward.canonicalSource, /^predicates \{/m);
+    assert.match(forward.canonicalSource, /ownUser:/);
+    assert.match(forward.canonicalSource, /teamMember:/);
   });
 });
 
@@ -154,6 +189,63 @@ describe('validateMergedSchema', () => {
         return true;
       },
     );
+  });
+
+  it('rejects duplicate predicate names across fragments', () => {
+    const left = fragment('a.schema', `predicates { ownUser: "id = 1" }`);
+    const right = fragment('b.schema', `predicates { ownUser: "id = 2" }`);
+    const { schema } = mergeFragments([left, right]);
+
+    assert.throws(
+      () => validateMergedSchema(schema),
+      (error: unknown) => {
+        assert.ok(error instanceof SchemaError);
+        assert.match(error.message, /duplicate predicate name "ownUser"/);
+        assert.match(error.message, /a\.schema/);
+        return true;
+      },
+    );
+  });
+
+  it('rejects unknown predicate references on @policy', () => {
+    const { schema } = mergeFragments([
+      fragment(
+        'user.schema',
+        `models {
+  model User {
+    id: UUID @id
+    @policy(role: USER, allow: [select], where: missingPredicate)
+  }
+}`,
+      ),
+    ]);
+
+    assert.throws(
+      () => validateMergedSchema(schema),
+      (error: unknown) => {
+        assert.ok(error instanceof SchemaError);
+        assert.match(error.message, /unknown predicate "missingPredicate"/);
+        assert.match(error.message, /User/);
+        return true;
+      },
+    );
+  });
+
+  it('accepts a @policy where that references a predicate from another fragment', () => {
+    const { schema } = mergeFragments([
+      fragment('access.schema', `predicates { ownUser: "id = {{auth.user.id}}" }`),
+      fragment(
+        'user.schema',
+        `models {
+  model User {
+    id: UUID @id
+    @policy(role: USER, allow: [select], where: ownUser)
+  }
+}`,
+      ),
+    ]);
+
+    assert.doesNotThrow(() => validateMergedSchema(schema));
   });
 
   it('rejects unknown type names', () => {

@@ -46,14 +46,7 @@ models {
     @policy(
       role: USER,
       allow: [select, insert, update, delete],
-      where: """
-        team_id IN (
-          SELECT team_id
-          FROM team_member
-          WHERE user_id = {{auth.user.id}}
-            AND is_active = true
-        )
-      """
+      where: activeTeamMember
     )
     @policy(role: ADMIN, allow: all)
   }

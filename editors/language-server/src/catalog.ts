@@ -1,4 +1,12 @@
-export const TOP_LEVEL_KEYWORDS = ['extensions', 'enums', 'models', 'model', 'functions', 'function'] as const;
+export const TOP_LEVEL_KEYWORDS = [
+  'extensions',
+  'enums',
+  'predicates',
+  'models',
+  'model',
+  'functions',
+  'function',
+] as const;
 
 export const PG_TYPES = [
   'UUID',

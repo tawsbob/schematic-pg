@@ -1,0 +1,12 @@
+predicates {
+  ownUser: "id = {{auth.user.id}}"
+
+  activeTeamMember: """
+    team_id IN (
+      SELECT team_id
+      FROM team_member
+      WHERE user_id = {{auth.user.id}}
+        AND is_active = true
+    )
+  """
+}

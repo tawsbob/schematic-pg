@@ -7,6 +7,7 @@ my-app/
 ├── app.schema              # Starter single-file schema (from init)
 ├── schema/                 # Optional: split into *.schema fragments
 │   ├── extensions.schema
+│   ├── access.schema       # Optional: named policy predicates
 │   ├── user.schema
 │   └── …
 ├── schema.sql              # Generated PostgreSQL DDL

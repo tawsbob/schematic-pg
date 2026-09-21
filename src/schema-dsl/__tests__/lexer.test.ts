@@ -10,10 +10,11 @@ function expectTokens(source: string, expected: Array<{ type: TokenType; value: 
 
 describe('Lexer', () => {
   describe('keywords', () => {
-    it('tokenizes extensions enums models model functions function', () => {
-      expectTokens('extensions enums models model functions function', [
+    it('tokenizes extensions enums predicates models model functions function', () => {
+      expectTokens('extensions enums predicates models model functions function', [
         { type: TokenType.EXTENSIONS, value: 'extensions' },
         { type: TokenType.ENUMS, value: 'enums' },
+        { type: TokenType.PREDICATES, value: 'predicates' },
         { type: TokenType.MODELS, value: 'models' },
         { type: TokenType.MODEL, value: 'model' },
         { type: TokenType.FUNCTIONS, value: 'functions' },

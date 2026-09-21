@@ -14,6 +14,21 @@ enums {
 
 }
 
+predicates {
+
+  activeTeamMember: """
+      team_id IN (
+        SELECT team_id
+        FROM team_member
+        WHERE user_id = {{auth.user.id}}
+          AND is_active = true
+      )
+    """
+
+  ownUser: "id = {{auth.user.id}}"
+
+}
+
 models {
 
   model Announcement {
@@ -64,14 +79,7 @@ models {
       @policy(
         role: USER,
         allow: [select, insert, update, delete],
-        where: """
-          team_id IN (
-            SELECT team_id
-            FROM team_member
-            WHERE user_id = {{auth.user.id}}
-              AND is_active = true
-          )
-        """
+        where: activeTeamMember
       )
       @policy(role: ADMIN, allow: all)
     }
@@ -208,7 +216,7 @@ models {
       teamMembers: TeamMember[]
 
       @rest(except: [create, update, delete])
-      @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
+      @policy(role: USER, allow: [select], where: ownUser)
       @policy(role: ADMIN, allow: all)
 
       @@index(fields: [role, isActive])

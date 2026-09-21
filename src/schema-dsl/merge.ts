@@ -2,6 +2,7 @@ import type {
   Enum,
   Extension,
   Model,
+  Predicate,
   Schema,
   SourceLocation,
   SqlFunction,
@@ -53,6 +54,7 @@ function formatSection(name: string, bodies: string[]): string | null {
 export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
   const extensionEntries: Array<{ item: Extension; source: string }> = [];
   const enumEntries: Array<{ item: Enum; source: string }> = [];
+  const predicateEntries: Array<{ item: Predicate; source: string }> = [];
   const modelEntries: Array<{ item: Model; source: string }> = [];
   const functionEntries: Array<{ item: SqlFunction; source: string }> = [];
 
@@ -62,6 +64,9 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     }
     for (const item of fragment.schema.enums) {
       enumEntries.push({ item, source: fragment.source });
+    }
+    for (const item of fragment.schema.predicates) {
+      predicateEntries.push({ item, source: fragment.source });
     }
     for (const item of fragment.schema.models) {
       modelEntries.push({ item, source: fragment.source });
@@ -73,11 +78,13 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
 
   extensionEntries.sort((left, right) => byName(left.item, right.item));
   enumEntries.sort((left, right) => byName(left.item, right.item));
+  predicateEntries.sort((left, right) => byName(left.item, right.item));
   modelEntries.sort((left, right) => byName(left.item, right.item));
   functionEntries.sort((left, right) => byName(left.item, right.item));
 
   const extensions = extensionEntries.map((entry) => entry.item);
   const enums = enumEntries.map((entry) => entry.item);
+  const predicates = predicateEntries.map((entry) => entry.item);
   const models = modelEntries.map((entry) => entry.item);
   const functions = functionEntries.map((entry) => entry.item);
 
@@ -85,6 +92,7 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     kind: 'Schema',
     extensions,
     enums,
+    predicates,
     models,
     functions,
     loc: {
@@ -103,6 +111,10 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     formatSection(
       'enums',
       enumEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc)),
+    ),
+    formatSection(
+      'predicates',
+      predicateEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc)),
     ),
     formatSection(
       'models',

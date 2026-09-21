@@ -7,24 +7,38 @@ export const OP_BY_METHOD = {
     PUT: 'update',
     DELETE: 'delete',
 };
-export function normalizePolicies(model) {
+export function normalizePolicies(model, predicates = []) {
+    const predicateByName = new Map(predicates.map((predicate) => [predicate.name, predicate.sql]));
     return model.attributes
         .filter((attribute) => attribute.name === 'policy')
-        .map((attribute) => normalizePolicyAttribute(attribute));
+        .map((attribute) => normalizePolicyAttribute(attribute, predicateByName));
 }
 export function hasPolicies(model) {
     return model.attributes.some((attribute) => attribute.name === 'policy');
 }
-function normalizePolicyAttribute(attribute) {
+function normalizePolicyAttribute(attribute, predicateByName) {
     const args = assertKeyValueArgs(attribute.args);
     const role = parseIdentifierValue(getKvPair(args, 'role').value, 'role');
     const allow = parseAllowOperations(getKvPair(args, 'allow').value);
     const wherePair = getOptionalKvPair(args, 'where');
     const policy = { role, operations: allow };
     if (wherePair) {
-        policy.where = parseStringValue(wherePair.value, 'where');
+        policy.where = resolveWhereValue(wherePair.value, predicateByName);
     }
     return policy;
+}
+function resolveWhereValue(value, predicateByName) {
+    if (value.kind === 'StringLiteral' || value.kind === 'TripleStringLiteral') {
+        return value.value.trim();
+    }
+    if (value.kind === 'Identifier') {
+        const sql = predicateByName.get(value.name);
+        if (sql === undefined) {
+            throw new Error(`Unknown policy predicate "${value.name}"`);
+        }
+        return sql;
+    }
+    throw new Error('Policy where must be a string or predicate identifier');
 }
 function parseAllowOperations(value) {
     if (value.kind === 'Identifier') {
@@ -53,12 +67,6 @@ function parseIdentifierValue(value, fieldName) {
         throw new Error(`Policy ${fieldName} must be an identifier`);
     }
     return value.name;
-}
-function parseStringValue(value, fieldName) {
-    if (value.kind === 'StringLiteral' || value.kind === 'TripleStringLiteral') {
-        return value.value.trim();
-    }
-    throw new Error(`Policy ${fieldName} must be a string`);
 }
 function isPolicyOperation(value) {
     return POLICY_OPERATIONS.includes(value);

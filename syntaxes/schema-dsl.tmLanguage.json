@@ -74,7 +74,7 @@
       "patterns": [
         {
           "name": "keyword.control.schema-dsl",
-          "match": "\\b(extensions|enums|models|model|functions|function|partition)\\b"
+          "match": "\\b(extensions|enums|predicates|models|model|functions|function|partition)\\b"
         }
       ]
     },

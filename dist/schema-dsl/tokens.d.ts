@@ -1,6 +1,7 @@
 export declare enum TokenType {
     EXTENSIONS = "EXTENSIONS",
     ENUMS = "ENUMS",
+    PREDICATES = "PREDICATES",
     MODELS = "MODELS",
     MODEL = "MODEL",
     FUNCTIONS = "FUNCTIONS",

@@ -2,6 +2,7 @@ export var TokenType;
 (function (TokenType) {
     TokenType["EXTENSIONS"] = "EXTENSIONS";
     TokenType["ENUMS"] = "ENUMS";
+    TokenType["PREDICATES"] = "PREDICATES";
     TokenType["MODELS"] = "MODELS";
     TokenType["MODEL"] = "MODEL";
     TokenType["FUNCTIONS"] = "FUNCTIONS";
@@ -27,6 +28,7 @@ export var TokenType;
 const KEYWORDS = {
     extensions: TokenType.EXTENSIONS,
     enums: TokenType.ENUMS,
+    predicates: TokenType.PREDICATES,
     models: TokenType.MODELS,
     model: TokenType.MODEL,
     functions: TokenType.FUNCTIONS,

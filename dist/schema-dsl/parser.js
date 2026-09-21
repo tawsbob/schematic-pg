@@ -30,6 +30,7 @@ export class Parser {
         const start = this.current();
         const extensions = this.check(TokenType.EXTENSIONS) ? this.parseExtensionsSection() : [];
         const enums = this.check(TokenType.ENUMS) ? this.parseEnumsSection() : [];
+        const predicates = this.check(TokenType.PREDICATES) ? this.parsePredicatesSection() : [];
         const models = this.check(TokenType.MODELS) ? this.parseModelsSection() : [];
         const functions = this.check(TokenType.FUNCTIONS) ? this.parseFunctionsSection() : [];
         if (!this.isAtEnd()) {
@@ -41,6 +42,7 @@ export class Parser {
             kind: 'Schema',
             extensions,
             enums,
+            predicates,
             models,
             functions,
             loc: this.loc(start),
@@ -49,13 +51,15 @@ export class Parser {
     sectionOrderHint(type) {
         switch (type) {
             case TokenType.EXTENSIONS:
-                return "sections in order 'extensions', 'enums', 'models', 'functions' (extensions must come first)";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (extensions must come first)";
             case TokenType.ENUMS:
-                return "sections in order 'extensions', 'enums', 'models', 'functions' (enums before models/functions)";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (enums before predicates/models/functions)";
+            case TokenType.PREDICATES:
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (predicates before models/functions)";
             case TokenType.MODELS:
-                return "sections in order 'extensions', 'enums', 'models', 'functions' (models before functions)";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (models before functions)";
             case TokenType.FUNCTIONS:
-                return "sections in order 'extensions', 'enums', 'models', 'functions'";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions'";
             default:
                 return null;
         }
@@ -131,6 +135,41 @@ export class Parser {
             name: start.value,
             values,
             loc: this.loc(start),
+        };
+    }
+    parsePredicatesSection() {
+        this.expect(TokenType.PREDICATES, "'predicates'");
+        this.expect(TokenType.LBRACE, "'{'");
+        const predicates = [];
+        const names = new Set();
+        while (!this.check(TokenType.RBRACE)) {
+            predicates.push(this.parsePredicate(names));
+            this.match(TokenType.COMMA);
+        }
+        this.expect(TokenType.RBRACE, "'}'");
+        return predicates;
+    }
+    parsePredicate(existingNames) {
+        const nameToken = this.expect(TokenType.IDENT, 'predicate name');
+        if (existingNames.has(nameToken.value)) {
+            throw new ParseError(`unique predicate name, "${nameToken.value}" already defined`, nameToken, this.file);
+        }
+        existingNames.add(nameToken.value);
+        this.expect(TokenType.COLON, "':'");
+        const valueToken = this.current();
+        const value = this.parseValue();
+        if (value.kind !== 'StringLiteral' && value.kind !== 'TripleStringLiteral') {
+            throw new ParseError('string or triple-quoted string predicate body', valueToken, this.file);
+        }
+        const sql = value.value.trim();
+        if (sql.length === 0) {
+            throw new ParseError('non-empty predicate body', valueToken, this.file);
+        }
+        return {
+            kind: 'Predicate',
+            name: nameToken.value,
+            sql,
+            loc: this.loc(nameToken),
         };
     }
     parseModelsSection() {

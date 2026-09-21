@@ -8,7 +8,7 @@ export class PolicyGenerator {
     generate() {
         const modelsWithPolicies = this.schema.models.filter(hasPolicies);
         const policyEntries = modelsWithPolicies.map((model) => {
-            const policies = normalizePolicies(model);
+            const policies = normalizePolicies(model, this.schema.predicates);
             const serializedPolicies = policies.map((policy) => serializePolicy(policy)).join(',\n    ');
             return `  ${model.name}: [\n    ${serializedPolicies},\n  ]`;
         });

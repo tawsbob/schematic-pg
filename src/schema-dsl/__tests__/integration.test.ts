@@ -16,9 +16,19 @@ describe('Integration — schema fragments', () => {
     assert.equal(schema.kind, 'Schema');
   });
 
-  it('has 2 extensions, 2 enums, 10 models, and 2 functions', () => {
+  it('has 2 extensions, 2 enums, 2 predicates, 10 models, and 2 functions', () => {
     assert.equal(schema.extensions.length, 2);
     assert.equal(schema.enums.length, 2);
+    assert.equal(schema.predicates.length, 2);
+    assert.deepEqual(
+      schema.predicates.map((predicate) => predicate.name),
+      ['activeTeamMember', 'ownUser'],
+    );
+    assert.equal(schema.predicates.find((p) => p.name === 'ownUser')!.sql, 'id = {{auth.user.id}}');
+    assert.match(
+      schema.predicates.find((p) => p.name === 'activeTeamMember')!.sql,
+      /team_id IN \([\s\S]*is_active = true/,
+    );
     assert.equal(schema.models.length, 10);
     assert.equal(schema.functions.length, 2);
     assert.deepEqual(
@@ -114,5 +124,29 @@ describe('Integration — schema fragments', () => {
       return (getKvPair(kv, 'role').value as { name: string }).name;
     });
     assert.deepEqual(roles.sort(), ['ADMIN', 'USER']);
+  });
+
+  it('User select policy references the ownUser predicate', () => {
+    const user = schema.models.find((m) => m.name === 'User')!;
+    const policies = user.attributes.filter((a) => a.name === 'policy');
+    const userPolicy = policies.find((policy) => {
+      const kv = assertKeyValueArgs(policy.args);
+      return (getKvPair(kv, 'role').value as { name: string }).name === 'USER';
+    })!;
+    const where = getKvPair(assertKeyValueArgs(userPolicy.args), 'where').value;
+    assert.equal(where.kind, 'Identifier');
+    assert.equal((where as { name: string }).name, 'ownUser');
+  });
+
+  it('Note select policy references the multiline activeTeamMember predicate', () => {
+    const note = schema.models.find((m) => m.name === 'Note')!;
+    const policies = note.attributes.filter((a) => a.name === 'policy');
+    const userPolicy = policies.find((policy) => {
+      const kv = assertKeyValueArgs(policy.args);
+      return (getKvPair(kv, 'role').value as { name: string }).name === 'USER';
+    })!;
+    const where = getKvPair(assertKeyValueArgs(userPolicy.args), 'where').value;
+    assert.equal(where.kind, 'Identifier');
+    assert.equal((where as { name: string }).name, 'activeTeamMember');
   });
 });

@@ -1,4 +1,4 @@
-import type { Attribute, Model, Value } from '../../schema-dsl/ast.js';
+import type { Attribute, Model, Predicate, Value } from '../../schema-dsl/ast.js';
 import { assertKeyValueArgs, getKvPair, getOptionalKvPair } from '../../sql-generator/utils/ast-helpers.js';
 
 export const PUBLIC_ROLE = 'PUBLIC';
@@ -20,17 +20,25 @@ export interface NormalizedPolicy {
   where?: string;
 }
 
-export function normalizePolicies(model: Model): NormalizedPolicy[] {
+export function normalizePolicies(
+  model: Model,
+  predicates: Predicate[] = [],
+): NormalizedPolicy[] {
+  const predicateByName = new Map(predicates.map((predicate) => [predicate.name, predicate.sql]));
+
   return model.attributes
     .filter((attribute) => attribute.name === 'policy')
-    .map((attribute) => normalizePolicyAttribute(attribute));
+    .map((attribute) => normalizePolicyAttribute(attribute, predicateByName));
 }
 
 export function hasPolicies(model: Model): boolean {
   return model.attributes.some((attribute) => attribute.name === 'policy');
 }
 
-function normalizePolicyAttribute(attribute: Attribute): NormalizedPolicy {
+function normalizePolicyAttribute(
+  attribute: Attribute,
+  predicateByName: Map<string, string>,
+): NormalizedPolicy {
   const args = assertKeyValueArgs(attribute.args);
   const role = parseIdentifierValue(getKvPair(args, 'role').value, 'role');
   const allow = parseAllowOperations(getKvPair(args, 'allow').value);
@@ -39,10 +47,26 @@ function normalizePolicyAttribute(attribute: Attribute): NormalizedPolicy {
   const policy: NormalizedPolicy = { role, operations: allow };
 
   if (wherePair) {
-    policy.where = parseStringValue(wherePair.value, 'where');
+    policy.where = resolveWhereValue(wherePair.value, predicateByName);
   }
 
   return policy;
+}
+
+function resolveWhereValue(value: Value, predicateByName: Map<string, string>): string {
+  if (value.kind === 'StringLiteral' || value.kind === 'TripleStringLiteral') {
+    return value.value.trim();
+  }
+
+  if (value.kind === 'Identifier') {
+    const sql = predicateByName.get(value.name);
+    if (sql === undefined) {
+      throw new Error(`Unknown policy predicate "${value.name}"`);
+    }
+    return sql;
+  }
+
+  throw new Error('Policy where must be a string or predicate identifier');
 }
 
 function parseAllowOperations(value: Value): PolicyOperation[] | 'all' {
@@ -80,14 +104,6 @@ function parseIdentifierValue(value: Value, fieldName: string): string {
   }
 
   return value.name;
-}
-
-function parseStringValue(value: Value, fieldName: string): string {
-  if (value.kind === 'StringLiteral' || value.kind === 'TripleStringLiteral') {
-    return value.value.trim();
-  }
-
-  throw new Error(`Policy ${fieldName} must be a string`);
 }
 
 function isPolicyOperation(value: string): value is PolicyOperation {

@@ -12,8 +12,16 @@ export interface Schema {
   kind: 'Schema';
   extensions: Extension[];
   enums: Enum[];
+  predicates: Predicate[];
   models: Model[];
   functions: SqlFunction[];
+  loc: SourceLocation;
+}
+
+export interface Predicate {
+  kind: 'Predicate';
+  name: string;
+  sql: string;
   loc: SourceLocation;
 }
 

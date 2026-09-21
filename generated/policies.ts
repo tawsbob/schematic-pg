@@ -7,7 +7,7 @@ export const POLICIES: Record<string, NormalizedPolicy[]> = {
     { role: 'ADMIN', operations: 'all' },
   ],
   Note: [
-    { role: 'USER', operations: ['select', 'insert', 'update', 'delete'], where: "team_id IN (\n          SELECT team_id\n          FROM team_member\n          WHERE user_id = {{auth.user.id}}\n            AND is_active = true\n        )" },
+    { role: 'USER', operations: ['select', 'insert', 'update', 'delete'], where: "team_id IN (\n      SELECT team_id\n      FROM team_member\n      WHERE user_id = {{auth.user.id}}\n        AND is_active = true\n    )" },
     { role: 'ADMIN', operations: 'all' },
   ],
   User: [

@@ -9,6 +9,7 @@ describe('Parser — optional sections', () => {
 }`);
     assert.equal(schema.extensions.length, 0);
     assert.equal(schema.enums.length, 0);
+    assert.equal(schema.predicates.length, 0);
     assert.equal(schema.models.length, 1);
     assert.equal(schema.functions.length, 0);
   });
@@ -33,13 +34,31 @@ models {
     assert.equal(schema.models.length, 0);
   });
 
+  it('parses predicates between enums and models', () => {
+    const schema = parse(`enums {
+  Role { USER }
+}
+
+predicates {
+  ownUser: "id = {{auth.user.id}}"
+}
+
+models {
+  model User { id: UUID @id }
+}`);
+    assert.equal(schema.predicates.length, 1);
+    assert.equal(schema.predicates[0]!.name, 'ownUser');
+  });
+
   it('still accepts explicit empty sections', () => {
     const schema = parse(`extensions {}
 enums {}
+predicates {}
 models {
   model User { id: UUID @id }
 }
 functions {}`);
     assert.equal(schema.models.length, 1);
+    assert.equal(schema.predicates.length, 0);
   });
 });

@@ -1,6 +1,7 @@
 export enum TokenType {
   EXTENSIONS = 'EXTENSIONS',
   ENUMS = 'ENUMS',
+  PREDICATES = 'PREDICATES',
   MODELS = 'MODELS',
   MODEL = 'MODEL',
   FUNCTIONS = 'FUNCTIONS',
@@ -41,6 +42,7 @@ export interface Token {
 const KEYWORDS: Record<string, TokenType> = {
   extensions: TokenType.EXTENSIONS,
   enums: TokenType.ENUMS,
+  predicates: TokenType.PREDICATES,
   models: TokenType.MODELS,
   model: TokenType.MODEL,
   functions: TokenType.FUNCTIONS,

@@ -12,7 +12,7 @@ model User {
   role: UserRole @default(USER)
   // ...
 
-  @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")
+  @policy(role: USER, allow: [select], where: ownUser)
   @policy(role: ADMIN, allow: all)
 }
 ```
@@ -21,7 +21,7 @@ model User {
 |----------|------|-------------|
 | `role` | enum identifier | Role this policy applies to (must match a value in your schema enums, e.g. `UserRole`) |
 | `allow` | `all` or `[select, insert, update, delete]` | Operations permitted for this role |
-| `where` | string (optional) | PostgreSQL boolean predicate applied on read/update/delete/insert; supports `{{auth.*}}` templates |
+| `where` | string or predicate identifier (optional) | PostgreSQL boolean predicate applied on read/update/delete/insert; supports `{{auth.*}}` templates. An identifier must name an entry in the `predicates` section. |
 
 **Operations map to HTTP methods:**
 
@@ -114,7 +114,7 @@ Return `null` for anonymous callers; throw `UnauthorizedError` for invalid crede
 
 ## Where predicates
 
-Policy `where` is a developer-authored PostgreSQL boolean expression. Dynamic authentication values use `{{auth.*}}` placeholders and become query parameters:
+Policy `where` is a developer-authored PostgreSQL boolean expression, or a named entry from the `predicates` section. Dynamic authentication values use `{{auth.*}}` placeholders and become query parameters:
 
 ```ts
 where: "id = {{auth.user.id}}"
@@ -125,6 +125,25 @@ becomes conceptually:
 ```sql
 WHERE (id = $1)   -- $1 = authenticated user id
 ```
+
+### Named predicates
+
+Declare reusable SQL once in a `predicates` section (any fragment). Merge combines them by name. `@policy` may reference a predicate by identifier; codegen inlines the SQL into `generated/policies.ts`.
+
+```ts
+predicates {
+  ownUser: "id = {{auth.user.id}}"
+}
+
+model User {
+  id: UUID @id
+
+  @policy(role: USER, allow: [select], where: ownUser)
+  @policy(role: ADMIN, allow: all)
+}
+```
+
+Unknown predicate names fail merged-schema validation. Prefer unqualified column names when a predicate is shared across models.
 
 Arbitrary SQL expressions are supported, including `AND` / `OR`, `IN`, `EXISTS`, subqueries, functions, and casts. Use a triple-quoted string for multiline predicates:
 
