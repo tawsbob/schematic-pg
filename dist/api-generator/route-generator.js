@@ -5,6 +5,7 @@ import { toRouteBasePath, toRouteFileName, toRouteImportName } from '../api/util
 import { toModelConstantPrefix } from './utils/api-fields.js';
 import { hasPolicies } from './utils/policy.js';
 import { isRestEnabled, normalizeRest } from './utils/rest.js';
+import { generateViewRouteFiles, getViewRouteMountEntries } from './view-route-generator.js';
 export class RouteGenerator {
     model;
     schema;
@@ -364,6 +365,9 @@ export function generateRouteFiles(schema, modelsWithHooksOrOptions = new Set())
             files.set(generator.getRouteFileName(), content);
         }
     }
+    for (const [fileName, content] of generateViewRouteFiles(schema)) {
+        files.set(fileName, content);
+    }
     return files;
 }
 function normalizeRouteGeneratorOptions(value) {
@@ -381,7 +385,7 @@ function normalizeRouteGeneratorOptions(value) {
     return value;
 }
 export function getRouteMountEntries(schema, overlays = new Map()) {
-    return schema.models
+    const modelEntries = schema.models
         .filter((model) => isRestEnabled(model) || overlays.has(model.name))
         .map((model) => {
         const basePath = toRouteBasePath(model.name);
@@ -389,4 +393,5 @@ export function getRouteMountEntries(schema, overlays = new Map()) {
         const importName = toRouteImportName(basePath);
         return { basePath, fileName, importName };
     });
+    return [...modelEntries, ...getViewRouteMountEntries(schema)];
 }

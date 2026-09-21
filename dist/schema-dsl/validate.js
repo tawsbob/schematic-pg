@@ -1,3 +1,5 @@
+import { PRIMITIVE_TYPES } from './primitives.js';
+import { toTableName } from '../sql-generator/utils/snake-case.js';
 export class SchemaError extends Error {
     line;
     col;
@@ -23,6 +25,7 @@ export function validateSchema(schema) {
         validatePartitionSpec(model, model.partition, modelNames, partitionNames, 0);
     }
     validateIncomingForeignKeys(schema, modelNames);
+    validateViews(schema);
 }
 function validatePartitionSpec(model, spec, modelNames, partitionNames, depth) {
     if (depth > 1) {
@@ -323,4 +326,209 @@ function boundRank(bound, extreme) {
         return '\uffff';
     }
     return bound;
+}
+const VIEW_DISALLOWED_FIELD_ATTRS = new Set(['default', 'relation', 'unique']);
+const VIEW_ALLOWED_DIRECTIVES = new Set(['id', 'index']);
+const VIEW_READ_OPS = new Set(['list', 'get']);
+const VIEW_WRITE_OPS = new Set(['create', 'update', 'delete']);
+function validateViews(schema) {
+    const enumNames = new Set(schema.enums.map((enumDef) => enumDef.name));
+    const modelSqlNames = new Map(schema.models.map((model) => [toTableName(model.name), model.name]));
+    const viewSqlNames = new Map();
+    const viewNames = new Set();
+    for (const view of schema.views) {
+        if (viewNames.has(view.name)) {
+            throw new SchemaError(`duplicate view name "${view.name}"`, view.loc);
+        }
+        viewNames.add(view.name);
+        if (schema.models.some((model) => model.name === view.name)) {
+            throw new SchemaError(`view name "${view.name}" conflicts with model "${view.name}"`, view.loc);
+        }
+        const sqlName = toTableName(view.name);
+        const modelClash = modelSqlNames.get(sqlName);
+        if (modelClash) {
+            throw new SchemaError(`view "${view.name}" SQL name "${sqlName}" conflicts with model "${modelClash}"`, view.loc);
+        }
+        const viewClash = viewSqlNames.get(sqlName);
+        if (viewClash) {
+            throw new SchemaError(`view "${view.name}" SQL name "${sqlName}" conflicts with view "${viewClash}"`, view.loc);
+        }
+        viewSqlNames.set(sqlName, view.name);
+        if (view.columns.length === 0) {
+            throw new SchemaError(`view "${view.name}" requires at least one column`, view.loc);
+        }
+        if (!view.query || view.query.trim().length === 0) {
+            throw new SchemaError(`view "${view.name}" requires a non-empty as query`, view.loc);
+        }
+        const columnNames = new Set();
+        for (const column of view.columns) {
+            if (columnNames.has(column.name)) {
+                throw new SchemaError(`duplicate column "${column.name}" on view "${view.name}"`, column.loc);
+            }
+            columnNames.add(column.name);
+            const typeName = column.type.name;
+            if (!PRIMITIVE_TYPES.has(typeName) && !enumNames.has(typeName)) {
+                throw new SchemaError(`view column "${view.name}.${column.name}" type must be a primitive or enum, got "${typeName}"`, column.type.loc);
+            }
+            for (const attribute of column.attributes) {
+                if (VIEW_DISALLOWED_FIELD_ATTRS.has(attribute.name)) {
+                    throw new SchemaError(`@${attribute.name} is not allowed on view column "${view.name}.${column.name}"`, attribute.loc);
+                }
+            }
+        }
+        for (const directive of view.directives) {
+            if (!VIEW_ALLOWED_DIRECTIVES.has(directive.name)) {
+                throw new SchemaError(`@@${directive.name} is not allowed on view "${view.name}"`, directive.loc);
+            }
+            if (directive.name === 'index') {
+                if (!view.materialized) {
+                    throw new SchemaError(`@@index is only allowed on materialized views (view "${view.name}")`, directive.loc);
+                }
+                validateViewIndexFields(view, directive, columnNames);
+            }
+            if (directive.name === 'id') {
+                validateViewIdDirective(view, directive, columnNames);
+            }
+        }
+        validateViewRest(view);
+        validateViewPolicies(view);
+    }
+}
+function validateViewIndexFields(view, directive, columnNames) {
+    if (!directive.args || directive.args.kind !== 'KeyValueArgs' || !directive.args.pairs) {
+        throw new SchemaError(`@@index on view "${view.name}" requires fields`, directive.loc);
+    }
+    const fieldsPair = directive.args.pairs.find((pair) => pair.key === 'fields');
+    if (!fieldsPair || fieldsPair.value.kind !== 'ArrayLiteral') {
+        throw new SchemaError(`@@index on view "${view.name}" requires fields`, directive.loc);
+    }
+    for (const element of fieldsPair.value.elements) {
+        if (element.kind !== 'Identifier') {
+            throw new SchemaError(`@@index fields must be identifiers on view "${view.name}"`, directive.loc);
+        }
+        if (!columnNames.has(element.name)) {
+            throw new SchemaError(`@@index field "${element.name}" is not a column on view "${view.name}"`, directive.loc);
+        }
+    }
+}
+function validateViewIdDirective(view, directive, columnNames) {
+    if (!directive.args || directive.args.kind !== 'KeyValueArgs' || !directive.args.pairs) {
+        throw new SchemaError(`@@id on view "${view.name}" requires fields`, directive.loc);
+    }
+    const fieldsPair = directive.args.pairs.find((pair) => pair.key === 'fields');
+    if (!fieldsPair || fieldsPair.value.kind !== 'ArrayLiteral') {
+        throw new SchemaError(`@@id on view "${view.name}" requires fields`, directive.loc);
+    }
+    for (const element of fieldsPair.value.elements) {
+        if (element.kind !== 'Identifier') {
+            throw new SchemaError(`@@id fields must be identifiers on view "${view.name}"`, directive.loc);
+        }
+        if (!columnNames.has(element.name)) {
+            throw new SchemaError(`@@id field "${element.name}" is not a column on view "${view.name}"`, directive.loc);
+        }
+    }
+}
+function validateViewRest(view) {
+    const restAttributes = view.attributes.filter((attribute) => attribute.name === 'rest');
+    if (restAttributes.length > 1) {
+        throw new SchemaError(`view "${view.name}" has duplicate @rest attributes`, restAttributes[1].loc);
+    }
+    const rest = restAttributes[0];
+    const operations = rest
+        ? parseViewRestOperations(view, rest)
+        : new Set(VIEW_READ_OPS);
+    for (const operation of operations) {
+        if (VIEW_WRITE_OPS.has(operation)) {
+            throw new SchemaError(`@rest on view "${view.name}" cannot include write operation "${operation}"`, rest?.loc ?? view.loc);
+        }
+        if (!VIEW_READ_OPS.has(operation)) {
+            throw new SchemaError(`unknown @rest operation "${operation}" on view "${view.name}"`, rest?.loc ?? view.loc);
+        }
+    }
+    if (operations.has('get') && !viewHasPrimaryKey(view)) {
+        throw new SchemaError(`@rest get on view "${view.name}" requires @id or @@id`, rest?.loc ?? view.loc);
+    }
+}
+function viewHasPrimaryKey(view) {
+    if (view.directives.some((directive) => directive.name === 'id')) {
+        return true;
+    }
+    if (view.attributes.some((attribute) => attribute.name === 'id')) {
+        return true;
+    }
+    return view.columns.some((column) => column.attributes.some((attribute) => attribute.name === 'id'));
+}
+function parseViewRestOperations(view, rest) {
+    if (!rest.args) {
+        return new Set();
+    }
+    if (rest.args.kind === 'ExpressionArgs') {
+        if (rest.args.expressions.length === 1 && rest.args.expressions[0]?.kind === 'BooleanLiteral') {
+            if (rest.args.expressions[0].value === false) {
+                return new Set();
+            }
+            return new Set(VIEW_READ_OPS);
+        }
+        throw new SchemaError(`@rest on view "${view.name}" expects false, only, or except`, rest.loc);
+    }
+    const onlyPair = rest.args.pairs.find((pair) => pair.key === 'only');
+    const exceptPair = rest.args.pairs.find((pair) => pair.key === 'except');
+    if (onlyPair && exceptPair) {
+        throw new SchemaError(`@rest on view "${view.name}" cannot mix only and except`, rest.loc);
+    }
+    if (!onlyPair && !exceptPair) {
+        throw new SchemaError(`@rest on view "${view.name}" requires only, except, or false`, rest.loc);
+    }
+    if (onlyPair) {
+        if (onlyPair.value.kind !== 'ArrayLiteral') {
+            throw new SchemaError(`@rest only on view "${view.name}" must be an array`, rest.loc);
+        }
+        return new Set(onlyPair.value.elements.map((element) => {
+            if (element.kind !== 'Identifier') {
+                throw new SchemaError(`@rest operation on view "${view.name}" must be an identifier`, rest.loc);
+            }
+            return element.name.toLowerCase();
+        }));
+    }
+    if (exceptPair.value.kind !== 'ArrayLiteral') {
+        throw new SchemaError(`@rest except on view "${view.name}" must be an array`, rest.loc);
+    }
+    const excluded = new Set(exceptPair.value.elements.map((element) => {
+        if (element.kind !== 'Identifier') {
+            throw new SchemaError(`@rest operation on view "${view.name}" must be an identifier`, rest.loc);
+        }
+        return element.name.toLowerCase();
+    }));
+    return new Set([...VIEW_READ_OPS].filter((operation) => !excluded.has(operation)));
+}
+function validateViewPolicies(view) {
+    for (const attribute of view.attributes) {
+        if (attribute.name !== 'policy') {
+            continue;
+        }
+        if (!attribute.args || attribute.args.kind !== 'KeyValueArgs') {
+            throw new SchemaError(`@policy on view "${view.name}" requires key-value args`, attribute.loc);
+        }
+        const allowPair = attribute.args.pairs.find((pair) => pair.key === 'allow');
+        if (!allowPair) {
+            throw new SchemaError(`@policy on view "${view.name}" requires allow`, attribute.loc);
+        }
+        if (allowPair.value.kind === 'Identifier') {
+            if (allowPair.value.name !== 'all' && allowPair.value.name !== 'select') {
+                throw new SchemaError(`@policy on view "${view.name}" allow must be select or all`, allowPair.loc ?? attribute.loc);
+            }
+            continue;
+        }
+        if (allowPair.value.kind !== 'ArrayLiteral') {
+            throw new SchemaError(`@policy on view "${view.name}" allow must be select, all, or an array`, allowPair.loc ?? attribute.loc);
+        }
+        for (const element of allowPair.value.elements) {
+            if (element.kind !== 'Identifier') {
+                throw new SchemaError(`@policy operation on view "${view.name}" must be an identifier`, allowPair.loc ?? attribute.loc);
+            }
+            if (element.name.toLowerCase() !== 'select') {
+                throw new SchemaError(`@policy on view "${view.name}" allow may only include select`, allowPair.loc ?? attribute.loc);
+            }
+        }
+    }
 }

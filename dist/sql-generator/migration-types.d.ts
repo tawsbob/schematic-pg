@@ -1,4 +1,4 @@
-export type Migration = CreateExtension | DropExtension | CreateTable | DropTable | AddColumn | DropColumn | AlterColumn | CreateIndex | DropIndex | CreateEnum | AddEnumValue | AddConstraint | DropConstraint | CreateFunction | ReplaceFunction | DropFunction | CreateTrigger | DropTrigger | CreatePartition | DropPartition | ConvertToPartitioned | ConvertFromPartitioned;
+export type Migration = CreateExtension | DropExtension | CreateTable | DropTable | AddColumn | DropColumn | AlterColumn | CreateIndex | DropIndex | CreateEnum | AddEnumValue | AddConstraint | DropConstraint | CreateFunction | ReplaceFunction | DropFunction | CreateTrigger | DropTrigger | CreatePartition | DropPartition | ConvertToPartitioned | ConvertFromPartitioned | CreateView | ReplaceView | DropView | CreateMaterializedView | DropMaterializedView;
 export interface CreateTable {
     kind: 'CreateTable';
     modelName: string;
@@ -116,4 +116,24 @@ export interface ConvertToPartitioned {
 export interface ConvertFromPartitioned {
     kind: 'ConvertFromPartitioned';
     modelName: string;
+}
+export interface CreateView {
+    kind: 'CreateView';
+    viewName: string;
+}
+export interface ReplaceView {
+    kind: 'ReplaceView';
+    viewName: string;
+}
+export interface DropView {
+    kind: 'DropView';
+    viewName: string;
+}
+export interface CreateMaterializedView {
+    kind: 'CreateMaterializedView';
+    viewName: string;
+}
+export interface DropMaterializedView {
+    kind: 'DropMaterializedView';
+    viewName: string;
 }

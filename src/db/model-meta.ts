@@ -1,4 +1,4 @@
-import type { Field, Model, Schema, TypeExpr } from '../schema-dsl/ast.js';
+import type { Field, Model, Schema, TypeExpr, View } from '../schema-dsl/ast.js';
 import {
   fieldHasAttribute,
   getModelNames,
@@ -74,6 +74,10 @@ export function buildModelMeta(model: Model, schema: Schema): ModelMeta {
   return hydrateModelMeta(buildModelMetaSnapshot(model, schema));
 }
 
+export function buildViewMeta(view: View, schema: Schema): ModelMeta {
+  return hydrateModelMeta(buildViewMetaSnapshot(view, schema));
+}
+
 export function buildModelMetaSnapshot(model: Model, schema: Schema): ModelMetaSnapshot {
   const modelNames = getModelNames(schema);
   const enumNames = new Set(schema.enums.map((enumDef) => enumDef.name));
@@ -98,6 +102,27 @@ export function buildModelMetaSnapshot(model: Model, schema: Schema): ModelMetaS
   };
 }
 
+export function buildViewMetaSnapshot(view: View, schema: Schema): ModelMetaSnapshot {
+  const enumNames = new Set(schema.enums.map((enumDef) => enumDef.name));
+  const primaryKey = getPrimaryKey(view);
+  const primaryKeyFields = primaryKey?.fields ?? [];
+
+  const fields = view.columns.map((field) => toFieldMeta(field, enumNames, primaryKeyFields));
+  const fieldByName = Object.fromEntries(fields.map((field) => [field.name, field]));
+  const columnToField = Object.fromEntries(fields.map((field) => [field.columnName, field.name]));
+
+  return {
+    name: view.name,
+    tableName: toTableName(view.name),
+    quotedTableName: quoteTable(view.name),
+    primaryKeyFields,
+    fields,
+    fieldByName,
+    columnToField,
+    relations: [],
+  };
+}
+
 export function hydrateModelMeta(snapshot: ModelMetaSnapshot): ModelMeta {
   const relations = snapshot.relations ?? [];
 
@@ -111,7 +136,10 @@ export function hydrateModelMeta(snapshot: ModelMetaSnapshot): ModelMeta {
 }
 
 export function buildModelMetas(schema: Schema): ModelMeta[] {
-  return schema.models.map((model) => buildModelMeta(model, schema));
+  return [
+    ...schema.models.map((model) => buildModelMeta(model, schema)),
+    ...schema.views.map((view) => buildViewMeta(view, schema)),
+  ];
 }
 
 function toFieldMeta(field: Field, enumNames: Set<string>, primaryKeyFields: string[]): FieldMeta {

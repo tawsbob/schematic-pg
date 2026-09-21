@@ -42,7 +42,10 @@ export function discoverCustomRoutes(customRoutesDir) {
     return entries.sort((left, right) => left.basePath.localeCompare(right.basePath));
 }
 export function partitionCustomRoutes(entries, schema) {
-    const modelBasePaths = new Map(schema.models.map((model) => [toRouteBasePath(model.name), model.name]));
+    const modelBasePaths = new Map([
+        ...schema.models.map((model) => [toRouteBasePath(model.name), model.name]),
+        ...schema.views.map((view) => [toRouteBasePath(view.name), view.name]),
+    ]);
     const overlays = new Map();
     const standalone = [];
     for (const entry of entries) {

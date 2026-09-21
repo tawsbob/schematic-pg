@@ -9,7 +9,9 @@ export class MigrationPlanner {
         migrations.push(...this.diffModels(oldSchema, newSchema));
         migrations.push(...this.diffPartitions(oldSchema, newSchema));
         migrations.push(...this.diffConstraints(oldSchema, newSchema));
-        migrations.push(...this.diffIndexes(oldSchema, newSchema));
+        const viewMigrations = this.diffViews(oldSchema, newSchema);
+        migrations.push(...viewMigrations);
+        migrations.push(...this.diffIndexes(oldSchema, newSchema, viewMigrations));
         migrations.push(...this.diffFunctions(oldSchema, newSchema));
         migrations.push(...this.diffTriggers(oldSchema, newSchema));
         return this.suppressMigrationsCoveredByConvert(migrations);
@@ -254,7 +256,7 @@ export class MigrationPlanner {
         }
         return migrations;
     }
-    diffIndexes(oldSchema, newSchema) {
+    diffIndexes(oldSchema, newSchema, viewMigrations) {
         const migrations = [];
         const oldModels = new Map(oldSchema.models.map((model) => [model.name, model]));
         const newModels = new Map(newSchema.models.map((model) => [model.name, model]));
@@ -277,7 +279,82 @@ export class MigrationPlanner {
                 }
             }
         }
+        const recreatedMatviews = new Set(viewMigrations
+            .filter((migration) => migration.kind === 'CreateMaterializedView' ||
+            migration.kind === 'DropMaterializedView')
+            .map((migration) => migration.viewName));
+        const oldViews = new Map(oldSchema.views.map((view) => [view.name, view]));
+        const newViews = new Map(newSchema.views.map((view) => [view.name, view]));
+        for (const [viewName, newView] of newViews) {
+            if (!newView.materialized || recreatedMatviews.has(viewName)) {
+                continue;
+            }
+            const oldView = oldViews.get(viewName);
+            if (!oldView?.materialized) {
+                continue;
+            }
+            const oldIndexes = this.indexSignatures(oldView, oldModelNames);
+            const newIndexes = this.indexSignatures(newView, newModelNames);
+            for (const signature of newIndexes) {
+                if (!oldIndexes.has(signature)) {
+                    migrations.push({ kind: 'CreateIndex', modelName: viewName, signature });
+                }
+            }
+            for (const signature of oldIndexes) {
+                if (!newIndexes.has(signature)) {
+                    migrations.push({ kind: 'DropIndex', modelName: viewName, signature });
+                }
+            }
+        }
         return migrations;
+    }
+    diffViews(oldSchema, newSchema) {
+        const migrations = [];
+        const oldEnumNames = getEnumNames(oldSchema);
+        const newEnumNames = getEnumNames(newSchema);
+        const oldViews = new Map(oldSchema.views.map((view) => [view.name, view]));
+        const newViews = new Map(newSchema.views.map((view) => [view.name, view]));
+        for (const [viewName, newView] of newViews) {
+            const oldView = oldViews.get(viewName);
+            if (!oldView) {
+                migrations.push(newView.materialized
+                    ? { kind: 'CreateMaterializedView', viewName }
+                    : { kind: 'CreateView', viewName });
+                continue;
+            }
+            const kindChanged = oldView.materialized !== newView.materialized;
+            const columnsChanged = this.viewColumnSignature(oldView, oldEnumNames) !==
+                this.viewColumnSignature(newView, newEnumNames);
+            const queryChanged = oldView.query.trim() !== newView.query.trim();
+            if (kindChanged || columnsChanged || (newView.materialized && queryChanged)) {
+                migrations.push(oldView.materialized
+                    ? { kind: 'DropMaterializedView', viewName }
+                    : { kind: 'DropView', viewName });
+                migrations.push(newView.materialized
+                    ? { kind: 'CreateMaterializedView', viewName }
+                    : { kind: 'CreateView', viewName });
+                continue;
+            }
+            if (!newView.materialized && queryChanged) {
+                migrations.push({ kind: 'ReplaceView', viewName });
+            }
+        }
+        for (const [viewName, oldView] of oldViews) {
+            if (!newViews.has(viewName)) {
+                migrations.push(oldView.materialized
+                    ? { kind: 'DropMaterializedView', viewName }
+                    : { kind: 'DropView', viewName });
+            }
+        }
+        return migrations;
+    }
+    viewColumnSignature(view, enumNames) {
+        return JSON.stringify(view.columns.map((column) => ({
+            name: column.name,
+            type: serializeColumnType(column.type, enumNames),
+            optional: Boolean(column.type.optional),
+            array: Boolean(column.type.array),
+        })));
     }
     diffTriggers(oldSchema, newSchema) {
         const migrations = [];
@@ -345,8 +422,8 @@ export class MigrationPlanner {
     triggerSignatures(model) {
         return new Set(getDirectives(model, 'trigger').map((directive) => JSON.stringify(normalizeTriggerDirective(directive))));
     }
-    indexSignatures(model, modelNames) {
-        return new Set(getDirectives(model, 'index').map((directive) => JSON.stringify(normalizeIndexDirective(directive, model, modelNames))));
+    indexSignatures(relation, modelNames) {
+        return new Set(getDirectives(relation, 'index').map((directive) => JSON.stringify(normalizeIndexDirective(directive, relation, modelNames))));
     }
     suppressMigrationsCoveredByConvert(migrations) {
         const convertedModels = new Set(migrations

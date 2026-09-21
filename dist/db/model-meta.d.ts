@@ -1,4 +1,4 @@
-import type { Model, Schema, TypeExpr } from '../schema-dsl/ast.js';
+import type { Model, Schema, TypeExpr, View } from '../schema-dsl/ast.js';
 export type RelationKind = 'belongsTo' | 'hasOne' | 'hasMany';
 export interface RelationMeta {
     name: string;
@@ -44,6 +44,8 @@ export interface ModelMeta {
     relationByName: Map<string, RelationMeta>;
 }
 export declare function buildModelMeta(model: Model, schema: Schema): ModelMeta;
+export declare function buildViewMeta(view: View, schema: Schema): ModelMeta;
 export declare function buildModelMetaSnapshot(model: Model, schema: Schema): ModelMetaSnapshot;
+export declare function buildViewMetaSnapshot(view: View, schema: Schema): ModelMetaSnapshot;
 export declare function hydrateModelMeta(snapshot: ModelMetaSnapshot): ModelMeta;
 export declare function buildModelMetas(schema: Schema): ModelMeta[];

@@ -1,6 +1,7 @@
 import type { AttributeArgs, Schema, SourceLocation } from './ast.js';
 import { PRIMITIVE_TYPES } from './primitives.js';
 import { SchemaError } from './validate.js';
+import { toTableName } from '../sql-generator/utils/snake-case.js';
 
 function formatFile(loc: SourceLocation): string {
   return loc.file ?? '<unknown>';
@@ -42,9 +43,33 @@ function validateDuplicateNames(schema: Schema): void {
     schema.models.map((model) => ({ name: model.name, loc: model.loc })),
   );
   findDuplicateNames(
+    'view',
+    schema.views.map((view) => ({ name: view.name, loc: view.loc })),
+  );
+  findDuplicateNames(
     'function',
     schema.functions.map((fn) => ({ name: fn.name, loc: fn.loc })),
   );
+
+  const modelBySqlName = new Map(
+    schema.models.map((model) => [toTableName(model.name), model]),
+  );
+  for (const view of schema.views) {
+    const sqlName = toTableName(view.name);
+    const model = modelBySqlName.get(sqlName);
+    if (model) {
+      throw new SchemaError(
+        `view "${view.name}" SQL name "${sqlName}" conflicts with model "${model.name}" (also declared in ${formatFile(model.loc)})`,
+        view.loc,
+      );
+    }
+    if (schema.models.some((candidate) => candidate.name === view.name)) {
+      throw new SchemaError(
+        `view name "${view.name}" conflicts with model "${view.name}"`,
+        view.loc,
+      );
+    }
+  }
 }
 
 function validateUnknownTypeNames(schema: Schema): void {
@@ -65,6 +90,20 @@ function validateUnknownTypeNames(schema: Schema): void {
       throw new SchemaError(
         `unknown type "${typeName}" on field "${model.name}.${field.name}"`,
         field.type.loc,
+      );
+    }
+  }
+
+  for (const view of schema.views) {
+    for (const column of view.columns) {
+      const typeName = column.type.name;
+      if (PRIMITIVE_TYPES.has(typeName) || enumNames.has(typeName)) {
+        continue;
+      }
+
+      throw new SchemaError(
+        `unknown type "${typeName}" on view column "${view.name}.${column.name}"`,
+        column.type.loc,
       );
     }
   }
@@ -96,6 +135,27 @@ function validatePolicyPredicateReferences(schema: Schema): void {
       if (!predicateNames.has(predicateName)) {
         throw new SchemaError(
           `unknown predicate "${predicateName}" referenced by @policy on model "${model.name}"`,
+          wherePair.loc ?? attribute.loc,
+        );
+      }
+    }
+  }
+
+  for (const view of schema.views) {
+    for (const attribute of view.attributes) {
+      if (attribute.name !== 'policy') {
+        continue;
+      }
+
+      const wherePair = getPolicyWherePair(attribute.args);
+      if (!wherePair || wherePair.value.kind !== 'Identifier') {
+        continue;
+      }
+
+      const predicateName = wherePair.value.name;
+      if (!predicateNames.has(predicateName)) {
+        throw new SchemaError(
+          `unknown predicate "${predicateName}" referenced by @policy on view "${view.name}"`,
           wherePair.loc ?? attribute.loc,
         );
       }

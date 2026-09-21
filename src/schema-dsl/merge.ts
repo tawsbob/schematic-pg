@@ -6,6 +6,7 @@ import type {
   Schema,
   SourceLocation,
   SqlFunction,
+  View,
 } from './ast.js';
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
@@ -56,6 +57,7 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
   const enumEntries: Array<{ item: Enum; source: string }> = [];
   const predicateEntries: Array<{ item: Predicate; source: string }> = [];
   const modelEntries: Array<{ item: Model; source: string }> = [];
+  const viewEntries: Array<{ item: View; source: string }> = [];
   const functionEntries: Array<{ item: SqlFunction; source: string }> = [];
 
   for (const fragment of fragments) {
@@ -71,6 +73,9 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     for (const item of fragment.schema.models) {
       modelEntries.push({ item, source: fragment.source });
     }
+    for (const item of fragment.schema.views) {
+      viewEntries.push({ item, source: fragment.source });
+    }
     for (const item of fragment.schema.functions) {
       functionEntries.push({ item, source: fragment.source });
     }
@@ -80,12 +85,14 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
   enumEntries.sort((left, right) => byName(left.item, right.item));
   predicateEntries.sort((left, right) => byName(left.item, right.item));
   modelEntries.sort((left, right) => byName(left.item, right.item));
+  viewEntries.sort((left, right) => byName(left.item, right.item));
   functionEntries.sort((left, right) => byName(left.item, right.item));
 
   const extensions = extensionEntries.map((entry) => entry.item);
   const enums = enumEntries.map((entry) => entry.item);
   const predicates = predicateEntries.map((entry) => entry.item);
   const models = modelEntries.map((entry) => entry.item);
+  const views = viewEntries.map((entry) => entry.item);
   const functions = functionEntries.map((entry) => entry.item);
 
   const schema: Schema = {
@@ -94,6 +101,7 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     enums,
     predicates,
     models,
+    views,
     functions,
     loc: {
       line: 1,
@@ -119,6 +127,10 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     formatSection(
       'models',
       modelEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc)),
+    ),
+    formatSection(
+      'views',
+      viewEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc)),
     ),
     formatSection(
       'functions',

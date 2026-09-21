@@ -5,6 +5,9 @@ export var TokenType;
     TokenType["PREDICATES"] = "PREDICATES";
     TokenType["MODELS"] = "MODELS";
     TokenType["MODEL"] = "MODEL";
+    TokenType["VIEWS"] = "VIEWS";
+    TokenType["VIEW"] = "VIEW";
+    TokenType["MATERIALIZED"] = "MATERIALIZED";
     TokenType["FUNCTIONS"] = "FUNCTIONS";
     TokenType["FUNCTION"] = "FUNCTION";
     TokenType["STRING"] = "STRING";
@@ -31,6 +34,9 @@ const KEYWORDS = {
     predicates: TokenType.PREDICATES,
     models: TokenType.MODELS,
     model: TokenType.MODEL,
+    views: TokenType.VIEWS,
+    view: TokenType.VIEW,
+    materialized: TokenType.MATERIALIZED,
     functions: TokenType.FUNCTIONS,
     function: TokenType.FUNCTION,
     true: TokenType.BOOLEAN,

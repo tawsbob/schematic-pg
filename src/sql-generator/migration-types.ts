@@ -20,7 +20,12 @@ export type Migration =
   | CreatePartition
   | DropPartition
   | ConvertToPartitioned
-  | ConvertFromPartitioned;
+  | ConvertFromPartitioned
+  | CreateView
+  | ReplaceView
+  | DropView
+  | CreateMaterializedView
+  | DropMaterializedView;
 
 export interface CreateTable {
   kind: 'CreateTable';
@@ -151,4 +156,29 @@ export interface ConvertToPartitioned {
 export interface ConvertFromPartitioned {
   kind: 'ConvertFromPartitioned';
   modelName: string;
+}
+
+export interface CreateView {
+  kind: 'CreateView';
+  viewName: string;
+}
+
+export interface ReplaceView {
+  kind: 'ReplaceView';
+  viewName: string;
+}
+
+export interface DropView {
+  kind: 'DropView';
+  viewName: string;
+}
+
+export interface CreateMaterializedView {
+  kind: 'CreateMaterializedView';
+  viewName: string;
+}
+
+export interface DropMaterializedView {
+  kind: 'DropMaterializedView';
+  viewName: string;
 }

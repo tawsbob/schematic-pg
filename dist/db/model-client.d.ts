@@ -39,3 +39,12 @@ export interface ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy> {
     }>;
 }
 export declare function createModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>(model: ModelMeta, executor: Queryable, registry?: ModelRegistry): ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>;
+export interface ReadOnlyModelClient<T, TWhere, TOrderBy> {
+    findUnique(where: Record<string, unknown>, args?: Omit<SelectArgs<TWhere, TOrderBy>, 'where'>): Promise<T | null>;
+    findFirst(args?: SelectArgs<TWhere, TOrderBy>): Promise<T | null>;
+    findMany(args?: SelectArgs<TWhere, TOrderBy>): Promise<T[]>;
+    count(args?: {
+        where?: TWhere;
+    }): Promise<number>;
+}
+export declare function createReadOnlyModelClient<T, TWhere, TOrderBy>(model: ModelMeta, executor: Queryable): ReadOnlyModelClient<T, TWhere, TOrderBy>;

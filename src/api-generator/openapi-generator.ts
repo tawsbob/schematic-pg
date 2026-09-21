@@ -1,4 +1,4 @@
-import type { Field, Model, Schema, TypeExpr } from '../schema-dsl/ast.js';
+import type { Field, Model, Schema, TypeExpr, View } from '../schema-dsl/ast.js';
 import { toRouteBasePath } from '../api/utils/route-naming.js';
 import {
   fieldHasAttribute,
@@ -14,7 +14,7 @@ import {
   isStoredScalarField,
 } from './utils/api-fields.js';
 import { buildFilterFieldMeta, queryParamKey, type FilterOperator } from './utils/filter-operators.js';
-import { hasRestOperation, isRestEnabled } from './utils/rest.js';
+import { hasRestOperation, hasViewRestOperation, isRestEnabled, isViewRestEnabled } from './utils/rest.js';
 
 export interface OpenApiGeneratorOptions {
   includeAuthPaths?: boolean;
@@ -110,6 +110,14 @@ export class OpenApiGenerator {
       }
       Object.assign(schemas, this.buildModelComponentSchemas(model));
       Object.assign(paths, this.buildModelPaths(model));
+    }
+
+    for (const view of this.schema.views) {
+      if (!isViewRestEnabled(view)) {
+        continue;
+      }
+      Object.assign(schemas, this.buildViewComponentSchemas(view));
+      Object.assign(paths, this.buildViewPaths(view));
     }
 
     if (this.options.includeAuthPaths) {
@@ -224,6 +232,98 @@ export class OpenApiGenerator {
     }
 
     return schemas;
+  }
+
+  private buildViewComponentSchemas(view: View): Record<string, JsonSchema> {
+    const responseProps: Record<string, JsonSchema> = {};
+    const responseRequired: string[] = [];
+    const omitted = new Set(getOmittedFields(view, this.schema).map((field) => field.name));
+
+    for (const field of view.columns) {
+      if (omitted.has(field.name)) {
+        continue;
+      }
+      responseProps[field.name] = this.fieldToOpenApiSchema(field, {
+        nullable: Boolean(field.type.optional),
+      });
+      if (!field.type.optional) {
+        responseRequired.push(field.name);
+      }
+    }
+
+    return {
+      [`${view.name}Response`]: {
+        type: 'object',
+        properties: responseProps,
+        ...(responseRequired.length > 0 ? { required: responseRequired } : {}),
+      },
+    };
+  }
+
+  private buildViewPaths(view: View): Record<string, OpenApiPathItem> {
+    const basePath = toRouteBasePath(view.name);
+    const collectionPath = `/${basePath}`;
+    const primaryKey = getPrimaryKey(view);
+    const pkFields = primaryKey?.fields ?? [];
+    const itemPathSegments = pkFields.map((field) => `{${field}}`);
+    const itemPath =
+      itemPathSegments.length > 0
+        ? `${collectionPath}/${itemPathSegments.join('/')}`
+        : collectionPath;
+
+    const responseRef = { $ref: `#/components/schemas/${view.name}Response` };
+    const tag = view.name;
+    const paths: Record<string, OpenApiPathItem> = {};
+
+    const collectionOps: OpenApiPathItem = {};
+    if (hasViewRestOperation(view, 'list')) {
+      collectionOps.get = {
+        tags: [tag],
+        summary: `List ${view.name}`,
+        operationId: `list${view.name}`,
+        security: OPTIONAL_BEARER_SECURITY,
+        parameters: this.buildListQueryParameters(view),
+        responses: {
+          '200': {
+            description: `List of ${view.name}`,
+            content: jsonContent({ type: 'array', items: responseRef }),
+          },
+          '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
+          '401': errorResponse('Unauthorized'),
+          '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
+          '500': errorResponse('Internal server error'),
+        },
+      };
+    }
+    if (Object.keys(collectionOps).length > 0) {
+      paths[collectionPath] = collectionOps;
+    }
+
+    if (pkFields.length > 0 && hasViewRestOperation(view, 'get')) {
+      const pathParams = this.buildPathParameters(pkFields, view);
+      paths[itemPath] = {
+        get: {
+          tags: [tag],
+          summary: `Get ${view.name}`,
+          operationId: `get${view.name}`,
+          security: OPTIONAL_BEARER_SECURITY,
+          parameters: pathParams,
+          responses: {
+            '200': {
+              description: view.name,
+              content: jsonContent(responseRef),
+            },
+            '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
+            '401': errorResponse('Unauthorized'),
+            '403': errorResponse('Forbidden', ERROR_EXAMPLE_FORBIDDEN),
+            '404': errorResponse('Not found'),
+            '500': errorResponse('Internal server error'),
+          },
+        },
+      };
+    }
+
+    return paths;
   }
 
   private buildModelPaths(model: Model): Record<string, OpenApiPathItem> {
@@ -368,7 +468,7 @@ export class OpenApiGenerator {
     return paths;
   }
 
-  private buildListQueryParameters(model: Model): OpenApiParameter[] {
+  private buildListQueryParameters(model: Model | View): OpenApiParameter[] {
     const filterableFields = getFilterableFields(model, this.schema);
     const sortableFields = getSortableFieldNames(model, this.schema);
     const parameters: OpenApiParameter[] = [];
@@ -412,8 +512,11 @@ export class OpenApiGenerator {
         schema: { type: 'string' },
         description: `Sort field (prefix with - for desc). Allowed: ${sortableFields.join(', ') || '(none)'}`,
       },
-      this.buildIncludeParameter(model),
     );
+
+    if (model.kind === 'Model') {
+      parameters.push(this.buildIncludeParameter(model));
+    }
 
     return parameters;
   }
@@ -432,9 +535,10 @@ export class OpenApiGenerator {
     };
   }
 
-  private buildPathParameters(pkFieldNames: string[], model: Model): OpenApiParameter[] {
+  private buildPathParameters(pkFieldNames: string[], model: Model | View): OpenApiParameter[] {
     const modelNames = getModelNames(this.schema);
-    const storedFields = getStoredFields(model, modelNames);
+    const storedFields =
+      model.kind === 'View' ? model.columns : getStoredFields(model, modelNames);
     return pkFieldNames.map((name) => {
       const field = storedFields.find((candidate) => candidate.name === name);
       return {

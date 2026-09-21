@@ -11,6 +11,8 @@ export declare class MigrationPlanner {
     private diffField;
     private diffConstraints;
     private diffIndexes;
+    private diffViews;
+    private viewColumnSignature;
     private diffTriggers;
     private diffFunctions;
     private triggerSignatures;

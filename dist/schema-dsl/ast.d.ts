@@ -13,6 +13,7 @@ export interface Schema {
     enums: Enum[];
     predicates: Predicate[];
     models: Model[];
+    views: View[];
     functions: SqlFunction[];
     loc: SourceLocation;
 }
@@ -41,6 +42,16 @@ export interface Model {
     attributes: Attribute[];
     directives: Directive[];
     partition?: PartitionSpec;
+    loc: SourceLocation;
+}
+export interface View {
+    kind: 'View';
+    name: string;
+    materialized: boolean;
+    columns: Field[];
+    query: string;
+    attributes: Attribute[];
+    directives: Directive[];
     loc: SourceLocation;
 }
 export type PartitionStrategy = 'RANGE' | 'LIST' | 'HASH';

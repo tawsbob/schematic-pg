@@ -32,6 +32,7 @@ export class Parser {
         const enums = this.check(TokenType.ENUMS) ? this.parseEnumsSection() : [];
         const predicates = this.check(TokenType.PREDICATES) ? this.parsePredicatesSection() : [];
         const models = this.check(TokenType.MODELS) ? this.parseModelsSection() : [];
+        const views = this.check(TokenType.VIEWS) ? this.parseViewsSection() : [];
         const functions = this.check(TokenType.FUNCTIONS) ? this.parseFunctionsSection() : [];
         if (!this.isAtEnd()) {
             const unexpected = this.current();
@@ -44,6 +45,7 @@ export class Parser {
             enums,
             predicates,
             models,
+            views,
             functions,
             loc: this.loc(start),
         };
@@ -51,15 +53,17 @@ export class Parser {
     sectionOrderHint(type) {
         switch (type) {
             case TokenType.EXTENSIONS:
-                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (extensions must come first)";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (extensions must come first)";
             case TokenType.ENUMS:
-                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (enums before predicates/models/functions)";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (enums before predicates/models/views/functions)";
             case TokenType.PREDICATES:
-                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (predicates before models/functions)";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (predicates before models/views/functions)";
             case TokenType.MODELS:
-                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions' (models before functions)";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (models before views/functions)";
+            case TokenType.VIEWS:
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (views before functions)";
             case TokenType.FUNCTIONS:
-                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'functions'";
+                return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions'";
             default:
                 return null;
         }
@@ -181,6 +185,93 @@ export class Parser {
         }
         this.expect(TokenType.RBRACE, "'}'");
         return models;
+    }
+    parseViewsSection() {
+        this.expect(TokenType.VIEWS, "'views'");
+        this.expect(TokenType.LBRACE, "'{'");
+        const views = [];
+        const names = new Set();
+        while (!this.check(TokenType.RBRACE)) {
+            views.push(this.parseView(names));
+        }
+        this.expect(TokenType.RBRACE, "'}'");
+        return views;
+    }
+    parseView(existingNames) {
+        const start = this.current();
+        let materialized = false;
+        if (this.check(TokenType.MATERIALIZED)) {
+            this.advance();
+            this.expect(TokenType.VIEW, "'view'");
+            materialized = true;
+        }
+        else {
+            this.expect(TokenType.VIEW, "'view'");
+        }
+        const nameToken = this.expect(TokenType.IDENT, 'view name');
+        if (existingNames?.has(nameToken.value)) {
+            throw new ParseError(`unique view name, "${nameToken.value}" already defined`, nameToken, this.file);
+        }
+        existingNames?.add(nameToken.value);
+        this.expect(TokenType.LBRACE, "'{'");
+        const body = this.parseViewBody(nameToken.value, materialized);
+        this.expect(TokenType.RBRACE, "'}'");
+        return {
+            ...body,
+            loc: this.loc(start),
+        };
+    }
+    parseViewBody(name, materialized) {
+        const columns = [];
+        const attributes = [];
+        const directives = [];
+        let query;
+        let queryToken;
+        while (!this.check(TokenType.RBRACE)) {
+            if (this.check(TokenType.ATAT)) {
+                directives.push(this.parseDirective());
+                continue;
+            }
+            if (this.check(TokenType.AT)) {
+                attributes.push(this.parseAttributeInternal());
+                continue;
+            }
+            if (this.check(TokenType.IDENT) &&
+                this.current().value === 'as' &&
+                this.peekType(1) === TokenType.COLON) {
+                if (query !== undefined) {
+                    throw new ParseError('at most one as query per view', this.current(), this.file);
+                }
+                queryToken = this.current();
+                this.advance();
+                this.expect(TokenType.COLON, "':'");
+                const valueToken = this.current();
+                const value = this.parseValue();
+                if (value.kind !== 'StringLiteral' && value.kind !== 'TripleStringLiteral') {
+                    throw new ParseError('string or triple-quoted as query', valueToken, this.file);
+                }
+                query = value.value.trim();
+                if (query.length === 0) {
+                    throw new ParseError('non-empty as query', valueToken, this.file);
+                }
+                this.match(TokenType.COMMA);
+                continue;
+            }
+            columns.push(this.parseField());
+        }
+        if (!query) {
+            throw new ParseError("view body key 'as'", queryToken ?? this.current(), this.file);
+        }
+        return {
+            kind: 'View',
+            name,
+            materialized,
+            columns,
+            query,
+            attributes,
+            directives,
+            loc: this.loc(this.current()),
+        };
     }
     parseFunctionsSection() {
         this.expect(TokenType.FUNCTIONS, "'functions'");

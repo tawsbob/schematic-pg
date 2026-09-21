@@ -16,6 +16,9 @@ const STRING_TYPES = new Set(['UUID', 'VARCHAR', 'TEXT']);
 export function buildModelMeta(model, schema) {
     return hydrateModelMeta(buildModelMetaSnapshot(model, schema));
 }
+export function buildViewMeta(view, schema) {
+    return hydrateModelMeta(buildViewMetaSnapshot(view, schema));
+}
 export function buildModelMetaSnapshot(model, schema) {
     const modelNames = getModelNames(schema);
     const enumNames = new Set(schema.enums.map((enumDef) => enumDef.name));
@@ -37,6 +40,24 @@ export function buildModelMetaSnapshot(model, schema) {
         relations,
     };
 }
+export function buildViewMetaSnapshot(view, schema) {
+    const enumNames = new Set(schema.enums.map((enumDef) => enumDef.name));
+    const primaryKey = getPrimaryKey(view);
+    const primaryKeyFields = primaryKey?.fields ?? [];
+    const fields = view.columns.map((field) => toFieldMeta(field, enumNames, primaryKeyFields));
+    const fieldByName = Object.fromEntries(fields.map((field) => [field.name, field]));
+    const columnToField = Object.fromEntries(fields.map((field) => [field.columnName, field.name]));
+    return {
+        name: view.name,
+        tableName: toTableName(view.name),
+        quotedTableName: quoteTable(view.name),
+        primaryKeyFields,
+        fields,
+        fieldByName,
+        columnToField,
+        relations: [],
+    };
+}
 export function hydrateModelMeta(snapshot) {
     const relations = snapshot.relations ?? [];
     return {
@@ -48,7 +69,10 @@ export function hydrateModelMeta(snapshot) {
     };
 }
 export function buildModelMetas(schema) {
-    return schema.models.map((model) => buildModelMeta(model, schema));
+    return [
+        ...schema.models.map((model) => buildModelMeta(model, schema)),
+        ...schema.views.map((view) => buildViewMeta(view, schema)),
+    ];
 }
 function toFieldMeta(field, enumNames, primaryKeyFields) {
     const typeName = field.type.name;

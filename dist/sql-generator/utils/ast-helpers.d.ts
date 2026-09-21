@@ -1,4 +1,4 @@
-import type { Attribute, AttributeArgs, Directive, Field, KeyValueArgs, Model, Schema, SqlFunction, TypeExpr, Value } from '../../schema-dsl/ast.js';
+import type { Attribute, AttributeArgs, Directive, Field, KeyValueArgs, Model, Schema, SqlFunction, TypeExpr, Value, View } from '../../schema-dsl/ast.js';
 export interface PrimaryKeyInfo {
     fields: string[];
     composite: boolean;
@@ -13,31 +13,35 @@ export interface ForeignKeyInfo {
     onDelete?: string;
     onUpdate?: string;
 }
+/** Model or view shape used by directive / attribute helpers. */
+export type RelationLike = Model | View;
+export declare function getRelationFields(relation: RelationLike): Field[];
 export declare function getModelNames(schema: Schema): Set<string>;
+export declare function getViewNames(schema: Schema): Set<string>;
 export declare function getEnumNames(schema: Schema): Set<string>;
 export declare function isStoredField(field: Field, modelNames: Set<string>): boolean;
 export declare function getStoredFields(model: Model, modelNames: Set<string>): Field[];
 export declare function getFieldAttribute(field: Field, name: string): Attribute | undefined;
-export declare function getModelAttribute(model: Model, name: string): Attribute | undefined;
-export declare function getDirective(model: Model, name: string): Directive | undefined;
-export declare function getDirectives(model: Model, name: string): Directive[];
+export declare function getModelAttribute(relation: RelationLike, name: string): Attribute | undefined;
+export declare function getDirective(relation: RelationLike, name: string): Directive | undefined;
+export declare function getDirectives(relation: RelationLike, name: string): Directive[];
 export declare function assertKeyValueArgs(args: AttributeArgs | undefined): KeyValueArgs;
 export declare function getKvPair(args: KeyValueArgs, key: string): import("../../schema-dsl/ast.js").KeyValuePair;
 export declare function getOptionalKvPair(args: KeyValueArgs, key: string): import("../../schema-dsl/ast.js").KeyValuePair | undefined;
 export declare function getIdentifierNames(value: Value): string[];
 export declare function fieldHasAttribute(field: Field, name: string): boolean;
-export declare function getPrimaryKey(model: Model): PrimaryKeyInfo | undefined;
+export declare function getPrimaryKey(relation: RelationLike): PrimaryKeyInfo | undefined;
 export declare function getDefaultExpression(field: Field, enumNames: Set<string>): string | undefined;
 export declare function collectValidationComments(field: Field): string[];
 export declare function mapReferentialAction(value: Value | undefined): string | undefined;
 export declare function collectForeignKeys(schema: Schema): ForeignKeyInfo[];
 export declare function serializeColumnType(type: TypeExpr, enumNames: Set<string>): string;
 export declare function serializeDefault(field: Field, enumNames: Set<string>): string | undefined;
-export declare function getFieldSnakeNameMap(model: Model, modelNames: Set<string>): Map<string, string>;
+export declare function getFieldSnakeNameMap(relation: RelationLike, modelNames: Set<string>): Map<string, string>;
 export declare function transformWhereClause(where: string, fieldNameMap: Map<string, string>): string;
 export declare function serializeForeignKey(foreignKey: ForeignKeyInfo): string;
 export declare function parseForeignKeySignature(signature: string): ForeignKeyInfo;
-export declare function normalizeIndexDirective(directive: Directive, model: Model, modelNames: Set<string>): {
+export declare function normalizeIndexDirective(directive: Directive, relation: RelationLike, modelNames: Set<string>): {
     fields: string[];
     where?: string;
     unique?: boolean;

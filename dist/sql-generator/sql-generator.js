@@ -7,6 +7,7 @@ import { generateFunctions } from './generators/functions.js';
 import { generateIndexes } from './generators/indexes.js';
 import { generateTables } from './generators/tables.js';
 import { generateTriggers } from './generators/triggers.js';
+import { generateViews } from './generators/views.js';
 export class SqlGenerator {
     generate(schema) {
         const sections = [
@@ -16,9 +17,10 @@ export class SqlGenerator {
             generateTables(schema),
             generateIndexes(schema),
             generateForeignKeys(schema),
+            generateViews(schema),
             generateFunctions(schema),
             generateTriggers(schema),
-        ];
+        ].filter((section) => section.length > 0);
         return `${sections.join('\n')}\n`;
     }
     generateFromSource(source) {

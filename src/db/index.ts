@@ -3,14 +3,14 @@ export { DatabaseClient } from './client.js';
 export { getDatabaseUrl } from './config.js';
 export { QueryBuilder } from './query-builder.js';
 export { WhereTranslator } from './where-translator.js';
-export { createModelClient } from './model-client.js';
+export { createModelClient, createReadOnlyModelClient } from './model-client.js';
 export type { Queryable } from './queryable.js';
 export { createRawClient } from './raw.js';
 export type { RawClient } from './raw.js';
 export { runInTransaction } from './transaction.js';
 export { TypeGenerator, generateDbTypes } from './type-generator.js';
 export { DbClientGenerator, generateDbClientFiles } from './db-client-generator.js';
-export { buildModelMeta, buildModelMetaSnapshot, hydrateModelMeta } from './model-meta.js';
+export { buildModelMeta, buildModelMetaSnapshot, buildViewMeta, buildViewMetaSnapshot, hydrateModelMeta } from './model-meta.js';
 export {
   DatabaseError,
   UniqueConstraintError,

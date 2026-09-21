@@ -5,7 +5,9 @@ export declare class ZodSchemaGenerator {
     generate(): string;
     private generateGlobalMetadata;
     private generateModelSchemas;
+    private generateViewSchemas;
     private generateListQuerySchemas;
+    private generateViewReadQueryRefinement;
     private generateIncludeRefinement;
     private generateReadQueryRefinement;
     private generateListQueryFieldLines;

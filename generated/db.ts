@@ -79,7 +79,6 @@ import {
   teamMemberModelMeta,
   userModelMeta,
 } from './db-model-meta.js';
-
 function buildModels(executor: Queryable) {
   const announcementMeta = hydrateModelMeta(announcementModelMeta);
   const logMeta = hydrateModelMeta(logModelMeta);
@@ -103,7 +102,6 @@ function buildModels(executor: Queryable) {
         ['TeamMember', teamMemberMeta],
         ['User', userMeta],
   ]);
-
   return {
     announcement: createModelClient<Announcement, AnnouncementCreateInput, AnnouncementUpdateInput, AnnouncementWhereInput, AnnouncementOrderByInput>(announcementMeta, executor, modelRegistry),
     log: createModelClient<Log, LogCreateInput, LogUpdateInput, LogWhereInput, LogOrderByInput>(logMeta, executor, modelRegistry),
@@ -118,19 +116,15 @@ function buildModels(executor: Queryable) {
     ...createRawClient(executor),
   };
 }
-
 /** All model clients scoped to a single transaction. Nested `$transaction` is unsupported. */
 export type TxClient = ReturnType<typeof buildModels>;
-
 export function createDbClient(pool: Pool) {
   async function $transaction<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
     return runInTransaction(pool, (client) => fn(buildModels(client)));
   }
-
   return {
     ...buildModels(pool),
     $transaction,
   };
 }
-
 export type DbClient = ReturnType<typeof createDbClient>;

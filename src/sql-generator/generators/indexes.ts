@@ -24,10 +24,13 @@ export function resolveIndexName(tableName: string, normalized: NormalizedIndex)
   return normalized.name ?? buildIndexName(tableName, normalized.fields);
 }
 
-export function generateCreateIndex(model: Model, normalized: NormalizedIndex): string {
-  const tableName = quoteIdentifier(toTableName(model.name));
+export function generateCreateIndexOnRelation(
+  relationName: string,
+  normalized: NormalizedIndex,
+): string {
+  const tableName = quoteIdentifier(toTableName(relationName));
   const columns = normalized.fields.map(toSnakeCase).join(', ');
-  const indexName = resolveIndexName(toTableName(model.name), normalized);
+  const indexName = resolveIndexName(toTableName(relationName), normalized);
   const uniqueKeyword = normalized.unique ? 'UNIQUE ' : '';
   const usingClause =
     normalized.type && normalized.type.toUpperCase() !== 'BTREE'
@@ -40,9 +43,20 @@ export function generateCreateIndex(model: Model, normalized: NormalizedIndex): 
   return `CREATE ${uniqueKeyword}INDEX ${indexName} ON ${tableName}${usingClause} (${columns})${whereClause};`;
 }
 
-export function generateDropIndex(model: Model, normalized: NormalizedIndex): string {
-  const indexName = resolveIndexName(toTableName(model.name), normalized);
+export function generateDropIndexOnRelation(
+  relationName: string,
+  normalized: NormalizedIndex,
+): string {
+  const indexName = resolveIndexName(toTableName(relationName), normalized);
   return `DROP INDEX IF EXISTS ${indexName};`;
+}
+
+export function generateCreateIndex(model: Model, normalized: NormalizedIndex): string {
+  return generateCreateIndexOnRelation(model.name, normalized);
+}
+
+export function generateDropIndex(model: Model, normalized: NormalizedIndex): string {
+  return generateDropIndexOnRelation(model.name, normalized);
 }
 
 export function generateIndexes(schema: Schema): string {

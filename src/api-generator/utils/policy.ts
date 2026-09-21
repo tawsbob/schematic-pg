@@ -1,4 +1,4 @@
-import type { Attribute, Model, Predicate, Value } from '../../schema-dsl/ast.js';
+import type { Attribute, Model, Predicate, Value, View } from '../../schema-dsl/ast.js';
 import { assertKeyValueArgs, getKvPair, getOptionalKvPair } from '../../sql-generator/utils/ast-helpers.js';
 
 export const PUBLIC_ROLE = 'PUBLIC';
@@ -20,19 +20,21 @@ export interface NormalizedPolicy {
   where?: string;
 }
 
+export type PolicyTarget = Pick<Model, 'attributes'> | Pick<View, 'attributes'>;
+
 export function normalizePolicies(
-  model: Model,
+  target: PolicyTarget,
   predicates: Predicate[] = [],
 ): NormalizedPolicy[] {
   const predicateByName = new Map(predicates.map((predicate) => [predicate.name, predicate.sql]));
 
-  return model.attributes
+  return target.attributes
     .filter((attribute) => attribute.name === 'policy')
     .map((attribute) => normalizePolicyAttribute(attribute, predicateByName));
 }
 
-export function hasPolicies(model: Model): boolean {
-  return model.attributes.some((attribute) => attribute.name === 'policy');
+export function hasPolicies(target: PolicyTarget): boolean {
+  return target.attributes.some((attribute) => attribute.name === 'policy');
 }
 
 function normalizePolicyAttribute(

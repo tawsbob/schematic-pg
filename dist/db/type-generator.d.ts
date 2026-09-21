@@ -4,6 +4,7 @@ export declare class TypeGenerator {
     constructor(schema: Schema);
     generate(): string;
     private generateEnumType;
+    private generateViewTypes;
     private generateModelTypes;
     private generateEntityInterface;
     private generateCreateInput;

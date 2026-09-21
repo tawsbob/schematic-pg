@@ -4,7 +4,8 @@ export declare class DbClientGenerator {
     constructor(schema: Schema);
     generate(): string;
     generateModelMetaModule(): string;
-    private generateClientEntry;
+    private generateModelClientEntry;
+    private generateViewClientEntry;
 }
 export declare function generateDbClientFiles(schema: Schema): {
     dbTypes: string;

@@ -11,6 +11,8 @@ export declare class OpenApiGenerator {
     generateJson(): string;
     generateTsModule(): string;
     private buildModelComponentSchemas;
+    private buildViewComponentSchemas;
+    private buildViewPaths;
     private buildModelPaths;
     private buildListQueryParameters;
     private buildIncludeParameter;

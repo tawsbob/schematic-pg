@@ -12,12 +12,12 @@ export class PolicyGenerator {
   constructor(private readonly schema: Schema) {}
 
   generate(): string {
-    const modelsWithPolicies = this.schema.models.filter(hasPolicies);
+    const targetsWithPolicies = [...this.schema.models, ...this.schema.views].filter(hasPolicies);
 
-    const policyEntries = modelsWithPolicies.map((model) => {
-      const policies = normalizePolicies(model, this.schema.predicates);
+    const policyEntries = targetsWithPolicies.map((target) => {
+      const policies = normalizePolicies(target, this.schema.predicates);
       const serializedPolicies = policies.map((policy) => serializePolicy(policy)).join(',\n    ');
-      return `  ${model.name}: [\n    ${serializedPolicies},\n  ]`;
+      return `  ${target.name}: [\n    ${serializedPolicies},\n  ]`;
     });
 
     return [

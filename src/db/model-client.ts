@@ -145,6 +145,70 @@ export function createModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>(
   };
 }
 
+export interface ReadOnlyModelClient<T, TWhere, TOrderBy> {
+  findUnique(
+    where: Record<string, unknown>,
+    args?: Omit<SelectArgs<TWhere, TOrderBy>, 'where'>,
+  ): Promise<T | null>;
+  findFirst(args?: SelectArgs<TWhere, TOrderBy>): Promise<T | null>;
+  findMany(args?: SelectArgs<TWhere, TOrderBy>): Promise<T[]>;
+  count(args?: { where?: TWhere }): Promise<number>;
+}
+
+export function createReadOnlyModelClient<T, TWhere, TOrderBy>(
+  model: ModelMeta,
+  executor: Queryable,
+): ReadOnlyModelClient<T, TWhere, TOrderBy> {
+  const builder = new QueryBuilder(model);
+
+  async function execute<TRow extends QueryResultRow>(
+    sql: string,
+    params: unknown[],
+  ): Promise<TRow[]> {
+    try {
+      const result = await executor.query<TRow>(sql, params);
+      return result.rows;
+    } catch (error) {
+      throw mapPgError(error, model.name, model.columnToField);
+    }
+  }
+
+  async function selectRows(args: SelectArgs<TWhere, TOrderBy> = {}): Promise<T[]> {
+    const query = builder.select(toFindArgs(args));
+    const rows = await execute<QueryResultRow>(query.sql, query.params);
+    return mapRows<T>(rows, model);
+  }
+
+  return {
+    async findUnique(
+      where: Record<string, unknown>,
+      args: Omit<SelectArgs<TWhere, TOrderBy>, 'where'> = {},
+    ): Promise<T | null> {
+      const rows = await selectRows({
+        ...args,
+        where: where as TWhere,
+        take: 1,
+      });
+      return rows[0] ?? null;
+    },
+
+    async findFirst(args: SelectArgs<TWhere, TOrderBy> = {}): Promise<T | null> {
+      const rows = await selectRows({ ...args, take: 1 });
+      return rows[0] ?? null;
+    },
+
+    async findMany(args: SelectArgs<TWhere, TOrderBy> = {}): Promise<T[]> {
+      return selectRows(args);
+    },
+
+    async count(args?: { where?: TWhere }): Promise<number> {
+      const query = builder.count({ where: args?.where as WhereInput | undefined });
+      const rows = await execute<{ count: number }>(query.sql, query.params);
+      return rows[0]?.count ?? 0;
+    },
+  };
+}
+
 function toFindArgs<TWhere, TOrderBy>(args: SelectArgs<TWhere, TOrderBy>): FindArgs {
   return {
     where: args.where as WhereInput | undefined,

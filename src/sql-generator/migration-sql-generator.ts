@@ -1,4 +1,4 @@
-import type { Enum, Field, Model, Schema, SqlFunction } from '../schema-dsl/ast.js';
+import type { Enum, Field, Model, Schema, SqlFunction, View } from '../schema-dsl/ast.js';
 import { generateAddEnumValue, generateEnum } from './generators/enums.js';
 import { generateCreateExtension, generateDropExtension } from './generators/extensions.js';
 import { generateForeignKey } from './generators/foreign-keys.js';
@@ -8,8 +8,8 @@ import {
   type NormalizedFunction,
 } from './generators/functions.js';
 import {
-  generateCreateIndex,
-  generateDropIndex,
+  generateCreateIndexOnRelation,
+  generateDropIndexOnRelation,
   type NormalizedIndex,
 } from './generators/indexes.js';
 import { generatePartitionConvertSql } from './generators/partition-convert.js';
@@ -24,6 +24,7 @@ import {
   generateDropTrigger,
   type NormalizedTrigger,
 } from './generators/triggers.js';
+import { generateCreateView, generateDropView } from './generators/views.js';
 import type { Migration } from './migration-types.js';
 import {
   getDirectives,
@@ -50,6 +51,11 @@ const MIGRATION_ORDER: Record<Migration['kind'], number> = {
   AlterColumn: 6,
   CreateIndex: 7,
   AddConstraint: 8,
+  DropView: 8.4,
+  DropMaterializedView: 8.4,
+  CreateView: 8.5,
+  ReplaceView: 8.5,
+  CreateMaterializedView: 8.5,
   DropColumn: 9,
   DropConstraint: 10,
   DropIndex: 11,
@@ -72,6 +78,7 @@ export class MigrationSqlGenerator {
     const enumNames = getEnumNames(newSchema);
     const modelNames = getModelNames(newSchema);
     const modelMap = new Map(newSchema.models.map((model) => [model.name, model]));
+    const viewMap = new Map(newSchema.views.map((view) => [view.name, view]));
     const enumMap = new Map(newSchema.enums.map((enumDef) => [enumDef.name, enumDef]));
     const functionMap = new Map(
       newSchema.functions.map((sqlFunction) => [sqlFunction.name, sqlFunction]),
@@ -88,6 +95,7 @@ export class MigrationSqlGenerator {
         enumNames,
         modelNames,
         modelMap,
+        viewMap,
         enumMap,
         functionMap,
       }),
@@ -104,12 +112,21 @@ export class MigrationSqlGenerator {
       enumNames: Set<string>;
       modelNames: Set<string>;
       modelMap: Map<string, Model>;
+      viewMap: Map<string, View>;
       enumMap: Map<string, Enum>;
       functionMap: Map<string, SqlFunction>;
     },
   ): string {
-    const { newSchema, oldSchema, enumNames, modelNames, modelMap, enumMap, functionMap } =
-      context;
+    const {
+      newSchema,
+      oldSchema,
+      enumNames,
+      modelNames,
+      modelMap,
+      viewMap,
+      enumMap,
+      functionMap,
+    } = context;
 
     switch (migration.kind) {
       case 'CreateExtension':
@@ -215,19 +232,20 @@ export class MigrationSqlGenerator {
       }
       case 'CreateIndex': {
         const model = modelMap.get(migration.modelName);
-        if (!model) {
-          throw new Error(`Model "${migration.modelName}" not found in new schema`);
+        if (model) {
+          const normalized = this.findIndexBySignature(model, migration.signature, modelNames);
+          return generateCreateIndexOnRelation(model.name, normalized);
         }
-        const normalized = this.findIndexBySignature(model, migration.signature, modelNames);
-        return generateCreateIndex(model, normalized);
+        const view = viewMap.get(migration.modelName);
+        if (!view) {
+          throw new Error(`Relation "${migration.modelName}" not found in new schema`);
+        }
+        const normalized = this.findIndexBySignature(view, migration.signature, modelNames);
+        return generateCreateIndexOnRelation(view.name, normalized);
       }
       case 'DropIndex': {
-        const model = modelMap.get(migration.modelName);
-        if (!model) {
-          throw new Error(`Model "${migration.modelName}" not found in new schema`);
-        }
         const normalized = JSON.parse(migration.signature) as NormalizedIndex;
-        return generateDropIndex(model, normalized);
+        return generateDropIndexOnRelation(migration.modelName, normalized);
       }
       case 'AddConstraint': {
         if (migration.constraintType !== 'foreignKey') {
@@ -271,6 +289,30 @@ export class MigrationSqlGenerator {
         const normalized = JSON.parse(migration.signature) as NormalizedFunction;
         return generateDropFunction(normalized);
       }
+      case 'CreateView':
+      case 'ReplaceView': {
+        const view = viewMap.get(migration.viewName);
+        if (!view || view.materialized) {
+          throw new Error(`View "${migration.viewName}" not found in new schema`);
+        }
+        return generateCreateView(view);
+      }
+      case 'CreateMaterializedView': {
+        const view = viewMap.get(migration.viewName);
+        if (!view || !view.materialized) {
+          throw new Error(`Materialized view "${migration.viewName}" not found in new schema`);
+        }
+        const statements = [generateCreateView(view)];
+        for (const directive of getDirectives(view, 'index')) {
+          const normalized = normalizeIndexDirective(directive, view, modelNames);
+          statements.push(generateCreateIndexOnRelation(view.name, normalized));
+        }
+        return statements.join('\n\n');
+      }
+      case 'DropView':
+        return generateDropView(migration.viewName, false);
+      case 'DropMaterializedView':
+        return generateDropView(migration.viewName, true);
       default: {
         const exhaustive: never = migration;
         throw new Error(`Unsupported migration kind: ${(exhaustive as Migration).kind}`);
@@ -287,18 +329,18 @@ export class MigrationSqlGenerator {
   }
 
   private findIndexBySignature(
-    model: Model,
+    relation: Model | View,
     signature: string,
     modelNames: Set<string>,
   ): NormalizedIndex {
-    for (const directive of getDirectives(model, 'index')) {
-      const normalized = normalizeIndexDirective(directive, model, modelNames);
+    for (const directive of getDirectives(relation, 'index')) {
+      const normalized = normalizeIndexDirective(directive, relation, modelNames);
       if (JSON.stringify(normalized) === signature) {
         return normalized;
       }
     }
 
-    throw new Error(`Index signature not found on model "${model.name}"`);
+    throw new Error(`Index signature not found on "${relation.name}"`);
   }
 
   private findTriggerBySignature(model: Model, signature: string): NormalizedTrigger {

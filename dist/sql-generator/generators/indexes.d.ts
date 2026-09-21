@@ -8,6 +8,8 @@ export interface NormalizedIndex {
 }
 export declare function buildIndexName(tableName: string, fields: string[]): string;
 export declare function resolveIndexName(tableName: string, normalized: NormalizedIndex): string;
+export declare function generateCreateIndexOnRelation(relationName: string, normalized: NormalizedIndex): string;
+export declare function generateDropIndexOnRelation(relationName: string, normalized: NormalizedIndex): string;
 export declare function generateCreateIndex(model: Model, normalized: NormalizedIndex): string;
 export declare function generateDropIndex(model: Model, normalized: NormalizedIndex): string;
 export declare function generateIndexes(schema: Schema): string;

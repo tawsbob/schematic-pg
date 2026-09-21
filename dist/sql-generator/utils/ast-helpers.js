@@ -2,8 +2,14 @@ import { isTableReturn } from '../../schema-dsl/ast.js';
 import { formatDefaultValue, serializeValue } from './value-formatter.js';
 import { mapColumnType } from './type-mapper.js';
 import { toSnakeCase, toTableName, quoteIdentifier } from './snake-case.js';
+export function getRelationFields(relation) {
+    return relation.kind === 'View' ? relation.columns : relation.fields;
+}
 export function getModelNames(schema) {
     return new Set(schema.models.map((model) => model.name));
+}
+export function getViewNames(schema) {
+    return new Set(schema.views.map((view) => view.name));
 }
 export function getEnumNames(schema) {
     return new Set(schema.enums.map((enumDef) => enumDef.name));
@@ -17,14 +23,14 @@ export function getStoredFields(model, modelNames) {
 export function getFieldAttribute(field, name) {
     return field.attributes.find((attr) => attr.name === name);
 }
-export function getModelAttribute(model, name) {
-    return model.attributes.find((attr) => attr.name === name);
+export function getModelAttribute(relation, name) {
+    return relation.attributes.find((attr) => attr.name === name);
 }
-export function getDirective(model, name) {
-    return model.directives.find((directive) => directive.name === name);
+export function getDirective(relation, name) {
+    return relation.directives.find((directive) => directive.name === name);
 }
-export function getDirectives(model, name) {
-    return model.directives.filter((directive) => directive.name === name);
+export function getDirectives(relation, name) {
+    return relation.directives.filter((directive) => directive.name === name);
 }
 export function assertKeyValueArgs(args) {
     if (!args || args.kind !== 'KeyValueArgs') {
@@ -56,20 +62,21 @@ export function getIdentifierNames(value) {
 export function fieldHasAttribute(field, name) {
     return field.attributes.some((attr) => attr.name === name);
 }
-export function getPrimaryKey(model) {
-    const compositeDirective = getDirective(model, 'id');
+export function getPrimaryKey(relation) {
+    const fields = getRelationFields(relation);
+    const compositeDirective = getDirective(relation, 'id');
     if (compositeDirective?.args?.kind === 'KeyValueArgs') {
-        const fields = getIdentifierNames(getKvPair(compositeDirective.args, 'fields').value);
-        return { fields, composite: fields.length > 1 };
+        const keyFields = getIdentifierNames(getKvPair(compositeDirective.args, 'fields').value);
+        return { fields: keyFields, composite: keyFields.length > 1 };
     }
-    const modelLevelId = getModelAttribute(model, 'id');
+    const modelLevelId = getModelAttribute(relation, 'id');
     if (modelLevelId) {
-        const idField = model.fields.find((field) => field.name === 'id');
+        const idField = fields.find((field) => field.name === 'id');
         if (idField) {
             return { fields: [idField.name], composite: false };
         }
     }
-    const idFields = model.fields.filter((field) => fieldHasAttribute(field, 'id')).map((field) => field.name);
+    const idFields = fields.filter((field) => fieldHasAttribute(field, 'id')).map((field) => field.name);
     if (idFields.length === 1) {
         return { fields: idFields, composite: false };
     }
@@ -166,9 +173,10 @@ export function serializeDefault(field, enumNames) {
     }
     return serializeValue(expression);
 }
-export function getFieldSnakeNameMap(model, modelNames) {
+export function getFieldSnakeNameMap(relation, modelNames) {
     const map = new Map();
-    for (const field of getStoredFields(model, modelNames)) {
+    const fields = relation.kind === 'View' ? relation.columns : getStoredFields(relation, modelNames);
+    for (const field of fields) {
         map.set(field.name, toSnakeCase(field.name));
     }
     return map;
@@ -204,14 +212,14 @@ export function parseForeignKeySignature(signature) {
         ...parsed,
     };
 }
-export function normalizeIndexDirective(directive, model, modelNames) {
+export function normalizeIndexDirective(directive, relation, modelNames) {
     const args = assertKeyValueArgs(directive.args);
     const fields = getIdentifierNames(getKvPair(args, 'fields').value);
     const wherePair = getOptionalKvPair(args, 'where');
     const uniquePair = getOptionalKvPair(args, 'unique');
     const namePair = getOptionalKvPair(args, 'name');
     const typePair = getOptionalKvPair(args, 'type');
-    const fieldNameMap = getFieldSnakeNameMap(model, modelNames);
+    const fieldNameMap = getFieldSnakeNameMap(relation, modelNames);
     return {
         fields,
         where: wherePair?.value.kind === 'StringLiteral'

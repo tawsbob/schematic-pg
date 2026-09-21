@@ -11,6 +11,7 @@ describe('Parser — optional sections', () => {
     assert.equal(schema.enums.length, 0);
     assert.equal(schema.predicates.length, 0);
     assert.equal(schema.models.length, 1);
+    assert.equal(schema.views.length, 0);
     assert.equal(schema.functions.length, 0);
   });
 

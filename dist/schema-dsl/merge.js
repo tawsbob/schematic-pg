@@ -29,6 +29,7 @@ export function mergeFragments(fragments) {
     const enumEntries = [];
     const predicateEntries = [];
     const modelEntries = [];
+    const viewEntries = [];
     const functionEntries = [];
     for (const fragment of fragments) {
         for (const item of fragment.schema.extensions) {
@@ -43,6 +44,9 @@ export function mergeFragments(fragments) {
         for (const item of fragment.schema.models) {
             modelEntries.push({ item, source: fragment.source });
         }
+        for (const item of fragment.schema.views) {
+            viewEntries.push({ item, source: fragment.source });
+        }
         for (const item of fragment.schema.functions) {
             functionEntries.push({ item, source: fragment.source });
         }
@@ -51,11 +55,13 @@ export function mergeFragments(fragments) {
     enumEntries.sort((left, right) => byName(left.item, right.item));
     predicateEntries.sort((left, right) => byName(left.item, right.item));
     modelEntries.sort((left, right) => byName(left.item, right.item));
+    viewEntries.sort((left, right) => byName(left.item, right.item));
     functionEntries.sort((left, right) => byName(left.item, right.item));
     const extensions = extensionEntries.map((entry) => entry.item);
     const enums = enumEntries.map((entry) => entry.item);
     const predicates = predicateEntries.map((entry) => entry.item);
     const models = modelEntries.map((entry) => entry.item);
+    const views = viewEntries.map((entry) => entry.item);
     const functions = functionEntries.map((entry) => entry.item);
     const schema = {
         kind: 'Schema',
@@ -63,6 +69,7 @@ export function mergeFragments(fragments) {
         enums,
         predicates,
         models,
+        views,
         functions,
         loc: {
             line: 1,
@@ -76,6 +83,7 @@ export function mergeFragments(fragments) {
         formatSection('enums', enumEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('predicates', predicateEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('models', modelEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
+        formatSection('views', viewEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('functions', functionEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
     ].filter((section) => section !== null);
     const canonicalSource = sections.length > 0 ? `${sections.join('\n\n')}\n` : '';

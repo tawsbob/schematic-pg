@@ -7,14 +7,14 @@ export const OP_BY_METHOD = {
     PUT: 'update',
     DELETE: 'delete',
 };
-export function normalizePolicies(model, predicates = []) {
+export function normalizePolicies(target, predicates = []) {
     const predicateByName = new Map(predicates.map((predicate) => [predicate.name, predicate.sql]));
-    return model.attributes
+    return target.attributes
         .filter((attribute) => attribute.name === 'policy')
         .map((attribute) => normalizePolicyAttribute(attribute, predicateByName));
 }
-export function hasPolicies(model) {
-    return model.attributes.some((attribute) => attribute.name === 'policy');
+export function hasPolicies(target) {
+    return target.attributes.some((attribute) => attribute.name === 'policy');
 }
 function normalizePolicyAttribute(attribute, predicateByName) {
     const args = assertKeyValueArgs(attribute.args);

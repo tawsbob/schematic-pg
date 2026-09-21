@@ -15,11 +15,17 @@ export function isUnincludeable(field) {
 export function isOmitted(field) {
     return fieldHasAttribute(field, 'omit');
 }
-export function getFilterableFields(model, schema) {
-    return getStoredFields(model, getModelNames(schema)).filter((field) => isStoredScalarField(field, schema) && !isUnfilterable(field));
+export function getScalarFields(relation, schema) {
+    if (relation.kind === 'View') {
+        return relation.columns;
+    }
+    return getStoredFields(relation, getModelNames(schema));
 }
-export function getOmittedFields(model, schema) {
-    return getStoredFields(model, getModelNames(schema)).filter((field) => isStoredScalarField(field, schema) && isOmitted(field));
+export function getFilterableFields(relation, schema) {
+    return getScalarFields(relation, schema).filter((field) => isStoredScalarField(field, schema) && !isUnfilterable(field));
+}
+export function getOmittedFields(relation, schema) {
+    return getScalarFields(relation, schema).filter((field) => isStoredScalarField(field, schema) && isOmitted(field));
 }
 export function getIncludableRelationFields(model, schema) {
     return model.fields.filter((field) => isRelationField(field, schema) && !isUnincludeable(field));
@@ -47,8 +53,8 @@ export function buildRelationTargets(model, schema) {
     }
     return targets;
 }
-export function getSortableFieldNames(model, schema) {
-    return getStoredFields(model, getModelNames(schema))
+export function getSortableFieldNames(relation, schema) {
+    return getScalarFields(relation, schema)
         .filter((field) => isStoredScalarField(field, schema))
         .map((field) => field.name);
 }

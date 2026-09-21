@@ -112,6 +112,46 @@ models {
 }
 ```
 
+### Views and materialized views
+
+Views live in an optional `views` section after `models` and before `functions`. A view declares a column contract plus an `as` SQL query. Declared column order must match the `SELECT` list; the generator emits an explicit column list so stored names follow the snake_case contract.
+
+```ts
+views {
+  view ActiveUser {
+    id:    UUID @id
+    email: VARCHAR(255)
+
+    as: """
+      SELECT id, email FROM "user" WHERE is_active = true
+    """
+
+    @rest(only: [list, get])
+    @policy(role: USER, allow: [select], where: ownUser)
+  }
+
+  materialized view UserStats {
+    role:  UserRole
+    count: INTEGER
+
+    as: """
+      SELECT role, count(*)::int AS count
+      FROM "user"
+      GROUP BY role
+    """
+
+    @rest(only: [list])
+    @@index(fields: [role], unique: true)
+  }
+}
+```
+
+Views are read-only: `@rest` defaults to `list` and `get` (writes are rejected). `get` requires `@id` or `@@id`. Use `@rest(only: [list])` when there is no key. `@policy` may allow `select` only. `@@index` is valid on materialized views only.
+
+Materialized view definition changes (query, columns, or kind flip) drop and recreate the object. Plain view query-only changes use `CREATE OR REPLACE VIEW` when the column signature is unchanged.
+
+Refresh is not generated — schedule `REFRESH MATERIALIZED VIEW` yourself (for example with `pg_cron`).
+
 ### Field types
 
 Stored columns use PostgreSQL types. Append `?` for nullable, `[]` for arrays. Parametric types take arguments.

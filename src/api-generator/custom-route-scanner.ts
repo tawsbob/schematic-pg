@@ -76,9 +76,10 @@ export function partitionCustomRoutes(
   entries: CustomRouteMountEntry[],
   schema: Schema,
 ): PartitionedCustomRoutes {
-  const modelBasePaths = new Map(
-    schema.models.map((model) => [toRouteBasePath(model.name), model.name]),
-  );
+  const modelBasePaths = new Map([
+    ...schema.models.map((model) => [toRouteBasePath(model.name), model.name] as const),
+    ...schema.views.map((view) => [toRouteBasePath(view.name), view.name] as const),
+  ]);
 
   const overlays = new Map<string, CustomRouteMountEntry>();
   const standalone: CustomRouteMountEntry[] = [];

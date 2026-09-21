@@ -4,6 +4,9 @@ export const TOP_LEVEL_KEYWORDS = [
   'predicates',
   'models',
   'model',
+  'views',
+  'view',
+  'materialized',
   'functions',
   'function',
 ] as const;

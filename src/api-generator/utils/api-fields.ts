@@ -1,10 +1,12 @@
-import type { Field, Model, Schema } from '../../schema-dsl/ast.js';
+import type { Field, Model, Schema, View } from '../../schema-dsl/ast.js';
 import {
   fieldHasAttribute,
   getModelNames,
   getStoredFields,
 } from '../../sql-generator/utils/ast-helpers.js';
 import type { IncludableRelationTree } from '../../api/utils/include-query.js';
+
+export type ApiRelation = Model | View;
 
 export function isStoredScalarField(field: Field, schema: Schema): boolean {
   const modelNames = getModelNames(schema);
@@ -27,14 +29,21 @@ export function isOmitted(field: Field): boolean {
   return fieldHasAttribute(field, 'omit');
 }
 
-export function getFilterableFields(model: Model, schema: Schema): Field[] {
-  return getStoredFields(model, getModelNames(schema)).filter(
+export function getScalarFields(relation: ApiRelation, schema: Schema): Field[] {
+  if (relation.kind === 'View') {
+    return relation.columns;
+  }
+  return getStoredFields(relation, getModelNames(schema));
+}
+
+export function getFilterableFields(relation: ApiRelation, schema: Schema): Field[] {
+  return getScalarFields(relation, schema).filter(
     (field) => isStoredScalarField(field, schema) && !isUnfilterable(field),
   );
 }
 
-export function getOmittedFields(model: Model, schema: Schema): Field[] {
-  return getStoredFields(model, getModelNames(schema)).filter(
+export function getOmittedFields(relation: ApiRelation, schema: Schema): Field[] {
+  return getScalarFields(relation, schema).filter(
     (field) => isStoredScalarField(field, schema) && isOmitted(field),
   );
 }
@@ -80,8 +89,8 @@ export function buildRelationTargets(model: Model, schema: Schema): Record<strin
   return targets;
 }
 
-export function getSortableFieldNames(model: Model, schema: Schema): string[] {
-  return getStoredFields(model, getModelNames(schema))
+export function getSortableFieldNames(relation: ApiRelation, schema: Schema): string[] {
+  return getScalarFields(relation, schema)
     .filter((field) => isStoredScalarField(field, schema))
     .map((field) => field.name);
 }
