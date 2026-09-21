@@ -23,6 +23,7 @@ export interface TokenConfig {
 export function parseTtlSeconds(
   value: string | undefined,
   defaultSeconds: number = DEFAULT_ACCESS_TOKEN_TTL_SECONDS,
+  envName: string = 'AUTH_ACCESS_TOKEN_TTL',
 ): number {
   if (value === undefined || value === null || value === '') {
     return defaultSeconds;
@@ -31,7 +32,7 @@ export function parseTtlSeconds(
   if (/^\d+$/.test(value)) {
     const seconds = Number(value);
     if (seconds <= 0) {
-      throw new InvalidTokenTtlError(`AUTH_ACCESS_TOKEN_TTL must be positive, got "${value}"`);
+      throw new InvalidTokenTtlError(`${envName} must be positive, got "${value}"`);
     }
     return seconds;
   }
@@ -39,7 +40,7 @@ export function parseTtlSeconds(
   const match = /^(\d+)([smhd])$/i.exec(value.trim());
   if (!match) {
     throw new InvalidTokenTtlError(
-      `AUTH_ACCESS_TOKEN_TTL must be seconds or a duration like 15m/1h, got "${value}"`,
+      `${envName} must be seconds or a duration like 15m/1h, got "${value}"`,
     );
   }
 
@@ -49,7 +50,7 @@ export function parseTtlSeconds(
   const seconds = amount * multiplier;
 
   if (seconds <= 0) {
-    throw new InvalidTokenTtlError(`AUTH_ACCESS_TOKEN_TTL must be positive, got "${value}"`);
+    throw new InvalidTokenTtlError(`${envName} must be positive, got "${value}"`);
   }
 
   return seconds;

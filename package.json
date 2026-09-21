@@ -1,6 +1,6 @@
 {
   "name": "schematic-pg",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Single-file backend framework for PostgreSQL and Node.js",
   "type": "module",
   "license": "MIT",

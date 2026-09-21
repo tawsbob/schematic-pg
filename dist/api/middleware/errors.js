@@ -1,6 +1,7 @@
 import { DatabaseError, ForeignKeyConstraintError, UniqueConstraintError, PolicyInsertDeniedError, } from '../../db/errors.js';
 import { ForbiddenError, UnauthorizedError } from '../auth/errors.js';
 import { InvalidPasswordInputError, MissingAuthPepperError, } from '../auth/password/errors.js';
+import { InvalidCookieConfigError } from '../auth/refresh/errors.js';
 import { InvalidTokenTtlError, MissingJwtSecretError } from '../auth/token/errors.js';
 export const handleError = (error, c) => {
     if (error instanceof UnauthorizedError) {
@@ -18,7 +19,7 @@ export const handleError = (error, c) => {
     if (error instanceof InvalidPasswordInputError) {
         return c.json({ error: error.message }, 400);
     }
-    if (error instanceof InvalidTokenTtlError) {
+    if (error instanceof InvalidTokenTtlError || error instanceof InvalidCookieConfigError) {
         return c.json({ error: error.message }, 500);
     }
     if (error instanceof MissingAuthPepperError || error instanceof MissingJwtSecretError) {

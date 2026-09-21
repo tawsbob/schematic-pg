@@ -126,7 +126,7 @@ curl http://localhost:3000/openapi.json
 
 On start, the generated app also logs `API docs at http://localhost:${PORT}/docs`.
 
-**Documented in v1:** schema-generated CRUD for every model, shared error shape `{ "error": string }` (validation failures also include `issues`), Bearer JWT (`components.securitySchemes.bearerAuth`), list filters / `limit` / `offset` / `sort` / `include`, and — when `src/routes/auth.ts` is present — the known `createAuthRouter` endpoints (`POST /auth/register`, `POST /auth/login`, `GET /auth/me`).
+**Documented in v1:** schema-generated CRUD for every model, shared error shape `{ "error": string }` (validation failures also include `issues`), Bearer JWT (`components.securitySchemes.bearerAuth`), list filters / `limit` / `offset` / `sort` / `include`, and — when `src/routes/auth.ts` is present — the known `createAuthRouter` endpoints (`POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`).
 
 **Not documented in v1:** other hand-written custom routes under `src/routes/`.
 
@@ -420,9 +420,17 @@ curl "http://localhost:3000/users?role=USER&limit=10" -H "Authorization: Bearer 
 curl http://localhost:3000/users/{uuid} -H "Authorization: Bearer $TOKEN"
 
 # Sample User disables create/update/delete via @rest — use auth register instead
-curl -X POST http://localhost:3000/auth/register \
+# Access JWT is in JSON; refresh token is Set-Cookie HttpOnly (never in the body).
+curl -i -X POST http://localhost:3000/auth/register \
   -H 'Content-Type: application/json' \
+  -c cookies.txt \
   -d '{"email":"alice@example.com","password":"secret-password"}'
+
+# Rotate access token using the HttpOnly refresh cookie
+curl -i -X POST http://localhost:3000/auth/refresh -b cookies.txt -c cookies.txt
+
+# Logout (revokes refresh family + clears cookie)
+curl -i -X POST http://localhost:3000/auth/logout -b cookies.txt -c cookies.txt
 
 # Create a product (full CRUD)
 curl -X POST http://localhost:3000/products \

@@ -17,12 +17,12 @@ export const announcementModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
-          "line": 62,
+          "line": 55,
           "col": 14,
-          "endLine": 62,
+          "endLine": 55,
           "endCol": 18,
-          "start": 1217,
-          "end": 1221
+          "start": 1061,
+          "end": 1065
         }
       },
       "optional": false,
@@ -42,12 +42,12 @@ export const announcementModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
-          "line": 63,
+          "line": 56,
           "col": 14,
-          "endLine": 63,
+          "endLine": 56,
           "endCol": 18,
-          "start": 1267,
-          "end": 1271
+          "start": 1111,
+          "end": 1115
         }
       },
       "optional": false,
@@ -67,12 +67,12 @@ export const announcementModelMeta = {
         "name": "TEXT",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
-          "line": 64,
+          "line": 57,
           "col": 14,
-          "endLine": 64,
+          "endLine": 57,
           "endCol": 18,
-          "start": 1285,
-          "end": 1289
+          "start": 1129,
+          "end": 1133
         }
       },
       "optional": false,
@@ -94,12 +94,12 @@ export const announcementModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
-          "line": 62,
+          "line": 55,
           "col": 14,
-          "endLine": 62,
+          "endLine": 55,
           "endCol": 18,
-          "start": 1217,
-          "end": 1221
+          "start": 1061,
+          "end": 1065
         }
       },
       "optional": false,
@@ -119,12 +119,12 @@ export const announcementModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
-          "line": 63,
+          "line": 56,
           "col": 14,
-          "endLine": 63,
+          "endLine": 56,
           "endCol": 18,
-          "start": 1267,
-          "end": 1271
+          "start": 1111,
+          "end": 1115
         }
       },
       "optional": false,
@@ -144,12 +144,12 @@ export const announcementModelMeta = {
         "name": "TEXT",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
-          "line": 64,
+          "line": 57,
           "col": 14,
-          "endLine": 64,
+          "endLine": 57,
           "endCol": 18,
-          "start": 1285,
-          "end": 1289
+          "start": 1129,
+          "end": 1133
         }
       },
       "optional": false,

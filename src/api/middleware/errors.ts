@@ -9,6 +9,7 @@ import {
   InvalidPasswordInputError,
   MissingAuthPepperError,
 } from '../auth/password/errors.js';
+import { InvalidCookieConfigError } from '../auth/refresh/errors.js';
 import { InvalidTokenTtlError, MissingJwtSecretError } from '../auth/token/errors.js';
 import type { ErrorHandler } from 'hono';
 
@@ -33,7 +34,7 @@ export const handleError: ErrorHandler = (error, c) => {
     return c.json({ error: error.message }, 400);
   }
 
-  if (error instanceof InvalidTokenTtlError) {
+  if (error instanceof InvalidTokenTtlError || error instanceof InvalidCookieConfigError) {
     return c.json({ error: error.message }, 500);
   }
 

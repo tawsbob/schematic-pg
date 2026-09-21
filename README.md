@@ -618,6 +618,10 @@ Generated code imports the runtime from the `schematic-pg` package (`schematic-p
 | `JWT_SECRET` | — | HMAC secret for JWT sign + verify (required for auth) |
 | `AUTH_PEPPER` | — | App-side pepper appended before Argon2 hash/verify (required for register/login) |
 | `AUTH_ACCESS_TOKEN_TTL` | `1h` | Access token lifetime (`15m`, `1h`, or seconds) |
+| `AUTH_REFRESH_TOKEN_TTL` | `30d` | Refresh cookie / session lifetime |
+| `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `10` | After rotation, reuse within this window returns 401 without revoking the whole family (allows single-flight duplicates) |
+| `AUTH_COOKIE_SECURE` | `true` in production, else `false` | `Secure` flag on the refresh cookie |
+| `AUTH_COOKIE_SAMESITE` | `Lax` | `Lax`, `Strict`, or `None` (`None` requires Secure) |
 | `JWT_ROLE_CLAIM` | `role` | JWT claim mapped to `auth.role` |
 | `JWT_USER_ID_CLAIM` | `sub` | JWT claim mapped to `auth.user.id` |
 | `CORS_ORIGIN` | — (disabled) | Allowed browser origins. Unset disables CORS. Use `*` for any origin (no cookies), or a comma-separated list (`http://localhost:5173,https://app.example.com`). Concrete origins enable credentialed CORS |
@@ -631,7 +635,16 @@ Browser frontends on another origin need `CORS_ORIGIN`. The generated app reads 
 
 ## Authentication
 
-schematic-pg verifies Bearer JWTs on every request and ships a reusable auth layer for **register / login / token issuance**. Runtime lives in the package (`schematic-pg/api/auth/*`); projects mount a thin custom route that auto-registers at `/auth`.
+schematic-pg verifies Bearer JWTs on every request and ships a reusable auth layer for **register / login / refresh / logout**. Runtime lives in the package (`schematic-pg/api/auth/*`); projects mount a thin custom route that auto-registers at `/auth`.
+
+### Token model
+
+| Token | Where it lives | How it is used |
+|-------|----------------|----------------|
+| Access JWT | JSON `token` field → **in-memory** on the client | `Authorization: Bearer <token>` on API calls |
+| Refresh (opaque) | **HttpOnly cookie** only (`refresh_token`, `Path=/auth`) | `POST /auth/refresh` with `credentials: 'include'` |
+
+The refresh token is never returned in JSON, so it cannot be written to `localStorage` or `sessionStorage`. CRUD routes stay Bearer-only — the refresh cookie does not authenticate them.
 
 ### Enable routes
 
@@ -647,11 +660,61 @@ After `generate:api`, the custom-route scanner mounts it at `/auth`. Options let
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `POST` | `/auth/register` | Create user (hashes password, issues access token). Bypasses model `@policy` — do not weaken insert policies for signup. |
-| `POST` | `/auth/login` | Verify password, optional rehash, issue access token |
+| `POST` | `/auth/register` | Create user (hashes password), issue access token + set refresh cookie. Bypasses model `@policy` — do not weaken insert policies for signup. |
+| `POST` | `/auth/login` | Verify password, optional rehash, issue access token + set refresh cookie |
+| `POST` | `/auth/refresh` | Rotate refresh cookie; return a new access token |
+| `POST` | `/auth/logout` | Revoke the refresh-token family and clear the cookie |
 | `GET` | `/auth/me` | Current `auth` context from the JWT middleware |
 
-Register/login responses: `{ token, user }` with `passwordHash` omitted (`@omit` / `omitFields`).
+Register/login responses: `{ token, expiresIn, user }` with `passwordHash` omitted (`@omit` / `omitFields`). Refresh responses: `{ token, expiresIn }`. The HttpOnly refresh cookie is set via `Set-Cookie` only.
+
+Refresh sessions are stored as SHA-256 hashes in an auto-created `auth_refresh_session` table (opaque tokens, rotation, family revoke on suspicious reuse). No schema DSL change is required.
+
+### Browser client pattern
+
+Keep the access token in a module variable. Restore the session on load with refresh (single-flight — one shared promise so concurrent 401s do not replay a rotated cookie):
+
+```ts
+let accessToken: string | null = null;
+let refreshPromise: Promise<string | null> | null = null;
+
+async function apiFetch(path: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  const response = await fetch(path, { ...init, headers, credentials: 'include' });
+  if (response.status !== 401) return response;
+  const next = await refreshAccessToken();
+  if (!next) return response;
+  headers.set('Authorization', `Bearer ${next}`);
+  return fetch(path, { ...init, headers, credentials: 'include' });
+}
+
+function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = fetch('/auth/refresh', { method: 'POST', credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) {
+          accessToken = null;
+          return null;
+        }
+        const body = (await res.json()) as { token: string };
+        accessToken = body.token;
+        return accessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+// On app boot:
+await refreshAccessToken();
+```
+
+Set `CORS_ORIGIN` to your frontend origin(s) so credentialed cookies work. Do not use `CORS_ORIGIN=*`.
+
+XSS can still read an in-memory access token until it expires; it cannot read the HttpOnly refresh cookie.
 
 ### Password hashing
 
@@ -672,7 +735,7 @@ if (passwordService.needsRehash(user.passwordHash)) {
 
 ### Tokens
 
-`createTokenService()` signs HS256 access tokens with `iat`/`exp`, using the same claim names as `createJwtResolver` (`sub` + `role` by default). The resolver rejects expired (`exp`) and not-yet-valid (`nbf`) tokens when those claims are present.
+`createTokenService()` signs HS256 access tokens with `iat`/`exp`, using the same claim names as `createJwtResolver` (`sub` + `role` by default). The resolver rejects expired (`exp`) and not-yet-valid (`nbf`) tokens when those claims are present. Refresh tokens are opaque random values; only their hashes are stored.
 
 ### Security notes
 
@@ -681,11 +744,12 @@ if (passwordService.needsRehash(user.passwordHash)) {
 - **Verify** uses Argon2’s constant-time check — never compare hash strings manually.
 - **No user enumeration** on login: same 401 message whether the email is missing or the password is wrong; verify always runs (dummy hash when no user).
 - **Expiry enforcement** on JWT verify; issued tokens always carry `exp`.
-- Never log passwords, hashes, pepper, or `JWT_SECRET`. Keep `passwordHash` `@omit` so it never appears in API JSON.
+- **Refresh rotation** with family revoke on reuse outside a short grace window; cookie `Path=/auth` so it is not sent on CRUD routes.
+- Never log passwords, hashes, pepper, refresh tokens, or `JWT_SECRET`. Keep `passwordHash` `@omit` so it never appears in API JSON.
 
 ### Future extensions
 
-Password reset, MFA, session/refresh-token management, and login rate limiting are intentionally out of scope for this release.
+Password reset, MFA, and login rate limiting are intentionally out of scope for this release.
 
 ---
 

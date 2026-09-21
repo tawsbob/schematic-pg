@@ -113,6 +113,8 @@ models {
 
     assert.ok(paths['/auth/register']);
     assert.ok(paths['/auth/login']);
+    assert.ok(paths['/auth/refresh']);
+    assert.ok(paths['/auth/logout']);
     assert.ok(paths['/auth/me']);
   });
 

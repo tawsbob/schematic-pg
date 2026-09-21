@@ -5,6 +5,8 @@ export interface AccessTokenClaims {
     [key: string]: unknown;
 }
 export interface TokenService {
+    /** Access-token lifetime in seconds (from config / AUTH_ACCESS_TOKEN_TTL). */
+    readonly accessTokenTtlSeconds: number;
     signAccessToken(claims: AccessTokenClaims): string;
     verifyAccessToken(token: string): Record<string, unknown>;
 }

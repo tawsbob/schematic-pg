@@ -61,6 +61,11 @@ npx schematic-pg dev
 | `DATABASE_URL` | PostgreSQL connection string (required) |
 | `PORT` | HTTP port (default `3000`) |
 | `JWT_SECRET` | HMAC secret for Bearer JWT auth |
+| `AUTH_PEPPER` | Pepper for Argon2 password hashing (register/login) |
+| `AUTH_ACCESS_TOKEN_TTL` | Access JWT lifetime (default `1h`) |
+| `AUTH_REFRESH_TOKEN_TTL` | Refresh cookie / session lifetime (default `30d`) |
+| `AUTH_COOKIE_SECURE` | Refresh cookie `Secure` flag (`true` in production by default) |
+| `AUTH_COOKIE_SAMESITE` | Refresh cookie SameSite (`Lax` default; `None` requires Secure) |
 | `JWT_ROLE_CLAIM` | JWT claim for role (default `role`) |
 | `JWT_USER_ID_CLAIM` | JWT claim for user id (default `sub`) |
 | `CORS_ORIGIN` | Allowed browser origins (`*` or comma-separated). Unset disables CORS. Concrete origins enable credentialed CORS (cookies); `*` does not |

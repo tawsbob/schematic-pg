@@ -4,6 +4,7 @@ import { MissingJwtSecretError } from './errors.js';
 export function createTokenService(overrides = {}) {
     const config = resolveTokenConfig(overrides);
     return {
+        accessTokenTtlSeconds: config.ttlSeconds,
         signAccessToken(claims) {
             const secret = config.secret;
             if (!secret) {

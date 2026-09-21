@@ -9,27 +9,27 @@ const TTL_UNIT_SECONDS = {
     h: 3_600,
     d: 86_400,
 };
-export function parseTtlSeconds(value, defaultSeconds = DEFAULT_ACCESS_TOKEN_TTL_SECONDS) {
+export function parseTtlSeconds(value, defaultSeconds = DEFAULT_ACCESS_TOKEN_TTL_SECONDS, envName = 'AUTH_ACCESS_TOKEN_TTL') {
     if (value === undefined || value === null || value === '') {
         return defaultSeconds;
     }
     if (/^\d+$/.test(value)) {
         const seconds = Number(value);
         if (seconds <= 0) {
-            throw new InvalidTokenTtlError(`AUTH_ACCESS_TOKEN_TTL must be positive, got "${value}"`);
+            throw new InvalidTokenTtlError(`${envName} must be positive, got "${value}"`);
         }
         return seconds;
     }
     const match = /^(\d+)([smhd])$/i.exec(value.trim());
     if (!match) {
-        throw new InvalidTokenTtlError(`AUTH_ACCESS_TOKEN_TTL must be seconds or a duration like 15m/1h, got "${value}"`);
+        throw new InvalidTokenTtlError(`${envName} must be seconds or a duration like 15m/1h, got "${value}"`);
     }
     const amount = Number(match[1]);
     const unit = match[2].toLowerCase();
     const multiplier = TTL_UNIT_SECONDS[unit];
     const seconds = amount * multiplier;
     if (seconds <= 0) {
-        throw new InvalidTokenTtlError(`AUTH_ACCESS_TOKEN_TTL must be positive, got "${value}"`);
+        throw new InvalidTokenTtlError(`${envName} must be positive, got "${value}"`);
     }
     return seconds;
 }

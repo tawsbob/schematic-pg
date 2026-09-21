@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../types.js';
 import { type PasswordService } from './password/index.js';
+import { type RefreshSessionStore } from './refresh/index.js';
 import { type TokenService } from './token/index.js';
 export interface CreateAuthRouterOptions {
     userModel?: string;
@@ -14,10 +15,14 @@ export interface CreateAuthRouterOptions {
     defaultCreateFields?: Record<string, unknown>;
     passwordService?: PasswordService;
     tokenService?: TokenService;
+    refreshSessionStore?: RefreshSessionStore;
 }
 /**
- * Reusable auth router: POST /register, POST /login, GET /me.
+ * Reusable auth router: POST /register, POST /login, POST /refresh, POST /logout, GET /me.
  * Mount via custom routes (src/routes/auth.ts → /auth).
  * Speaks to the DB client directly — does not go through model @policy.
+ *
+ * Access tokens are returned in JSON only (client keeps them in memory as Bearer).
+ * Refresh tokens are opaque and set only as HttpOnly cookies — never in the JSON body.
  */
 export declare function createAuthRouter(options?: CreateAuthRouterOptions): Hono<AppEnv>;

@@ -469,10 +469,31 @@ export class OpenApiGenerator {
             },
             AuthTokenResponse: {
                 type: 'object',
-                required: ['token', 'user'],
+                required: ['token', 'expiresIn', 'user'],
                 properties: {
-                    token: { type: 'string' },
+                    token: {
+                        type: 'string',
+                        description: 'Short-lived access JWT. Keep in memory and send as Authorization: Bearer. Never store in localStorage/sessionStorage.',
+                    },
+                    expiresIn: {
+                        type: 'integer',
+                        description: 'Access token lifetime in seconds',
+                    },
                     user: { type: 'object', additionalProperties: true },
+                },
+            },
+            AuthRefreshResponse: {
+                type: 'object',
+                required: ['token', 'expiresIn'],
+                properties: {
+                    token: {
+                        type: 'string',
+                        description: 'Rotated short-lived access JWT (memory / Bearer only)',
+                    },
+                    expiresIn: {
+                        type: 'integer',
+                        description: 'Access token lifetime in seconds',
+                    },
                 },
             },
             AuthMeResponse: {
@@ -501,6 +522,7 @@ export class OpenApiGenerator {
                 post: {
                     tags: ['Auth'],
                     summary: 'Register',
+                    description: 'Creates a user, returns an access JWT in JSON, and sets an HttpOnly refresh_token cookie (Path=/auth). The refresh token is never included in the response body.',
                     operationId: 'authRegister',
                     requestBody: {
                         required: true,
@@ -508,7 +530,7 @@ export class OpenApiGenerator {
                     },
                     responses: {
                         '201': {
-                            description: 'Registered user with access token',
+                            description: 'Registered user with access token. Refresh token is Set-Cookie only (HttpOnly).',
                             content: jsonContent({ $ref: '#/components/schemas/AuthTokenResponse' }),
                         },
                         '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
@@ -521,6 +543,7 @@ export class OpenApiGenerator {
                 post: {
                     tags: ['Auth'],
                     summary: 'Login',
+                    description: 'Verifies password, returns an access JWT in JSON, and sets an HttpOnly refresh_token cookie (Path=/auth). The refresh token is never included in the response body.',
                     operationId: 'authLogin',
                     requestBody: {
                         required: true,
@@ -528,11 +551,43 @@ export class OpenApiGenerator {
                     },
                     responses: {
                         '200': {
-                            description: 'Access token and user',
+                            description: 'Access token and user. Refresh token is Set-Cookie only (HttpOnly).',
                             content: jsonContent({ $ref: '#/components/schemas/AuthTokenResponse' }),
                         },
                         '400': errorResponse('Validation error', ERROR_EXAMPLE_VALIDATION),
                         '401': errorResponse('Invalid email or password'),
+                        '500': errorResponse('Internal server error'),
+                    },
+                },
+            },
+            '/auth/refresh': {
+                post: {
+                    tags: ['Auth'],
+                    summary: 'Refresh access token',
+                    description: 'Reads the HttpOnly refresh_token cookie, rotates the session, returns a new access JWT, and sets a new refresh cookie. Call with credentials: include. Single-flight refreshes on the client to avoid reuse detection.',
+                    operationId: 'authRefresh',
+                    responses: {
+                        '200': {
+                            description: 'New access token; rotated refresh cookie via Set-Cookie',
+                            content: jsonContent({ $ref: '#/components/schemas/AuthRefreshResponse' }),
+                        },
+                        '401': errorResponse('Invalid refresh token'),
+                        '403': errorResponse('Origin not allowed'),
+                        '500': errorResponse('Internal server error'),
+                    },
+                },
+            },
+            '/auth/logout': {
+                post: {
+                    tags: ['Auth'],
+                    summary: 'Logout',
+                    description: 'Revokes the refresh-token family for the current cookie and clears the cookie. Returns 204 even when no cookie was sent.',
+                    operationId: 'authLogout',
+                    responses: {
+                        '204': {
+                            description: 'Session revoked and cookie cleared',
+                        },
+                        '403': errorResponse('Origin not allowed'),
                         '500': errorResponse('Internal server error'),
                     },
                 },

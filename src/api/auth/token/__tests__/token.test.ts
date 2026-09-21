@@ -31,6 +31,7 @@ describe('createTokenService', () => {
 
   it('round-trips signAccessToken → verifyAccessToken', () => {
     const tokens = createTokenService();
+    assert.equal(tokens.accessTokenTtlSeconds, 3_600);
     const jwt = tokens.signAccessToken({ userId: 'user-1', role: 'USER' });
     const payload = tokens.verifyAccessToken(jwt);
 

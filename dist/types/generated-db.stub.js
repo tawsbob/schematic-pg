@@ -6,5 +6,8 @@ export function createDbClient(_pool) {
         async $executeRaw() {
             return 0;
         },
+        async $transaction(fn) {
+            return fn(this);
+        },
     };
 }

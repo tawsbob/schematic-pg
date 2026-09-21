@@ -9,6 +9,8 @@ export interface AccessTokenClaims {
 }
 
 export interface TokenService {
+  /** Access-token lifetime in seconds (from config / AUTH_ACCESS_TOKEN_TTL). */
+  readonly accessTokenTtlSeconds: number;
   signAccessToken(claims: AccessTokenClaims): string;
   verifyAccessToken(token: string): Record<string, unknown>;
 }
@@ -17,6 +19,8 @@ export function createTokenService(overrides: Partial<TokenConfig> = {}): TokenS
   const config = resolveTokenConfig(overrides);
 
   return {
+    accessTokenTtlSeconds: config.ttlSeconds,
+
     signAccessToken(claims: AccessTokenClaims): string {
       const secret = config.secret;
       if (!secret) {

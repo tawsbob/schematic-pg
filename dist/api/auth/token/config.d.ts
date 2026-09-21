@@ -6,5 +6,5 @@ export interface TokenConfig {
     roleClaim: string;
     userIdClaim: string;
 }
-export declare function parseTtlSeconds(value: string | undefined, defaultSeconds?: number): number;
+export declare function parseTtlSeconds(value: string | undefined, defaultSeconds?: number, envName?: string): number;
 export declare function resolveTokenConfig(overrides?: Partial<TokenConfig>): TokenConfig;
