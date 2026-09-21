@@ -9,6 +9,8 @@ export enum TokenType {
   MATERIALIZED = 'MATERIALIZED',
   FUNCTIONS = 'FUNCTIONS',
   FUNCTION = 'FUNCTION',
+  CRON = 'CRON',
+  JOB = 'JOB',
 
   STRING = 'STRING',
   TRIPLE_STRING = 'TRIPLE_STRING',
@@ -53,6 +55,8 @@ const KEYWORDS: Record<string, TokenType> = {
   materialized: TokenType.MATERIALIZED,
   functions: TokenType.FUNCTIONS,
   function: TokenType.FUNCTION,
+  cron: TokenType.CRON,
+  job: TokenType.JOB,
   true: TokenType.BOOLEAN,
   false: TokenType.BOOLEAN,
 };

@@ -53,6 +53,14 @@ docker_data/
 npm-debug.log*
 `;
 
+export const DOCKERFILE_POSTGRES_TEMPLATE = `FROM postgres:18.4-bookworm
+
+# pg_cron from PGDG (already configured in the official image).
+RUN apt-get update \\
+  && apt-get install -y --no-install-recommends postgresql-18-cron \\
+  && rm -rf /var/lib/apt/lists/*
+`;
+
 function sanitizeComposeProjectName(projectName: string): string {
   const sanitized = projectName
     .toLowerCase()
@@ -69,7 +77,10 @@ export function createDockerComposeTemplate(projectName: string): string {
   return `name: ${composeName}
 services:
   postgres:
-    image: postgres:18.4-bookworm
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: ${composeName}-postgres:18-cron
     container_name: ${composeName}-postgres
     restart: unless-stopped
     ports:
@@ -78,6 +89,12 @@ services:
       POSTGRES_USER: postgrest
       POSTGRES_PASSWORD: postgrest
       POSTGRES_DB: postgrest
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_cron
+      - -c
+      - cron.database_name=postgrest
     volumes:
       - ./docker_data/postgres:/var/lib/postgresql
     healthcheck:

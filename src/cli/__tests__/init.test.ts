@@ -50,5 +50,12 @@ describe('runInit', () => {
     const composeContent = await readFile(composePath, 'utf8');
     assert.match(composeContent, new RegExp(`^name: ${projectName}$`, 'm'));
     assert.match(composeContent, new RegExp(`container_name: ${projectName}-postgres`));
+    assert.match(composeContent, /shared_preload_libraries=pg_cron/);
+    assert.match(composeContent, /Dockerfile\.postgres/);
+
+    const dockerfilePath = path.join(tempDir, 'Dockerfile.postgres');
+    assert.equal(existsSync(dockerfilePath), true);
+    const dockerfileContent = await readFile(dockerfilePath, 'utf8');
+    assert.match(dockerfileContent, /postgresql-18-cron/);
   });
 });

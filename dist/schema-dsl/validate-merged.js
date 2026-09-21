@@ -1,3 +1,4 @@
+import { isTableReturn } from './ast.js';
 import { PRIMITIVE_TYPES } from './primitives.js';
 import { SchemaError } from './validate.js';
 import { toTableName } from '../sql-generator/utils/snake-case.js';
@@ -21,6 +22,7 @@ function validateDuplicateNames(schema) {
     findDuplicateNames('model', schema.models.map((model) => ({ name: model.name, loc: model.loc })));
     findDuplicateNames('view', schema.views.map((view) => ({ name: view.name, loc: view.loc })));
     findDuplicateNames('function', schema.functions.map((fn) => ({ name: fn.name, loc: fn.loc })));
+    findDuplicateNames('job', schema.jobs.map((job) => ({ name: job.name, loc: job.loc })));
     const modelBySqlName = new Map(schema.models.map((model) => [toTableName(model.name), model]));
     for (const view of schema.views) {
         const sqlName = toTableName(view.name);
@@ -96,6 +98,37 @@ function validatePolicyPredicateReferences(schema) {
         }
     }
 }
+function validateCronJobs(schema) {
+    if (schema.jobs.length === 0) {
+        return;
+    }
+    const hasPgCron = schema.extensions.some((extension) => extension.name === 'pg_cron');
+    if (!hasPgCron) {
+        throw new SchemaError('cron jobs require the pg_cron extension (add `pg_cron` to extensions)', schema.jobs[0].loc);
+    }
+    const functionsByName = new Map(schema.functions.map((fn) => [fn.name, fn]));
+    for (const job of schema.jobs) {
+        if (job.execute !== undefined && job.execute.includes('{{auth.')) {
+            throw new SchemaError(`cron job "${job.name}" execute body must not use {{auth.*}} templates (jobs have no request auth context)`, job.loc);
+        }
+        if (job.call === undefined) {
+            continue;
+        }
+        const sqlFunction = functionsByName.get(job.call);
+        if (!sqlFunction) {
+            throw new SchemaError(`unknown function "${job.call}" referenced by cron job "${job.name}"`, job.loc);
+        }
+        if (sqlFunction.params.length > 0) {
+            throw new SchemaError(`cron job "${job.name}" call "${job.call}" must reference a zero-argument function`, job.loc);
+        }
+        if (isTableReturn(sqlFunction.returns)) {
+            throw new SchemaError(`cron job "${job.name}" call "${job.call}" cannot reference a TABLE-returning function`, job.loc);
+        }
+        if (sqlFunction.returns.kind === 'TypeExpr' && sqlFunction.returns.name === 'TRIGGER') {
+            throw new SchemaError(`cron job "${job.name}" call "${job.call}" cannot reference a TRIGGER function`, job.loc);
+        }
+    }
+}
 /**
  * Strict validation for a fully merged schema.
  * Must not be called from parse() — the language server validates single buffers
@@ -105,4 +138,5 @@ export function validateMergedSchema(schema) {
     validateDuplicateNames(schema);
     validateUnknownTypeNames(schema);
     validatePolicyPredicateReferences(schema);
+    validateCronJobs(schema);
 }

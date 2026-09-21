@@ -31,6 +31,7 @@ export function mergeFragments(fragments) {
     const modelEntries = [];
     const viewEntries = [];
     const functionEntries = [];
+    const jobEntries = [];
     for (const fragment of fragments) {
         for (const item of fragment.schema.extensions) {
             extensionEntries.push({ item, source: fragment.source });
@@ -50,6 +51,9 @@ export function mergeFragments(fragments) {
         for (const item of fragment.schema.functions) {
             functionEntries.push({ item, source: fragment.source });
         }
+        for (const item of fragment.schema.jobs) {
+            jobEntries.push({ item, source: fragment.source });
+        }
     }
     extensionEntries.sort((left, right) => byName(left.item, right.item));
     enumEntries.sort((left, right) => byName(left.item, right.item));
@@ -57,12 +61,14 @@ export function mergeFragments(fragments) {
     modelEntries.sort((left, right) => byName(left.item, right.item));
     viewEntries.sort((left, right) => byName(left.item, right.item));
     functionEntries.sort((left, right) => byName(left.item, right.item));
+    jobEntries.sort((left, right) => byName(left.item, right.item));
     const extensions = extensionEntries.map((entry) => entry.item);
     const enums = enumEntries.map((entry) => entry.item);
     const predicates = predicateEntries.map((entry) => entry.item);
     const models = modelEntries.map((entry) => entry.item);
     const views = viewEntries.map((entry) => entry.item);
     const functions = functionEntries.map((entry) => entry.item);
+    const jobs = jobEntries.map((entry) => entry.item);
     const schema = {
         kind: 'Schema',
         extensions,
@@ -71,6 +77,7 @@ export function mergeFragments(fragments) {
         models,
         views,
         functions,
+        jobs,
         loc: {
             line: 1,
             col: 1,
@@ -85,6 +92,7 @@ export function mergeFragments(fragments) {
         formatSection('models', modelEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('views', viewEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
         formatSection('functions', functionEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
+        formatSection('cron', jobEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc))),
     ].filter((section) => section !== null);
     const canonicalSource = sections.length > 0 ? `${sections.join('\n\n')}\n` : '';
     return { schema, canonicalSource };

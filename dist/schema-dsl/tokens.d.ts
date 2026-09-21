@@ -9,6 +9,8 @@ export declare enum TokenType {
     MATERIALIZED = "MATERIALIZED",
     FUNCTIONS = "FUNCTIONS",
     FUNCTION = "FUNCTION",
+    CRON = "CRON",
+    JOB = "JOB",
     STRING = "STRING",
     TRIPLE_STRING = "TRIPLE_STRING",
     NUMBER = "NUMBER",

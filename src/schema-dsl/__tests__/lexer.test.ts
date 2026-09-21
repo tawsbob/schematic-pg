@@ -10,9 +10,9 @@ function expectTokens(source: string, expected: Array<{ type: TokenType; value: 
 
 describe('Lexer', () => {
   describe('keywords', () => {
-    it('tokenizes extensions enums predicates models model views view materialized functions function', () => {
+    it('tokenizes extensions enums predicates models model views view materialized functions function cron job', () => {
       expectTokens(
-        'extensions enums predicates models model views view materialized functions function',
+        'extensions enums predicates models model views view materialized functions function cron job',
         [
           { type: TokenType.EXTENSIONS, value: 'extensions' },
           { type: TokenType.ENUMS, value: 'enums' },
@@ -24,6 +24,8 @@ describe('Lexer', () => {
           { type: TokenType.MATERIALIZED, value: 'materialized' },
           { type: TokenType.FUNCTIONS, value: 'functions' },
           { type: TokenType.FUNCTION, value: 'function' },
+          { type: TokenType.CRON, value: 'cron' },
+          { type: TokenType.JOB, value: 'job' },
         ],
       );
     });

@@ -2,6 +2,9 @@ import type { Schema } from '../../schema-dsl/ast.js';
 import { joinSection } from '../utils/format.js';
 
 export function generateCreateExtension(name: string): string {
+  if (name === 'pg_cron') {
+    return `CREATE EXTENSION IF NOT EXISTS "${name}";`;
+  }
   return `CREATE EXTENSION IF NOT EXISTS "${name}" WITH SCHEMA public;`;
 }
 

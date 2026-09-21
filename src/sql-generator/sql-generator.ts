@@ -1,5 +1,6 @@
 import type { Schema } from '../schema-dsl/ast.js';
 import { parse } from '../schema-dsl/index.js';
+import { generateCronJobs } from './generators/cron-jobs.js';
 import { generateDropTables } from './generators/drop-tables.js';
 import { generateEnums } from './generators/enums.js';
 import { generateExtensions } from './generators/extensions.js';
@@ -22,6 +23,7 @@ export class SqlGenerator {
       generateViews(schema),
       generateFunctions(schema),
       generateTriggers(schema),
+      generateCronJobs(schema),
     ].filter((section) => section.length > 0);
 
     return `${sections.join('\n')}\n`;

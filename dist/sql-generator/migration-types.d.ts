@@ -1,4 +1,4 @@
-export type Migration = CreateExtension | DropExtension | CreateTable | DropTable | AddColumn | DropColumn | AlterColumn | CreateIndex | DropIndex | CreateEnum | AddEnumValue | AddConstraint | DropConstraint | CreateFunction | ReplaceFunction | DropFunction | CreateTrigger | DropTrigger | CreatePartition | DropPartition | ConvertToPartitioned | ConvertFromPartitioned | CreateView | ReplaceView | DropView | CreateMaterializedView | DropMaterializedView;
+export type Migration = CreateExtension | DropExtension | CreateTable | DropTable | AddColumn | DropColumn | AlterColumn | CreateIndex | DropIndex | CreateEnum | AddEnumValue | AddConstraint | DropConstraint | CreateFunction | ReplaceFunction | DropFunction | CreateTrigger | DropTrigger | CreatePartition | DropPartition | ConvertToPartitioned | ConvertFromPartitioned | CreateView | ReplaceView | DropView | CreateMaterializedView | DropMaterializedView | CreateCronJob | ReplaceCronJob | DropCronJob;
 export interface CreateTable {
     kind: 'CreateTable';
     modelName: string;
@@ -136,4 +136,16 @@ export interface CreateMaterializedView {
 export interface DropMaterializedView {
     kind: 'DropMaterializedView';
     viewName: string;
+}
+export interface CreateCronJob {
+    kind: 'CreateCronJob';
+    jobName: string;
+}
+export interface ReplaceCronJob {
+    kind: 'ReplaceCronJob';
+    jobName: string;
+}
+export interface DropCronJob {
+    kind: 'DropCronJob';
+    jobName: string;
 }

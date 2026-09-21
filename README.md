@@ -11,7 +11,7 @@
 
 The schema DSL is the source of truth — either a single `app.schema` file or multiple fragments under `schema/`. From it, schematic-pg generates PostgreSQL DDL, a type-safe DB client, REST routes, Zod validators, and ACL policies.
 
-A schema document may include any of these sections, in this order when present: `extensions`, `enums`, `predicates`, `models`, `functions`. Empty sections can be omitted.
+A schema document may include any of these sections, in this order when present: `extensions`, `enums`, `predicates`, `models`, `views`, `functions`, `cron`. Empty sections can be omitted.
 
 ```ts
 extensions {
@@ -579,6 +579,53 @@ const products = await db.$queryRaw<{ id: string; name: string; price: string }>
   [query],
 );
 ```
+
+### Cron jobs (`pg_cron`)
+
+Optional section after `functions`. Each `job` becomes a pg_cron schedule, identified by a unique camelCase name that is stored as `snake_case` (`expireStaleSessions` → `expire_stale_sessions`).
+
+```ts
+extensions {
+  pg_cron
+}
+
+functions {
+  function expireStaleSessions(): VOID {
+    execute: """
+      DELETE FROM auth_refresh_session
+      WHERE expires_at < now()
+    """
+  }
+}
+
+cron {
+  job expireStaleSessions {
+    schedule: "0 * * * *"
+    call: expireStaleSessions
+  }
+
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}
+```
+
+| Argument | Required | Purpose |
+|----------|----------|---------|
+| `schedule` | Yes | Cron expression or pg_cron interval (`"0 * * * *"`, `"30 seconds"`) |
+| `execute` | One of `execute` / `call` | SQL command string or triple-quoted body |
+| `call` | One of `execute` / `call` | Zero-argument schema function (not `TRIGGER` / `TABLE`) |
+
+`call: expireStaleSessions` compiles to `SELECT expire_stale_sessions()`. Exactly one of `execute` or `call` is required. Cron execute bodies must not use `{{auth.*}}` templates — jobs have no request context.
+
+Generated SQL upserts by job name (`unschedule` then `schedule`). `db:diff` emits `CreateCronJob` / `ReplaceCronJob` / `DropCronJob`. Dropping a job that calls a function runs before dropping that function.
+
+**Ops requirements:** Local `docker-compose.yml` builds `Dockerfile.postgres` (Postgres 18 + `postgresql-18-cron`) and sets `shared_preload_libraries=pg_cron` with `cron.database_name=postgrest`. If you already had a data volume from an older image, recreate it with `npm run docker:reset`.
+
+Declare `pg_cron` in `extensions` (it is created without `WITH SCHEMA public` — the extension owns the `cron` schema). Jobs live outside `public`, so `db:bootstrap` upserts declared jobs but does not remove leftover unmanaged `cron.job` rows; use `db:diff` / `db:migrate` to drop jobs in production.
+
+Cron jobs are database objects only — they are not REST endpoints.
 
 ---
 

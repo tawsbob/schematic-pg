@@ -13,6 +13,7 @@ describe('Parser — optional sections', () => {
     assert.equal(schema.models.length, 1);
     assert.equal(schema.views.length, 0);
     assert.equal(schema.functions.length, 0);
+    assert.equal(schema.jobs.length, 0);
   });
 
   it('parses enums + models without extensions or functions', () => {
@@ -58,8 +59,27 @@ predicates {}
 models {
   model User { id: UUID @id }
 }
-functions {}`);
+functions {}
+cron {}`);
     assert.equal(schema.models.length, 1);
     assert.equal(schema.predicates.length, 0);
+    assert.equal(schema.jobs.length, 0);
+  });
+
+  it('parses cron after functions', () => {
+    const schema = parse(`extensions { pg_cron }
+functions {
+  function ping(): VOID {
+    execute: """SELECT 1"""
+  }
+}
+cron {
+  job hourlyPing {
+    schedule: "0 * * * *"
+    call: ping
+  }
+}`);
+    assert.equal(schema.jobs.length, 1);
+    assert.equal(schema.jobs[0]?.name, 'hourlyPing');
   });
 });

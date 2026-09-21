@@ -157,6 +157,51 @@ functions {
     assert.match(forward.canonicalSource, /ownUser:/);
     assert.match(forward.canonicalSource, /teamMember:/);
   });
+
+  it('merges cron jobs by name regardless of fragment order', () => {
+    const cleanupFragment = `extensions {
+  pg_cron
+}
+
+functions {
+  function expireSessions(): VOID {
+    execute: """SELECT 1"""
+  }
+}
+
+cron {
+  job expireSessions {
+    schedule: "0 * * * *"
+    call: expireSessions
+  }
+}
+`;
+    const vacuumFragment = `cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}
+`;
+
+    const forward = mergeFragments([
+      fragment('schema/cleanup.schema', cleanupFragment),
+      fragment('schema/vacuum.schema', vacuumFragment),
+    ]);
+    const reverse = mergeFragments([
+      fragment('schema/vacuum.schema', vacuumFragment),
+      fragment('schema/cleanup.schema', cleanupFragment),
+    ]);
+
+    assert.deepEqual(
+      forward.schema.jobs.map((job) => job.name),
+      ['expireSessions', 'nightlyVacuum'],
+    );
+    assert.equal(forward.canonicalSource, reverse.canonicalSource);
+    assert.match(forward.canonicalSource, /^cron \{/m);
+    assert.match(forward.canonicalSource, /job expireSessions/);
+    assert.match(forward.canonicalSource, /job nightlyVacuum/);
+  });
 });
 
 describe('validateMergedSchema', () => {
@@ -276,6 +321,151 @@ describe('validateMergedSchema', () => {
   model Wallet {
     id: UUID @id
     balance: BIGINT @default(0)
+  }
+}`,
+      'app.schema',
+    );
+
+    assert.doesNotThrow(() => validateMergedSchema(schema));
+  });
+
+  it('rejects duplicate job names across fragments', () => {
+    const left = fragment(
+      'a.schema',
+      `extensions { pg_cron }
+cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`,
+    );
+    const right = fragment(
+      'b.schema',
+      `cron {
+  job nightlyVacuum {
+    schedule: "0 4 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`,
+    );
+    const { schema } = mergeFragments([left, right]);
+
+    assert.throws(
+      () => validateMergedSchema(schema),
+      (error: unknown) => {
+        assert.ok(error instanceof SchemaError);
+        assert.match(error.message, /duplicate job name "nightlyVacuum"/);
+        assert.match(error.message, /a\.schema/);
+        return true;
+      },
+    );
+  });
+
+  it('rejects cron jobs without the pg_cron extension', () => {
+    const schema = parseFragment(
+      `cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`,
+      'app.schema',
+    );
+
+    assert.throws(
+      () => validateMergedSchema(schema),
+      (error: unknown) => {
+        assert.ok(error instanceof SchemaError);
+        assert.match(error.message, /pg_cron extension/);
+        return true;
+      },
+    );
+  });
+
+  it('rejects unknown call function on cron jobs', () => {
+    const schema = parseFragment(
+      `extensions { pg_cron }
+cron {
+  job hourly {
+    schedule: "0 * * * *"
+    call: missingFn
+  }
+}`,
+      'app.schema',
+    );
+
+    assert.throws(
+      () => validateMergedSchema(schema),
+      (error: unknown) => {
+        assert.ok(error instanceof SchemaError);
+        assert.match(error.message, /unknown function "missingFn"/);
+        return true;
+      },
+    );
+  });
+
+  it('rejects call to functions with parameters', () => {
+    const schema = parseFragment(
+      `extensions { pg_cron }
+functions {
+  function getBalance(userId: UUID): INTEGER {
+    execute: """SELECT 1"""
+  }
+}
+cron {
+  job hourly {
+    schedule: "0 * * * *"
+    call: getBalance
+  }
+}`,
+      'app.schema',
+    );
+
+    assert.throws(
+      () => validateMergedSchema(schema),
+      (error: unknown) => {
+        assert.ok(error instanceof SchemaError);
+        assert.match(error.message, /zero-argument function/);
+        return true;
+      },
+    );
+  });
+
+  it('rejects auth templates in cron execute bodies', () => {
+    const schema = parseFragment(
+      `extensions { pg_cron }
+cron {
+  job bad {
+    schedule: "0 * * * *"
+    execute: "SELECT {{auth.user.id}}"
+  }
+}`,
+      'app.schema',
+    );
+
+    assert.throws(
+      () => validateMergedSchema(schema),
+      (error: unknown) => {
+        assert.ok(error instanceof SchemaError);
+        assert.match(error.message, /\{\{auth\.\*\}\}/);
+        return true;
+      },
+    );
+  });
+
+  it('accepts a valid cron job that calls a zero-arg function', () => {
+    const schema = parseFragment(
+      `extensions { pg_cron }
+functions {
+  function expireSessions(): VOID {
+    execute: """SELECT 1"""
+  }
+}
+cron {
+  job expireSessions {
+    schedule: "0 * * * *"
+    call: expireSessions
   }
 }`,
       'app.schema',

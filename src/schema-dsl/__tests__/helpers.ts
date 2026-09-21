@@ -25,6 +25,10 @@ export function wrapFunctions(body: string): string {
   return `extensions {}\nenums {}\nmodels {}\nfunctions { ${body} }`;
 }
 
+export function wrapCron(body: string): string {
+  return `extensions { pg_cron }\nenums {}\nmodels {}\nfunctions {}\ncron { ${body} }`;
+}
+
 export function parseSnippet(source: string) {
   return parse(source);
 }

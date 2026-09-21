@@ -74,7 +74,7 @@
       "patterns": [
         {
           "name": "keyword.control.schema-dsl",
-          "match": "\\b(extensions|enums|predicates|models|model|functions|function|partition)\\b"
+          "match": "\\b(extensions|enums|predicates|models|model|views|view|materialized|functions|function|cron|job|partition)\\b"
         }
       ]
     },
@@ -118,7 +118,7 @@
         },
         {
           "name": "support.type.property-name.schema-dsl",
-          "match": "\\b(?:fields|references|onDelete|onUpdate|role|allow|where|timing|event|level|execute|pattern|message|min|max|name|type|unique|version|language|volatility|security|by|expression|count|from|to|in|default|modulus|remainder)\\b"
+          "match": "\\b(?:fields|references|onDelete|onUpdate|role|allow|where|timing|event|level|execute|pattern|message|min|max|name|type|unique|version|language|volatility|security|by|expression|count|from|to|in|default|modulus|remainder|schedule|call|as)\\b"
         }
       ]
     },

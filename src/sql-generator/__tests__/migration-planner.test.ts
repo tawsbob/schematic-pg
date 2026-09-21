@@ -356,4 +356,78 @@ model Audit {
     const migrations = planner.generateMigration(oldSchema, newSchema);
     assert.deepEqual(migrations, [{ kind: 'ReplaceFunction', functionName: 'search' }]);
   });
+
+  it('detects added and dropped cron jobs', () => {
+    const oldSchema = parse(`extensions { pg_cron }\ncron {}`);
+    const newSchema = parse(`extensions { pg_cron }
+cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`);
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.deepEqual(
+      migrations.filter((migration) => migration.kind === 'CreateCronJob'),
+      [{ kind: 'CreateCronJob', jobName: 'nightlyVacuum' }],
+    );
+
+    const reverse = planner.generateMigration(newSchema, oldSchema);
+    assert.deepEqual(
+      reverse.filter((migration) => migration.kind === 'DropCronJob'),
+      [{ kind: 'DropCronJob', jobName: 'nightlyVacuum' }],
+    );
+  });
+
+  it('detects cron job schedule changes as replace', () => {
+    const oldSchema = parse(`extensions { pg_cron }
+cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`);
+    const newSchema = parse(`extensions { pg_cron }
+cron {
+  job nightlyVacuum {
+    schedule: "0 4 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`);
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.deepEqual(migrations, [{ kind: 'ReplaceCronJob', jobName: 'nightlyVacuum' }]);
+  });
+
+  it('detects cron job command changes as replace', () => {
+    const oldSchema = parse(`extensions { pg_cron }
+cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`);
+    const newSchema = parse(`extensions { pg_cron }
+functions {
+  function vacuumPublic(): VOID {
+    execute: """VACUUM ANALYZE"""
+  }
+}
+cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    call: vacuumPublic
+  }
+}`);
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.ok(migrations.some((migration) => migration.kind === 'CreateFunction'));
+    assert.ok(
+      migrations.some(
+        (migration) =>
+          migration.kind === 'ReplaceCronJob' && migration.jobName === 'nightlyVacuum',
+      ),
+    );
+  });
 });

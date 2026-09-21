@@ -14,7 +14,7 @@ schematic-pg is a schema-driven backend framework for PostgreSQL and Node.js. **
 
 1. **Never edit `generated/`** — it is overwritten on every `generate` / `dev` run.
 2. **Regenerate after changes** to the schema (`app.schema` or `schema/*.schema`), `src/routes/`, or `src/hooks/` (`schematic-pg generate` or `schematic-pg dev`).
-3. **Edit the schema** for models, relations, policies, indexes, triggers, partitions, and SQL functions. Prefer `schema/*.schema` fragments for larger domains; `init` scaffolds single-file `app.schema`.
+3. **Edit the schema** for models, relations, policies, indexes, triggers, partitions, SQL functions, and cron jobs. Prefer `schema/*.schema` fragments for larger domains; `init` scaffolds single-file `app.schema`.
 4. **Use extension points** for app-specific logic: `src/routes/` (custom HTTP) and `src/hooks/` (lifecycle hooks).
 5. **Do not hand-write SQL** for CRUD — use the generated DB client or REST API.
 
@@ -30,7 +30,8 @@ my-app/
 ├── schema.sql              # Generated PostgreSQL DDL (read-only)
 ├── AGENTS.md               # This file
 ├── .env                    # DATABASE_URL, JWT_*, CORS_ORIGIN
-├── docker-compose.yml      # Local PostgreSQL
+├── docker-compose.yml      # Local PostgreSQL (+ pg_cron via Dockerfile.postgres)
+├── Dockerfile.postgres     # Postgres 18 image with postgresql-18-cron
 ├── generated/              # Generated — do not edit
 │   ├── db.ts               # createDbClient(pool)
 │   ├── db-types.ts         # Model interfaces
@@ -73,7 +74,7 @@ npx schematic-pg dev
 
 ## Schema DSL Essentials
 
-Sections (`extensions`, `enums`, `predicates`, `models`, `functions`) are optional; omit empty ones. Split across `schema/*.schema` when useful — see project docs for fragment merge rules.
+Sections (`extensions`, `enums`, `predicates`, `models`, `views`, `functions`, `cron`) are optional; omit empty ones. Split across `schema/*.schema` when useful — see project docs for fragment merge rules.
 
 ```ts
 extensions { pgcrypto; uuid-ossp }
@@ -125,7 +126,8 @@ models {
 - **Predicates:** `predicates { name: "sql..." | """multiline sql...""" }` — named SQL snippets merged across fragments; referenced as `@policy(where: name)`. Codegen inlines the SQL into `generated/policies.ts`.
 - **Validation:** `@regex(...)`, `@range(min: ..., max: ...)` flow into generated Zod schemas.
 - **Indexes / triggers / partitions:** `@@index(...)`, `@@trigger { timing, event, level, execute: """...""" }`, `@@partition { by: RANGE|LIST|HASH, fields: [...], partition Name { … } }`.
-- **SQL functions:** optional `functions { function name(args): ReturnType { execute: """...""" } }` after `models`. `ReturnType` may be a scalar (`INTEGER`, `TRIGGER`, `VOID`, …) or `TABLE(col: Type, …)`. Names snake_case in SQL; call scalars with `SELECT fn($1)`, table functions with `SELECT * FROM fn($1)` via `db.$queryRaw`.
+- **SQL functions:** optional `functions { function name(args): ReturnType { execute: """...""" } }` after `models` / `views`. `ReturnType` may be a scalar (`INTEGER`, `TRIGGER`, `VOID`, …) or `TABLE(col: Type, …)`. Names snake_case in SQL; call scalars with `SELECT fn($1)`, table functions with `SELECT * FROM fn($1)` via `db.$queryRaw`.
+- **Cron jobs:** optional `cron { job name { schedule: "...", execute: "..." | call: fnName } }` after `functions`. Requires `extensions { pg_cron }`. `call` must name a zero-arg, non-TRIGGER, non-TABLE function. Needs a Postgres image with pg_cron + `shared_preload_libraries`.
 
 ## Database Client
 

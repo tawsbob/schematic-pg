@@ -64,6 +64,44 @@ describe('Schema DSL language server', () => {
     assert.equal(rest?.detail, 'model attribute');
   });
 
+  it('indexes cron jobs and offers call completions for zero-arg functions', () => {
+    const validSource = `extensions { pg_cron }
+functions {
+  function expireSessions(): VOID {
+    execute: """SELECT 1"""
+  }
+  function getBalance(userId: UUID): INTEGER {
+    execute: """SELECT 1"""
+  }
+}
+cron {
+  job expireSessions {
+    schedule: "0 * * * *"
+    call: expireSessions
+  }
+}`;
+    const { schema } = parseDocument(validSource);
+    assert.ok(schema);
+    const index = buildSchemaIndex(schema);
+    assert.ok(index.jobs.has('expireSessions'));
+
+    const completionSource = `cron {
+  job expireSessions {
+    schedule: "0 * * * *"
+    call: 
+  }
+}`;
+    const callLine = completionSource.split('\n').findIndex((line) => line.includes('call:'));
+    const callCompletions = getCompletions(
+      completionSource,
+      Position.create(callLine, '    call: '.length),
+      schema,
+    );
+    const labels = callCompletions.map((item) => item.label);
+    assert.ok(labels.includes('expireSessions'));
+    assert.ok(!labels.includes('getBalance'));
+  });
+
   it('catalog includes known decorators used in integration tests', () => {
     for (const decorator of ['id', 'default', 'unique', 'regex', 'range', 'relation', 'policy', 'rest', 'index', 'trigger']) {
       assert.ok(KNOWN_DECORATORS.includes(decorator as (typeof KNOWN_DECORATORS)[number]));

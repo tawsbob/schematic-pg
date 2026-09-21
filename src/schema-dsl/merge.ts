@@ -1,4 +1,5 @@
 import type {
+  CronJob,
   Enum,
   Extension,
   Model,
@@ -59,6 +60,7 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
   const modelEntries: Array<{ item: Model; source: string }> = [];
   const viewEntries: Array<{ item: View; source: string }> = [];
   const functionEntries: Array<{ item: SqlFunction; source: string }> = [];
+  const jobEntries: Array<{ item: CronJob; source: string }> = [];
 
   for (const fragment of fragments) {
     for (const item of fragment.schema.extensions) {
@@ -79,6 +81,9 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     for (const item of fragment.schema.functions) {
       functionEntries.push({ item, source: fragment.source });
     }
+    for (const item of fragment.schema.jobs) {
+      jobEntries.push({ item, source: fragment.source });
+    }
   }
 
   extensionEntries.sort((left, right) => byName(left.item, right.item));
@@ -87,6 +92,7 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
   modelEntries.sort((left, right) => byName(left.item, right.item));
   viewEntries.sort((left, right) => byName(left.item, right.item));
   functionEntries.sort((left, right) => byName(left.item, right.item));
+  jobEntries.sort((left, right) => byName(left.item, right.item));
 
   const extensions = extensionEntries.map((entry) => entry.item);
   const enums = enumEntries.map((entry) => entry.item);
@@ -94,6 +100,7 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
   const models = modelEntries.map((entry) => entry.item);
   const views = viewEntries.map((entry) => entry.item);
   const functions = functionEntries.map((entry) => entry.item);
+  const jobs = jobEntries.map((entry) => entry.item);
 
   const schema: Schema = {
     kind: 'Schema',
@@ -103,6 +110,7 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     models,
     views,
     functions,
+    jobs,
     loc: {
       line: 1,
       col: 1,
@@ -135,6 +143,10 @@ export function mergeFragments(fragments: SchemaFragment[]): MergedSchema {
     formatSection(
       'functions',
       functionEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc)),
+    ),
+    formatSection(
+      'cron',
+      jobEntries.map((entry) => sliceDeclaration(entry.source, entry.item.loc)),
     ),
   ].filter((section): section is string => section !== null);
 

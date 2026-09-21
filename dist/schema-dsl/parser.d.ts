@@ -1,4 +1,4 @@
-import type { Attribute, Field, Model, Schema, SqlFunction, View } from './ast.js';
+import type { Attribute, CronJob, Field, Model, Schema, SqlFunction, View } from './ast.js';
 import { Token } from './tokens.js';
 export declare class ParseError extends Error {
     readonly line: number;
@@ -29,6 +29,9 @@ export declare class Parser {
     parseView(existingNames?: Set<string>): View;
     private parseViewBody;
     private parseFunctionsSection;
+    private parseCronSection;
+    parseCronJob(existingNames?: Set<string>): CronJob;
+    private parseCronJobBody;
     parseFunction(existingNames?: Set<string>): SqlFunction;
     private parseFunctionReturn;
     private parseTableReturn;

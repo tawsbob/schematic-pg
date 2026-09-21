@@ -37,6 +37,12 @@ export function getHover(
         contents: `**function ${word}**\n\n${definition.detail ?? ''}`.trim(),
       };
     }
+
+    if (definition.kind === 'job') {
+      return {
+        contents: `**job ${word}**\n\n${definition.detail ?? ''}`.trim(),
+      };
+    }
   }
 
   for (const [fieldKey, fieldSymbol] of index.fields.entries()) {

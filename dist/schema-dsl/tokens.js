@@ -10,6 +10,8 @@ export var TokenType;
     TokenType["MATERIALIZED"] = "MATERIALIZED";
     TokenType["FUNCTIONS"] = "FUNCTIONS";
     TokenType["FUNCTION"] = "FUNCTION";
+    TokenType["CRON"] = "CRON";
+    TokenType["JOB"] = "JOB";
     TokenType["STRING"] = "STRING";
     TokenType["TRIPLE_STRING"] = "TRIPLE_STRING";
     TokenType["NUMBER"] = "NUMBER";
@@ -39,6 +41,8 @@ const KEYWORDS = {
     materialized: TokenType.MATERIALIZED,
     functions: TokenType.FUNCTIONS,
     function: TokenType.FUNCTION,
+    cron: TokenType.CRON,
+    job: TokenType.JOB,
     true: TokenType.BOOLEAN,
     false: TokenType.BOOLEAN,
 };

@@ -2,6 +2,7 @@ import type {
   Attribute,
   AttributeArgs,
   BlockLiteral,
+  CronJob,
   Directive,
   Enum,
   Extension,
@@ -66,6 +67,7 @@ export class Parser {
     const models = this.check(TokenType.MODELS) ? this.parseModelsSection() : [];
     const views = this.check(TokenType.VIEWS) ? this.parseViewsSection() : [];
     const functions = this.check(TokenType.FUNCTIONS) ? this.parseFunctionsSection() : [];
+    const jobs = this.check(TokenType.CRON) ? this.parseCronSection() : [];
 
     if (!this.isAtEnd()) {
       const unexpected = this.current();
@@ -85,24 +87,29 @@ export class Parser {
       models,
       views,
       functions,
+      jobs,
       loc: this.loc(start),
     };
   }
 
   private sectionOrderHint(type: TokenType): string | null {
+    const order =
+      "'extensions', 'enums', 'predicates', 'models', 'views', 'functions', 'cron'";
     switch (type) {
       case TokenType.EXTENSIONS:
-        return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (extensions must come first)";
+        return `sections in order ${order} (extensions must come first)`;
       case TokenType.ENUMS:
-        return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (enums before predicates/models/views/functions)";
+        return `sections in order ${order} (enums before predicates/models/views/functions/cron)`;
       case TokenType.PREDICATES:
-        return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (predicates before models/views/functions)";
+        return `sections in order ${order} (predicates before models/views/functions/cron)`;
       case TokenType.MODELS:
-        return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (models before views/functions)";
+        return `sections in order ${order} (models before views/functions/cron)`;
       case TokenType.VIEWS:
-        return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions' (views before functions)";
+        return `sections in order ${order} (views before functions/cron)`;
       case TokenType.FUNCTIONS:
-        return "sections in order 'extensions', 'enums', 'predicates', 'models', 'views', 'functions'";
+        return `sections in order ${order} (functions before cron)`;
+      case TokenType.CRON:
+        return `sections in order ${order}`;
       default:
         return null;
     }
@@ -374,6 +381,127 @@ export class Parser {
 
     this.expect(TokenType.RBRACE, "'}'");
     return functions;
+  }
+
+  private parseCronSection(): CronJob[] {
+    this.expect(TokenType.CRON, "'cron'");
+    this.expect(TokenType.LBRACE, "'{'");
+    const jobs: CronJob[] = [];
+    const names = new Set<string>();
+
+    while (!this.check(TokenType.RBRACE)) {
+      jobs.push(this.parseCronJob(names));
+    }
+
+    this.expect(TokenType.RBRACE, "'}'");
+    return jobs;
+  }
+
+  parseCronJob(existingNames?: Set<string>): CronJob {
+    const start = this.expect(TokenType.JOB, "'job'");
+    const nameToken = this.expect(TokenType.IDENT, 'job name');
+    if (existingNames?.has(nameToken.value)) {
+      throw new ParseError(
+        `unique job name, "${nameToken.value}" already defined`,
+        nameToken,
+        this.file,
+      );
+    }
+    existingNames?.add(nameToken.value);
+
+    this.expect(TokenType.LBRACE, "'{'");
+    const body = this.parseCronJobBody();
+    this.expect(TokenType.RBRACE, "'}'");
+
+    return {
+      kind: 'CronJob',
+      name: nameToken.value,
+      schedule: body.schedule,
+      execute: body.execute,
+      call: body.call,
+      loc: this.loc(start),
+    };
+  }
+
+  private parseCronJobBody(): {
+    schedule: string;
+    execute?: string;
+    call?: string;
+  } {
+    if (this.check(TokenType.RBRACE)) {
+      throw new ParseError("job body key 'schedule'", this.current(), this.file);
+    }
+
+    let schedule: string | undefined;
+    let execute: string | undefined;
+    let call: string | undefined;
+
+    do {
+      const keyToken = this.expect(TokenType.IDENT, 'job body key');
+      this.expect(TokenType.COLON, "':'");
+      const valueToken = this.current();
+      const value = this.parseValue();
+
+      switch (keyToken.value) {
+        case 'schedule': {
+          if (value.kind !== 'StringLiteral' && value.kind !== 'TripleStringLiteral') {
+            throw new ParseError('string or triple-quoted schedule', valueToken, this.file);
+          }
+          schedule = value.value.trim();
+          if (schedule.length === 0) {
+            throw new ParseError('non-empty schedule', valueToken, this.file);
+          }
+          break;
+        }
+        case 'execute': {
+          if (value.kind !== 'StringLiteral' && value.kind !== 'TripleStringLiteral') {
+            throw new ParseError('string or triple-quoted execute body', valueToken, this.file);
+          }
+          execute = value.value.trim();
+          if (execute.length === 0) {
+            throw new ParseError('non-empty execute body', valueToken, this.file);
+          }
+          break;
+        }
+        case 'call': {
+          if (value.kind !== 'Identifier') {
+            throw new ParseError('function identifier', valueToken, this.file);
+          }
+          call = value.name;
+          break;
+        }
+        default:
+          throw new ParseError(
+            "job body key 'schedule', 'execute', or 'call'",
+            keyToken,
+            this.file,
+          );
+      }
+
+      this.match(TokenType.COMMA);
+    } while (!this.check(TokenType.RBRACE));
+
+    if (!schedule) {
+      throw new ParseError("job body key 'schedule'", this.current(), this.file);
+    }
+
+    if (execute !== undefined && call !== undefined) {
+      throw new ParseError(
+        "exactly one of 'execute' or 'call'",
+        this.current(),
+        this.file,
+      );
+    }
+
+    if (execute === undefined && call === undefined) {
+      throw new ParseError(
+        "job body key 'execute' or 'call'",
+        this.current(),
+        this.file,
+      );
+    }
+
+    return { schedule, execute, call };
   }
 
   parseFunction(existingNames?: Set<string>): SqlFunction {

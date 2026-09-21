@@ -1,6 +1,7 @@
 import type { Schema } from 'schematic-pg/schema-dsl';
 import { CompletionItem, CompletionItemKind, Position } from 'vscode-languageserver';
 import {
+  CRON_JOB_KEYS,
   DEFAULT_FUNCTIONS,
   FIELD_ATTRIBUTES,
   FUNCTION_KEYS,
@@ -30,6 +31,7 @@ import {
 } from './catalog.js';
 import {
   findContainingFunction,
+  findContainingJob,
   findContainingModel,
   getEnumNames,
   getEnumValues,
@@ -113,6 +115,14 @@ export function getCompletions(
     ];
   }
 
+  if (/job\s+\w+\s*\{[^}]*$/.test(prefix)) {
+    return cronJobCompletions(schema, prefix);
+  }
+
+  if (/call:\s*[\w]*$/.test(prefix) && schema) {
+    return cronJobCompletions(schema, prefix);
+  }
+
   if (/@default\s*\([^)]*$/.test(prefix)) {
     return DEFAULT_FUNCTIONS.map((fn) =>
       item(`${fn}()`, CompletionItemKind.Function, 'default expression'),
@@ -138,6 +148,11 @@ export function getCompletions(
   }
 
   if (schema) {
+    const job = findContainingJob(schema, position.line);
+    if (job && (/^\s+[\w]*$/.test(trimmed) || /call:\s*[\w]*$/.test(prefix))) {
+      return cronJobCompletions(schema, prefix);
+    }
+
     const sqlFunction = findContainingFunction(schema, position.line);
     if (sqlFunction && /^\s+[\w]*$/.test(trimmed)) {
       return [
@@ -155,6 +170,16 @@ export function getCompletions(
   }
 
   return [];
+}
+
+function cronJobCompletions(schema: Schema | undefined, prefix: string): CompletionItem[] {
+  if (/call:\s*[\w]*$/.test(prefix) && schema) {
+    return schema.functions
+      .filter((fn) => fn.params.length === 0)
+      .map((fn) => item(fn.name, CompletionItemKind.Function, 'zero-arg function'));
+  }
+
+  return CRON_JOB_KEYS.map((key) => item(key, CompletionItemKind.Property, 'cron job key'));
 }
 
 function isTopLevelContext(text: string, position: Position): boolean {

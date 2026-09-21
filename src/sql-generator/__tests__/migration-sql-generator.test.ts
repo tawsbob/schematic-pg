@@ -346,6 +346,83 @@ model Legacy { id: UUID @id }`),
     assert.ok(dropIndex >= 0);
     assert.ok(createIndex > dropIndex);
   });
+
+  it('generates cron job creation and removal', () => {
+    const sql = diffSql(
+      `extensions { pg_cron }\ncron {}`,
+      `extensions { pg_cron }
+cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`,
+    );
+
+    assert.match(sql, /SELECT cron\.schedule\(/);
+    assert.match(sql, /nightly_vacuum/);
+    assert.match(sql, /VACUUM ANALYZE/);
+
+    const reverse = diffSql(
+      `extensions { pg_cron }
+cron {
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`,
+      `extensions { pg_cron }\ncron {}`,
+    );
+
+    assert.match(reverse, /WHERE jobname = 'nightly_vacuum'/);
+    assert.doesNotMatch(reverse, /cron\.schedule/);
+  });
+
+  it('orders DropCronJob before DropFunction and CreateCronJob after CreateFunction', () => {
+    const createSql = diffSql(
+      `extensions { pg_cron }`,
+      `extensions { pg_cron }
+functions {
+  function expireSessions(): VOID {
+    execute: """SELECT 1"""
+  }
+}
+cron {
+  job expireSessions {
+    schedule: "0 * * * *"
+    call: expireSessions
+  }
+}`,
+    );
+
+    const createFunctionIndex = createSql.indexOf(
+      'CREATE OR REPLACE FUNCTION expire_sessions()',
+    );
+    const createCronIndex = createSql.indexOf('SELECT cron.schedule(');
+    assert.ok(createFunctionIndex >= 0);
+    assert.ok(createCronIndex > createFunctionIndex);
+
+    const dropSql = diffSql(
+      `extensions { pg_cron }
+functions {
+  function expireSessions(): VOID {
+    execute: """SELECT 1"""
+  }
+}
+cron {
+  job expireSessions {
+    schedule: "0 * * * *"
+    call: expireSessions
+  }
+}`,
+      `extensions { pg_cron }`,
+    );
+
+    const dropCronIndex = dropSql.indexOf("WHERE jobname = 'expire_sessions'");
+    const dropFunctionIndex = dropSql.indexOf('DROP FUNCTION IF EXISTS expire_sessions()');
+    assert.ok(dropCronIndex >= 0);
+    assert.ok(dropFunctionIndex > dropCronIndex);
+  });
 });
 
 describe('schema snapshot and diff integration', () => {

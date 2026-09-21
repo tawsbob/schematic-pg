@@ -22,7 +22,7 @@
 ```
 
 1. **Load** — Resolve `app.schema` or `schema/*.schema` fragments, parse each file, merge (name-sorted), and validate once. Downstream generators always receive a single AST. See [Schema fragments](schema-fragments.md).
-2. **Generate SQL** — The DDL generator emits idempotent PostgreSQL: extensions, enums, tables, indexes, foreign keys, functions, and triggers. All identifiers are automatically converted to `snake_case`.
+2. **Generate SQL** — The DDL generator emits idempotent PostgreSQL: extensions, enums, tables, indexes, foreign keys, views, functions, triggers, and cron jobs (when declared). All identifiers are automatically converted to `snake_case`.
 3. **Generate DB client** — The client generator emits TypeScript interfaces (including `{Model}Include` types), relation metadata, and a `createDbClient(pool)` factory with per-model CRUD methods, nested `include` eager-loading, and `$transaction` for atomic multi-model writes. All SQL uses `$1`, `$2`, … placeholders — user input is never interpolated.
 4. **Generate API** — The route generator emits Hono routers with:
    - Zod-validated request bodies and path params (driven by `@regex` and `@range`)

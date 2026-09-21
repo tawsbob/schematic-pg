@@ -21,3 +21,5 @@
 - [x] VS Code extension with syntax highlighting and language server
 - [x] SQL functions in the schema DSL (`functions { function … }`, diff-based migrations)
 - [x] Table partitions in the schema DSL (`@@partition`, add/remove via `db:diff`)
+- [x] SQL views / materialized views in the schema DSL (`views { view … }`)
+- [x] Cron jobs via pg_cron (`cron { job … }`, diff-based migrations)

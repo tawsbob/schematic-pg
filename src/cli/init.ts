@@ -9,6 +9,7 @@ import {
   AUTH_ROUTE_TEMPLATE,
   createDockerComposeTemplate,
   createPackageJsonTemplate,
+  DOCKERFILE_POSTGRES_TEMPLATE,
   ENV_TEMPLATE,
   GITIGNORE_TEMPLATE,
   HEALTH_ROUTE_TEMPLATE,
@@ -109,6 +110,14 @@ export async function runInit(args: string[]): Promise<void> {
     console.log('Created docker-compose.yml');
   } else {
     console.log('Skipped existing file: docker-compose.yml');
+  }
+
+  const dockerfilePath = path.join(targetDir, 'Dockerfile.postgres');
+  if (!existsSync(dockerfilePath)) {
+    await writeFile(dockerfilePath, DOCKERFILE_POSTGRES_TEMPLATE, 'utf8');
+    console.log('Created Dockerfile.postgres');
+  } else {
+    console.log('Skipped existing file: Dockerfile.postgres');
   }
 
   const packageJsonPath = path.join(targetDir, 'package.json');

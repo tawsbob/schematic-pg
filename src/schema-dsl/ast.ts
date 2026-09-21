@@ -16,6 +16,7 @@ export interface Schema {
   models: Model[];
   views: View[];
   functions: SqlFunction[];
+  jobs: CronJob[];
   loc: SourceLocation;
 }
 
@@ -98,6 +99,15 @@ export interface SqlFunction {
   volatility?: string;
   security?: string;
   execute: string;
+  loc: SourceLocation;
+}
+
+export interface CronJob {
+  kind: 'CronJob';
+  name: string;
+  schedule: string;
+  execute?: string;
+  call?: string;
   loc: SourceLocation;
 }
 

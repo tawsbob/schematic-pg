@@ -1,4 +1,4 @@
-import type { Field, FunctionReturn, Model, Schema, SourceLocation, SqlFunction, TypeExpr } from 'schematic-pg/schema-dsl';
+import type { CronJob, Field, FunctionReturn, Model, Schema, SourceLocation, SqlFunction, TypeExpr } from 'schematic-pg/schema-dsl';
 import { isTableReturn } from 'schematic-pg/schema-dsl';
 import { Range } from 'vscode-languageserver';
 import { toRange } from './utils.js';
@@ -10,7 +10,8 @@ export type SymbolKind =
   | 'field'
   | 'type-ref'
   | 'extension'
-  | 'function';
+  | 'function'
+  | 'job';
 
 export interface IndexedSymbol {
   name: string;
@@ -28,6 +29,8 @@ export interface SchemaIndex {
   typeRefs: IndexedSymbol[];
   enumValues: Map<string, IndexedSymbol>;
   functions: Map<string, IndexedSymbol>;
+  jobs: Map<string, IndexedSymbol>;
+  callRefs: IndexedSymbol[];
 }
 
 export function buildSchemaIndex(schema: Schema): SchemaIndex {
@@ -38,6 +41,8 @@ export function buildSchemaIndex(schema: Schema): SchemaIndex {
   const typeRefs: IndexedSymbol[] = [];
   const enumValues = new Map<string, IndexedSymbol>();
   const functions = new Map<string, IndexedSymbol>();
+  const jobs = new Map<string, IndexedSymbol>();
+  const callRefs: IndexedSymbol[] = [];
 
   for (const extension of schema.extensions) {
     const symbol: IndexedSymbol = {
@@ -110,7 +115,30 @@ export function buildSchemaIndex(schema: Schema): SchemaIndex {
     functions.set(sqlFunction.name, functionSymbol);
   }
 
-  return { symbols, enums, models, fields, typeRefs, enumValues, functions };
+  for (const job of schema.jobs) {
+    const jobSymbol: IndexedSymbol = {
+      name: job.name,
+      kind: 'job',
+      range: toRange(job.loc),
+      detail: formatJobDetail(job),
+    };
+    symbols.push(jobSymbol);
+    jobs.set(job.name, jobSymbol);
+
+    if (job.call) {
+      const callRef: IndexedSymbol = {
+        name: job.call,
+        kind: 'type-ref',
+        range: toRange(job.loc),
+        containerName: job.name,
+        detail: `call: ${job.call}`,
+      };
+      callRefs.push(callRef);
+      symbols.push(callRef);
+    }
+  }
+
+  return { symbols, enums, models, fields, typeRefs, enumValues, functions, jobs, callRefs };
 }
 
 function createTypeRef(type: TypeExpr, containerName: string): IndexedSymbol | undefined {
@@ -157,8 +185,20 @@ function formatFunctionReturn(returns: FunctionReturn): string {
   return formatType(returns);
 }
 
+function formatJobDetail(job: CronJob): string {
+  if (job.call) {
+    return `schedule: ${job.schedule}, call: ${job.call}`;
+  }
+  return `schedule: ${job.schedule}`;
+}
+
 export function findDefinition(index: SchemaIndex, word: string): IndexedSymbol | undefined {
-  return index.enums.get(word) ?? index.models.get(word) ?? index.functions.get(word);
+  return (
+    index.enums.get(word) ??
+    index.models.get(word) ??
+    index.functions.get(word) ??
+    index.jobs.get(word)
+  );
 }
 
 export function findReferences(index: SchemaIndex, word: string): Range[] {
@@ -172,9 +212,19 @@ export function findReferences(index: SchemaIndex, word: string): Range[] {
     ranges.push(index.models.get(word)!.range);
   }
 
+  if (index.functions.has(word)) {
+    ranges.push(index.functions.get(word)!.range);
+  }
+
   for (const typeRef of index.typeRefs) {
     if (typeRef.name === word) {
       ranges.push(typeRef.range);
+    }
+  }
+
+  for (const callRef of index.callRefs) {
+    if (callRef.name === word) {
+      ranges.push(callRef.range);
     }
   }
 
@@ -209,6 +259,14 @@ export function findContainingFunction(schema: Schema, positionLine: number): Sq
   return schema.functions.find((sqlFunction) => {
     const start = sqlFunction.loc.line;
     const end = sqlFunction.loc.endLine ?? sqlFunction.loc.line;
+    return positionLine + 1 >= start && positionLine + 1 <= end;
+  });
+}
+
+export function findContainingJob(schema: Schema, positionLine: number): CronJob | undefined {
+  return schema.jobs.find((job) => {
+    const start = job.loc.line;
+    const end = job.loc.endLine ?? job.loc.line;
     return positionLine + 1 >= start && positionLine + 1 <= end;
   });
 }

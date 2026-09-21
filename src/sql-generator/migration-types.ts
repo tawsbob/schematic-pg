@@ -25,7 +25,10 @@ export type Migration =
   | ReplaceView
   | DropView
   | CreateMaterializedView
-  | DropMaterializedView;
+  | DropMaterializedView
+  | CreateCronJob
+  | ReplaceCronJob
+  | DropCronJob;
 
 export interface CreateTable {
   kind: 'CreateTable';
@@ -181,4 +184,19 @@ export interface CreateMaterializedView {
 export interface DropMaterializedView {
   kind: 'DropMaterializedView';
   viewName: string;
+}
+
+export interface CreateCronJob {
+  kind: 'CreateCronJob';
+  jobName: string;
+}
+
+export interface ReplaceCronJob {
+  kind: 'ReplaceCronJob';
+  jobName: string;
+}
+
+export interface DropCronJob {
+  kind: 'DropCronJob';
+  jobName: string;
 }

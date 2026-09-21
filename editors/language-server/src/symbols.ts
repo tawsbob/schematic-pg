@@ -96,5 +96,21 @@ export function getDocumentSymbols(schema: Schema): DocumentSymbol[] {
     );
   }
 
+  for (const job of schema.jobs) {
+    const jobSymbol = index.jobs.get(job.name);
+    if (!jobSymbol) {
+      continue;
+    }
+
+    symbols.push(
+      DocumentSymbol.create(
+        job.name,
+        LspSymbolKind.Event,
+        jobSymbol.range,
+        jobSymbol.range,
+      ),
+    );
+  }
+
   return symbols;
 }

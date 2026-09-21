@@ -1,5 +1,6 @@
 import type { Field, Model, Schema, View } from '../schema-dsl/ast.js';
 import type { Migration } from './migration-types.js';
+import { normalizeCronJob } from './generators/cron-jobs.js';
 import {
   flattenPartitions,
   partitionStrategySignature,
@@ -37,6 +38,7 @@ export class MigrationPlanner {
     migrations.push(...this.diffIndexes(oldSchema, newSchema, viewMigrations));
     migrations.push(...this.diffFunctions(oldSchema, newSchema));
     migrations.push(...this.diffTriggers(oldSchema, newSchema));
+    migrations.push(...this.diffCronJobs(oldSchema, newSchema));
     return this.suppressMigrationsCoveredByConvert(migrations);
   }
 
@@ -567,6 +569,40 @@ export class MigrationPlanner {
     }
 
     return migrations;
+  }
+
+  private diffCronJobs(oldSchema: Schema, newSchema: Schema): Migration[] {
+    const migrations: Migration[] = [];
+    const oldJobs = new Map(
+      oldSchema.jobs.map((job) => [job.name, this.cronJobSignature(job)]),
+    );
+    const newJobs = new Map(
+      newSchema.jobs.map((job) => [job.name, this.cronJobSignature(job)]),
+    );
+
+    for (const [jobName, newSignature] of newJobs) {
+      const oldSignature = oldJobs.get(jobName);
+      if (!oldSignature) {
+        migrations.push({ kind: 'CreateCronJob', jobName });
+        continue;
+      }
+
+      if (oldSignature !== newSignature) {
+        migrations.push({ kind: 'ReplaceCronJob', jobName });
+      }
+    }
+
+    for (const jobName of oldJobs.keys()) {
+      if (!newJobs.has(jobName)) {
+        migrations.push({ kind: 'DropCronJob', jobName });
+      }
+    }
+
+    return migrations;
+  }
+
+  private cronJobSignature(job: Schema['jobs'][number]): string {
+    return JSON.stringify(normalizeCronJob(job));
   }
 
   private triggerSignatures(model: Model): Set<string> {

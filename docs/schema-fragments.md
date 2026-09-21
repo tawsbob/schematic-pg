@@ -21,17 +21,18 @@ schematic-pg dev                   # watches the resolved source
 
 ## Fragment shape
 
-Each fragment is a normal schema document. Include only the sections you need — empty `extensions {}` / `enums {}` / `predicates {}` / `models {}` / `functions {}` shells are unnecessary.
+Each fragment is a normal schema document. Include only the sections you need — empty `extensions {}` / `enums {}` / `predicates {}` / `models {}` / `views {}` / `functions {}` / `cron {}` shells are unnecessary.
 
 When a file has more than one section, keep this order:
 
-`extensions` → `enums` → `predicates` → `models` → `functions`
+`extensions` → `enums` → `predicates` → `models` → `views` → `functions` → `cron`
 
 Cross-file references are allowed. A model in `user.schema` may use an enum, related model, or named predicate declared in another fragment. Strict validation runs **once on the merged result**, so:
 
-- Duplicate model / enum / predicate / function / extension names fail the build (errors name both files)
+- Duplicate model / enum / predicate / function / extension / job names fail the build (errors name both files)
 - A field type that is not a primitive, enum, or model fails validation (no silent raw SQL fallthrough)
 - A `@policy` `where` identifier that is not a merged predicate fails validation
+- Cron jobs require `pg_cron` in `extensions`; `call` must resolve to a zero-arg, non-TRIGGER, non-TABLE function
 
 ## Layout example
 
@@ -123,7 +124,7 @@ functions {
 
 Fragments are parsed individually, then merged:
 
-1. Concatenate `extensions`, `enums`, `predicates`, `models`, and `functions`
+1. Concatenate `extensions`, `enums`, `predicates`, `models`, `views`, `functions`, and `cron`
 2. Sort each list **by declaration name** (not file name or glob order)
 3. Emit a canonical schema document for snapshots
 4. Validate the merged AST once

@@ -15,6 +15,8 @@ export declare class MigrationPlanner {
     private viewColumnSignature;
     private diffTriggers;
     private diffFunctions;
+    private diffCronJobs;
+    private cronJobSignature;
     private triggerSignatures;
     private indexSignatures;
     private suppressMigrationsCoveredByConvert;

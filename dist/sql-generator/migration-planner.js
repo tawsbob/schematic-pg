@@ -1,3 +1,4 @@
+import { normalizeCronJob } from './generators/cron-jobs.js';
 import { flattenPartitions, partitionStrategySignature, } from './generators/partitions.js';
 import { collectForeignKeys, functionIdentity, functionSignature, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, parseForeignKeySignature, serializeColumnType, serializeDefault, serializeForeignKey, } from './utils/ast-helpers.js';
 import { toTableName } from './utils/snake-case.js';
@@ -14,6 +15,7 @@ export class MigrationPlanner {
         migrations.push(...this.diffIndexes(oldSchema, newSchema, viewMigrations));
         migrations.push(...this.diffFunctions(oldSchema, newSchema));
         migrations.push(...this.diffTriggers(oldSchema, newSchema));
+        migrations.push(...this.diffCronJobs(oldSchema, newSchema));
         return this.suppressMigrationsCoveredByConvert(migrations);
     }
     diffExtensions(oldSchema, newSchema) {
@@ -418,6 +420,30 @@ export class MigrationPlanner {
             }
         }
         return migrations;
+    }
+    diffCronJobs(oldSchema, newSchema) {
+        const migrations = [];
+        const oldJobs = new Map(oldSchema.jobs.map((job) => [job.name, this.cronJobSignature(job)]));
+        const newJobs = new Map(newSchema.jobs.map((job) => [job.name, this.cronJobSignature(job)]));
+        for (const [jobName, newSignature] of newJobs) {
+            const oldSignature = oldJobs.get(jobName);
+            if (!oldSignature) {
+                migrations.push({ kind: 'CreateCronJob', jobName });
+                continue;
+            }
+            if (oldSignature !== newSignature) {
+                migrations.push({ kind: 'ReplaceCronJob', jobName });
+            }
+        }
+        for (const jobName of oldJobs.keys()) {
+            if (!newJobs.has(jobName)) {
+                migrations.push({ kind: 'DropCronJob', jobName });
+            }
+        }
+        return migrations;
+    }
+    cronJobSignature(job) {
+        return JSON.stringify(normalizeCronJob(job));
     }
     triggerSignatures(model) {
         return new Set(getDirectives(model, 'trigger').map((directive) => JSON.stringify(normalizeTriggerDirective(directive))));

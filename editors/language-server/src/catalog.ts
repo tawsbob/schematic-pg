@@ -9,6 +9,8 @@ export const TOP_LEVEL_KEYWORDS = [
   'materialized',
   'functions',
   'function',
+  'cron',
+  'job',
 ] as const;
 
 export const PG_TYPES = [
@@ -77,6 +79,8 @@ export const FUNCTION_VOLATILITIES = ['VOLATILE', 'STABLE', 'IMMUTABLE'] as cons
 export const FUNCTION_SECURITIES = ['INVOKER', 'DEFINER'] as const;
 
 export const FUNCTION_RETURN_TYPES = ['TRIGGER', 'VOID', 'TABLE'] as const;
+
+export const CRON_JOB_KEYS = ['schedule', 'execute', 'call'] as const;
 
 export const REFERENCE_ACTIONS = ['CASCADE', 'SET_NULL', 'RESTRICT', 'NO_ACTION'] as const;
 

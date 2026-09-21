@@ -121,4 +121,51 @@ describe('SqlGenerator — app.schema', () => {
     assert.match(sql, /LANGUAGE sql/);
     assert.match(sql, /STABLE/);
   });
+
+  it('omits the cron jobs section when no jobs are declared', () => {
+    assert.doesNotMatch(sql, /-- Create cron jobs/);
+  });
+
+  it('generates pg_cron extension without WITH SCHEMA public', () => {
+    const schema = parse(`extensions { pg_cron }\nmodels {}`);
+    const generated = new SqlGenerator().generate(schema);
+    assert.match(generated, /CREATE EXTENSION IF NOT EXISTS "pg_cron";/);
+    assert.doesNotMatch(generated, /"pg_cron" WITH SCHEMA public/);
+  });
+
+  it('generates cron jobs with unschedule then schedule', () => {
+    const schema = parse(`extensions { pg_cron }
+functions {
+  function expireSessions(): VOID {
+    execute: """SELECT 1"""
+  }
+}
+cron {
+  job expireSessions {
+    schedule: "0 * * * *"
+    call: expireSessions
+  }
+  job nightlyVacuum {
+    schedule: "0 3 * * *"
+    execute: "VACUUM ANALYZE"
+  }
+}`);
+    const generated = new SqlGenerator().generate(schema);
+
+    assert.match(generated, /-- Create cron jobs/);
+    assert.match(generated, /WHERE jobname = 'expire_sessions'/);
+    assert.match(
+      generated,
+      /SELECT cron\.schedule\(\s*'expire_sessions',\s*'0 \* \* \* \*',\s*\$cron\$SELECT expire_sessions\(\)\$cron\$/s,
+    );
+    assert.match(
+      generated,
+      /SELECT cron\.schedule\(\s*'nightly_vacuum',\s*'0 3 \* \* \*',\s*\$cron\$VACUUM ANALYZE\$cron\$/s,
+    );
+
+    const functionsHeader = generated.indexOf('-- Create functions');
+    const cronHeader = generated.indexOf('-- Create cron jobs');
+    assert.ok(functionsHeader >= 0);
+    assert.ok(cronHeader > functionsHeader);
+  });
 });

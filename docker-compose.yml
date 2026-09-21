@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:18.4-bookworm
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: schematic-pg-postgres:18-cron
     container_name: schematic-pg-postgres
     restart: unless-stopped
     ports:
@@ -9,6 +12,12 @@ services:
       POSTGRES_USER: postgrest
       POSTGRES_PASSWORD: postgrest
       POSTGRES_DB: postgrest
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_cron
+      - -c
+      - cron.database_name=postgrest
     volumes:
       - ./docker_data/postgres:/var/lib/postgresql
     healthcheck:

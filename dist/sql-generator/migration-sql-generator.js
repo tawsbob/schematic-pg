@@ -1,3 +1,4 @@
+import { generateCreateCronJob, generateDropCronJob, normalizeCronJob, } from './generators/cron-jobs.js';
 import { generateAddEnumValue, generateEnum } from './generators/enums.js';
 import { generateCreateExtension, generateDropExtension } from './generators/extensions.js';
 import { generateForeignKey } from './generators/foreign-keys.js';
@@ -30,9 +31,12 @@ const MIGRATION_ORDER = {
     DropColumn: 9,
     DropConstraint: 10,
     DropIndex: 11,
+    DropCronJob: 11.5,
     DropFunction: 12,
     CreateFunction: 13,
     ReplaceFunction: 14,
+    CreateCronJob: 14.5,
+    ReplaceCronJob: 14.6,
     CreateTrigger: 15,
     DropTrigger: 16,
     DropPartition: 17,
@@ -50,6 +54,7 @@ export class MigrationSqlGenerator {
         const viewMap = new Map(newSchema.views.map((view) => [view.name, view]));
         const enumMap = new Map(newSchema.enums.map((enumDef) => [enumDef.name, enumDef]));
         const functionMap = new Map(newSchema.functions.map((sqlFunction) => [sqlFunction.name, sqlFunction]));
+        const jobMap = new Map(newSchema.jobs.map((job) => [job.name, job]));
         const ordered = [...migrations].sort((left, right) => MIGRATION_ORDER[left.kind] - MIGRATION_ORDER[right.kind]);
         const statements = ordered.map((migration) => this.migrationToSql(migration, {
             newSchema,
@@ -60,11 +65,12 @@ export class MigrationSqlGenerator {
             viewMap,
             enumMap,
             functionMap,
+            jobMap,
         }));
         return `${statements.join('\n\n')}\n`;
     }
     migrationToSql(migration, context) {
-        const { newSchema, oldSchema, enumNames, modelNames, modelMap, viewMap, enumMap, functionMap, } = context;
+        const { newSchema, oldSchema, enumNames, modelNames, modelMap, viewMap, enumMap, functionMap, jobMap, } = context;
         switch (migration.kind) {
             case 'CreateExtension':
                 return generateCreateExtension(migration.extensionName);
@@ -238,6 +244,16 @@ export class MigrationSqlGenerator {
                 return generateDropView(migration.viewName, false);
             case 'DropMaterializedView':
                 return generateDropView(migration.viewName, true);
+            case 'CreateCronJob':
+            case 'ReplaceCronJob': {
+                const job = jobMap.get(migration.jobName);
+                if (!job) {
+                    throw new Error(`Cron job "${migration.jobName}" not found in new schema`);
+                }
+                return generateCreateCronJob(normalizeCronJob(job));
+            }
+            case 'DropCronJob':
+                return generateDropCronJob(migration.jobName);
             default: {
                 const exhaustive = migration;
                 throw new Error(`Unsupported migration kind: ${exhaustive.kind}`);
