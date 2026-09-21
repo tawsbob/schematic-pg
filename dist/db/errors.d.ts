@@ -31,4 +31,9 @@ export declare class NotFoundError extends DatabaseError {
     readonly where: Record<string, unknown>;
     constructor(model: string, where: Record<string, unknown>);
 }
+/** Thrown when INSERT … SELECT with a policy predicate returns no rows. */
+export declare class PolicyInsertDeniedError extends DatabaseError {
+    readonly model: string;
+    constructor(model: string);
+}
 export declare function mapPgError(error: unknown, modelName: string, columnToField: Map<string, string>): DatabaseError;

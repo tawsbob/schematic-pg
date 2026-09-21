@@ -16,6 +16,7 @@ export {
   UniqueConstraintError,
   ForeignKeyConstraintError,
   NotFoundError,
+  PolicyInsertDeniedError,
   mapPgError,
 } from './errors.js';
 export { mapRow, mapRows } from './row-mapper.js';

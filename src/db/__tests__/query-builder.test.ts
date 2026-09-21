@@ -119,6 +119,143 @@ describe('WhereTranslator', () => {
     );
     assert.deepEqual(query.params, ['ADMIN', 50, '%@%', 'Alice', false]);
   });
+
+  it('embeds parameterized $sql policy predicates parenthesized', () => {
+    const translator = new WhereTranslator(userMeta);
+    const query = translator.translate({
+      $sql: { sql: 'id = $1', params: ['user-123'] },
+    });
+
+    assert.equal(query.sql, '(id = $1)');
+    assert.deepEqual(query.params, ['user-123']);
+  });
+
+  it('renumbers $sql placeholders after primary filters (get-by-id)', () => {
+    const translator = new WhereTranslator(userMeta);
+    const query = translator.translate({
+      AND: [
+        { id: 'route-id' },
+        { $sql: { sql: 'id = $1', params: ['user-123'] } },
+      ],
+    });
+
+    assert.equal(query.sql, '(id = $1 AND (id = $2))');
+    assert.deepEqual(query.params, ['route-id', 'user-123']);
+  });
+
+  it('embeds IN subquery and EXISTS predicates without interpolating params', () => {
+    const translator = new WhereTranslator(userMeta);
+    const inQuery = translator.translate({
+      $sql: {
+        sql: 'restaurant_id IN (SELECT restaurant_id FROM "user" WHERE id = $1)',
+        params: ['auth-id'],
+      },
+    });
+    const existsQuery = translator.translate({
+      $sql: {
+        sql: 'EXISTS (SELECT 1 FROM restaurant_member rm WHERE rm.user_id = $1)',
+        params: ['auth-id'],
+      },
+    });
+
+    assert.equal(
+      inQuery.sql,
+      '(restaurant_id IN (SELECT restaurant_id FROM "user" WHERE id = $1))',
+    );
+    assert.deepEqual(inQuery.params, ['auth-id']);
+    assert.equal(inQuery.sql.includes('auth-id'), false);
+
+    assert.equal(
+      existsQuery.sql,
+      '(EXISTS (SELECT 1 FROM restaurant_member rm WHERE rm.user_id = $1))',
+    );
+    assert.deepEqual(existsQuery.params, ['auth-id']);
+  });
+
+  it('embeds AND/OR SQL predicates as opaque fragments', () => {
+    const translator = new WhereTranslator(userMeta);
+    const query = translator.translate({
+      $sql: {
+        sql: 'restaurant_id = $1 AND is_active = true OR role = $2',
+        params: ['r-1', 'ADMIN'],
+      },
+    });
+
+    assert.equal(query.sql, '(restaurant_id = $1 AND is_active = true OR role = $2)');
+    assert.deepEqual(query.params, ['r-1', 'ADMIN']);
+  });
+});
+
+describe('QueryBuilder policy SQL', () => {
+  it('applies $sql on SELECT list', () => {
+    const query = builder.select({
+      where: { $sql: { sql: 'id = $1', params: ['user-123'] } },
+    });
+
+    assert.equal(query.sql, 'SELECT * FROM "user" WHERE (id = $1)');
+    assert.deepEqual(query.params, ['user-123']);
+  });
+
+  it('applies $sql on UPDATE after SET placeholders', () => {
+    const query = builder.update({
+      data: { name: 'Bob' },
+      where: {
+        AND: [
+          { id: 'row-id' },
+          { $sql: { sql: 'id = $1', params: ['user-123'] } },
+        ],
+      },
+    });
+
+    assert.equal(
+      query.sql,
+      'UPDATE "user" SET name = $1 WHERE (id = $2 AND (id = $3)) RETURNING *',
+    );
+    assert.deepEqual(query.params, ['Bob', 'row-id', 'user-123']);
+  });
+
+  it('applies $sql on DELETE', () => {
+    const query = builder.delete({
+      where: {
+        AND: [
+          { id: 'row-id' },
+          { $sql: { sql: 'id = $1', params: ['user-123'] } },
+        ],
+      },
+    });
+
+    assert.equal(query.sql, 'DELETE FROM "user" WHERE (id = $1 AND (id = $2)) RETURNING *');
+    assert.deepEqual(query.params, ['row-id', 'user-123']);
+  });
+
+  it('keeps VALUES insert when no policy where is provided', () => {
+    const query = builder.insert({ email: 'a@b.com', name: 'Alice', balance: 0 });
+
+    assert.equal(
+      query.sql,
+      'INSERT INTO "user" (email, name, balance) VALUES ($1, $2, $3) RETURNING *',
+    );
+  });
+
+  it('uses INSERT ... SELECT with policy where and typed casts', () => {
+    const query = builder.insert(
+      { email: 'a@b.com', name: 'Alice', balance: 0 },
+      { $sql: { sql: 'id = $1', params: ['user-123'] } },
+    );
+
+    assert.equal(
+      query.sql,
+      [
+        'INSERT INTO "user" (email, name, balance)',
+        'SELECT "user".email, "user".name, "user".balance',
+        'FROM (SELECT $1::VARCHAR(255) AS email, $2::VARCHAR(150) AS name, $3::INTEGER AS balance) AS "user"',
+        'WHERE (id = $4)',
+        'RETURNING *',
+      ].join(' '),
+    );
+    assert.deepEqual(query.params, ['a@b.com', 'Alice', 0, 'user-123']);
+    assert.equal(query.sql.includes('user-123'), false);
+  });
 });
 
 describe('db.user operations SQL snapshot', () => {

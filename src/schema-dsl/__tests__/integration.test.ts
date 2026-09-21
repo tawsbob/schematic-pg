@@ -16,10 +16,10 @@ describe('Integration — schema fragments', () => {
     assert.equal(schema.kind, 'Schema');
   });
 
-  it('has 2 extensions, 2 enums, 6 models, and 2 functions', () => {
+  it('has 2 extensions, 2 enums, 10 models, and 2 functions', () => {
     assert.equal(schema.extensions.length, 2);
     assert.equal(schema.enums.length, 2);
-    assert.equal(schema.models.length, 6);
+    assert.equal(schema.models.length, 10);
     assert.equal(schema.functions.length, 2);
     assert.deepEqual(
       schema.functions.map((fn) => fn.name),
@@ -49,10 +49,10 @@ describe('Integration — schema fragments', () => {
     ]);
   });
 
-  it('User model has 12 fields', () => {
+  it('User model has 13 fields', () => {
     const user = schema.models.find((m) => m.name === 'User');
     assert.ok(user);
-    assert.equal(user!.fields.length, 12);
+    assert.equal(user!.fields.length, 13);
   });
 
   it('User model has 2 @policy model attributes and @rest', () => {

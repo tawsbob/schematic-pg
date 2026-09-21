@@ -6,12 +6,24 @@ import type { Queryable } from 'schematic-pg/db/queryable';
 import { createRawClient } from 'schematic-pg/db/raw';
 import { runInTransaction } from 'schematic-pg/db/transaction';
 import type {
+  Announcement,
+  AnnouncementCreateInput,
+  AnnouncementUpdateInput,
+  AnnouncementWhereInput,
+  AnnouncementOrderByInput,
+  AnnouncementInclude,
   Log,
   LogCreateInput,
   LogUpdateInput,
   LogWhereInput,
   LogOrderByInput,
   LogInclude,
+  Note,
+  NoteCreateInput,
+  NoteUpdateInput,
+  NoteWhereInput,
+  NoteOrderByInput,
+  NoteInclude,
   Order,
   OrderCreateInput,
   OrderUpdateInput,
@@ -36,6 +48,18 @@ import type {
   ProfileWhereInput,
   ProfileOrderByInput,
   ProfileInclude,
+  Team,
+  TeamCreateInput,
+  TeamUpdateInput,
+  TeamWhereInput,
+  TeamOrderByInput,
+  TeamInclude,
+  TeamMember,
+  TeamMemberCreateInput,
+  TeamMemberUpdateInput,
+  TeamMemberWhereInput,
+  TeamMemberOrderByInput,
+  TeamMemberInclude,
   User,
   UserCreateInput,
   UserUpdateInput,
@@ -44,36 +68,52 @@ import type {
   UserInclude,
 } from './db-types.js';
 import {
+  announcementModelMeta,
   logModelMeta,
+  noteModelMeta,
   orderModelMeta,
   productModelMeta,
   productOrderModelMeta,
   profileModelMeta,
+  teamModelMeta,
+  teamMemberModelMeta,
   userModelMeta,
 } from './db-model-meta.js';
 
 function buildModels(executor: Queryable) {
+  const announcementMeta = hydrateModelMeta(announcementModelMeta);
   const logMeta = hydrateModelMeta(logModelMeta);
+  const noteMeta = hydrateModelMeta(noteModelMeta);
   const orderMeta = hydrateModelMeta(orderModelMeta);
   const productMeta = hydrateModelMeta(productModelMeta);
   const productOrderMeta = hydrateModelMeta(productOrderModelMeta);
   const profileMeta = hydrateModelMeta(profileModelMeta);
+  const teamMeta = hydrateModelMeta(teamModelMeta);
+  const teamMemberMeta = hydrateModelMeta(teamMemberModelMeta);
   const userMeta = hydrateModelMeta(userModelMeta);
   const modelRegistry = new Map([
+        ['Announcement', announcementMeta],
         ['Log', logMeta],
+        ['Note', noteMeta],
         ['Order', orderMeta],
         ['Product', productMeta],
         ['ProductOrder', productOrderMeta],
         ['Profile', profileMeta],
+        ['Team', teamMeta],
+        ['TeamMember', teamMemberMeta],
         ['User', userMeta],
   ]);
 
   return {
+    announcement: createModelClient<Announcement, AnnouncementCreateInput, AnnouncementUpdateInput, AnnouncementWhereInput, AnnouncementOrderByInput>(announcementMeta, executor, modelRegistry),
     log: createModelClient<Log, LogCreateInput, LogUpdateInput, LogWhereInput, LogOrderByInput>(logMeta, executor, modelRegistry),
+    note: createModelClient<Note, NoteCreateInput, NoteUpdateInput, NoteWhereInput, NoteOrderByInput>(noteMeta, executor, modelRegistry),
     order: createModelClient<Order, OrderCreateInput, OrderUpdateInput, OrderWhereInput, OrderOrderByInput>(orderMeta, executor, modelRegistry),
     product: createModelClient<Product, ProductCreateInput, ProductUpdateInput, ProductWhereInput, ProductOrderByInput>(productMeta, executor, modelRegistry),
     productOrder: createModelClient<ProductOrder, ProductOrderCreateInput, ProductOrderUpdateInput, ProductOrderWhereInput, ProductOrderOrderByInput>(productOrderMeta, executor, modelRegistry),
     profile: createModelClient<Profile, ProfileCreateInput, ProfileUpdateInput, ProfileWhereInput, ProfileOrderByInput>(profileMeta, executor, modelRegistry),
+    team: createModelClient<Team, TeamCreateInput, TeamUpdateInput, TeamWhereInput, TeamOrderByInput>(teamMeta, executor, modelRegistry),
+    teamMember: createModelClient<TeamMember, TeamMemberCreateInput, TeamMemberUpdateInput, TeamMemberWhereInput, TeamMemberOrderByInput>(teamMemberMeta, executor, modelRegistry),
     user: createModelClient<User, UserCreateInput, UserUpdateInput, UserWhereInput, UserOrderByInput>(userMeta, executor, modelRegistry),
     ...createRawClient(executor),
   };

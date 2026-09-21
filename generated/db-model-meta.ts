@@ -1,6 +1,183 @@
 // Auto-generated model metadata. Do not edit manually.
 import type { ModelMetaSnapshot } from 'schematic-pg/db/model-meta';
 
+export const announcementModelMeta = {
+  "name": "Announcement",
+  "tableName": "announcement",
+  "quotedTableName": "announcement",
+  "primaryKeyFields": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 62,
+          "col": 14,
+          "endLine": 62,
+          "endCol": 18,
+          "start": 1217,
+          "end": 1221
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "teamId",
+      "columnName": "team_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 63,
+          "col": 14,
+          "endLine": 63,
+          "endCol": 18,
+          "start": 1267,
+          "end": 1271
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "message",
+      "columnName": "message",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TEXT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 64,
+          "col": 14,
+          "endLine": 64,
+          "endCol": 18,
+          "start": 1285,
+          "end": 1289
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  ],
+  "fieldByName": {
+    "id": {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 62,
+          "col": 14,
+          "endLine": 62,
+          "endCol": 18,
+          "start": 1217,
+          "end": 1221
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "teamId": {
+      "name": "teamId",
+      "columnName": "team_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 63,
+          "col": 14,
+          "endLine": 63,
+          "endCol": 18,
+          "start": 1267,
+          "end": 1271
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "message": {
+      "name": "message",
+      "columnName": "message",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TEXT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 64,
+          "col": 14,
+          "endLine": 64,
+          "endCol": 18,
+          "start": 1285,
+          "end": 1289
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  },
+  "columnToField": {
+    "id": "id",
+    "team_id": "teamId",
+    "message": "message"
+  },
+  "relations": [
+    {
+      "name": "team",
+      "kind": "belongsTo",
+      "targetModel": "Team",
+      "localKey": "teamId",
+      "foreignKey": "id",
+      "unique": true
+    }
+  ]
+} as const;
 export const logModelMeta = {
   "name": "Log",
   "tableName": "log",
@@ -168,6 +345,246 @@ export const logModelMeta = {
     "created_at": "createdAt"
   },
   "relations": []
+} as const;
+export const noteModelMeta = {
+  "name": "Note",
+  "tableName": "note",
+  "quotedTableName": "note",
+  "primaryKeyFields": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 35,
+          "col": 13,
+          "endLine": 35,
+          "endCol": 17,
+          "start": 659,
+          "end": 663
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "teamId",
+      "columnName": "team_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 36,
+          "col": 13,
+          "endLine": 36,
+          "endCol": 17,
+          "start": 716,
+          "end": 720
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "title",
+      "columnName": "title",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 37,
+          "col": 13,
+          "endLine": 37,
+          "endCol": 25,
+          "start": 733,
+          "end": 745
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "body",
+      "columnName": "body",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TEXT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 38,
+          "col": 13,
+          "endLine": 38,
+          "endCol": 17,
+          "start": 758,
+          "end": 762
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  ],
+  "fieldByName": {
+    "id": {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 35,
+          "col": 13,
+          "endLine": 35,
+          "endCol": 17,
+          "start": 659,
+          "end": 663
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "teamId": {
+      "name": "teamId",
+      "columnName": "team_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 36,
+          "col": 13,
+          "endLine": 36,
+          "endCol": 17,
+          "start": 716,
+          "end": 720
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "title": {
+      "name": "title",
+      "columnName": "title",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 255
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 37,
+          "col": 13,
+          "endLine": 37,
+          "endCol": 25,
+          "start": 733,
+          "end": 745
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "body": {
+      "name": "body",
+      "columnName": "body",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "TEXT",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 38,
+          "col": 13,
+          "endLine": 38,
+          "endCol": 17,
+          "start": 758,
+          "end": 762
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  },
+  "columnToField": {
+    "id": "id",
+    "team_id": "teamId",
+    "title": "title",
+    "body": "body"
+  },
+  "relations": [
+    {
+      "name": "team",
+      "kind": "belongsTo",
+      "targetModel": "Team",
+      "localKey": "teamId",
+      "foreignKey": "id",
+      "unique": true
+    }
+  ]
 } as const;
 export const orderModelMeta = {
   "name": "Order",
@@ -1486,12 +1903,12 @@ export const profileModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 43,
+          "line": 44,
           "col": 15,
-          "endLine": 43,
+          "endLine": 44,
           "endCol": 19,
-          "start": 1355,
-          "end": 1359
+          "start": 1387,
+          "end": 1391
         }
       },
       "optional": false,
@@ -1511,12 +1928,12 @@ export const profileModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 44,
+          "line": 45,
           "col": 15,
-          "endLine": 44,
+          "endLine": 45,
           "endCol": 19,
-          "start": 1413,
-          "end": 1417
+          "start": 1445,
+          "end": 1449
         }
       },
       "optional": false,
@@ -1536,12 +1953,12 @@ export const profileModelMeta = {
         "name": "TEXT",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 45,
+          "line": 46,
           "col": 15,
-          "endLine": 45,
+          "endLine": 46,
           "endCol": 19,
-          "start": 1447,
-          "end": 1451
+          "start": 1479,
+          "end": 1483
         }
       },
       "optional": false,
@@ -1567,12 +1984,12 @@ export const profileModelMeta = {
         ],
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 46,
+          "line": 47,
           "col": 15,
-          "endLine": 46,
+          "endLine": 47,
           "endCol": 27,
-          "start": 1466,
-          "end": 1478
+          "start": 1498,
+          "end": 1510
         }
       },
       "optional": false,
@@ -1592,12 +2009,12 @@ export const profileModelMeta = {
         "name": "POINT",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 47,
+          "line": 48,
           "col": 15,
-          "endLine": 47,
+          "endLine": 48,
           "endCol": 20,
-          "start": 1493,
-          "end": 1498
+          "start": 1525,
+          "end": 1530
         }
       },
       "optional": false,
@@ -1619,12 +2036,12 @@ export const profileModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 43,
+          "line": 44,
           "col": 15,
-          "endLine": 43,
+          "endLine": 44,
           "endCol": 19,
-          "start": 1355,
-          "end": 1359
+          "start": 1387,
+          "end": 1391
         }
       },
       "optional": false,
@@ -1644,12 +2061,12 @@ export const profileModelMeta = {
         "name": "UUID",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 44,
+          "line": 45,
           "col": 15,
-          "endLine": 44,
+          "endLine": 45,
           "endCol": 19,
-          "start": 1413,
-          "end": 1417
+          "start": 1445,
+          "end": 1449
         }
       },
       "optional": false,
@@ -1669,12 +2086,12 @@ export const profileModelMeta = {
         "name": "TEXT",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 45,
+          "line": 46,
           "col": 15,
-          "endLine": 45,
+          "endLine": 46,
           "endCol": 19,
-          "start": 1447,
-          "end": 1451
+          "start": 1479,
+          "end": 1483
         }
       },
       "optional": false,
@@ -1700,12 +2117,12 @@ export const profileModelMeta = {
         ],
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 46,
+          "line": 47,
           "col": 15,
-          "endLine": 46,
+          "endLine": 47,
           "endCol": 27,
-          "start": 1466,
-          "end": 1478
+          "start": 1498,
+          "end": 1510
         }
       },
       "optional": false,
@@ -1725,12 +2142,12 @@ export const profileModelMeta = {
         "name": "POINT",
         "loc": {
           "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/user.schema",
-          "line": 47,
+          "line": 48,
           "col": 15,
-          "endLine": 47,
+          "endLine": 48,
           "endCol": 20,
-          "start": 1493,
-          "end": 1498
+          "start": 1525,
+          "end": 1530
         }
       },
       "optional": false,
@@ -1751,6 +2168,396 @@ export const profileModelMeta = {
     "location": "location"
   },
   "relations": [
+    {
+      "name": "user",
+      "kind": "belongsTo",
+      "targetModel": "User",
+      "localKey": "userId",
+      "foreignKey": "id",
+      "unique": true
+    }
+  ]
+} as const;
+export const teamModelMeta = {
+  "name": "Team",
+  "tableName": "team",
+  "quotedTableName": "team",
+  "primaryKeyFields": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 3,
+          "col": 14,
+          "endLine": 3,
+          "endCol": 18,
+          "start": 37,
+          "end": 41
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "name",
+      "columnName": "name",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 100
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 4,
+          "col": 14,
+          "endLine": 4,
+          "endCol": 26,
+          "start": 95,
+          "end": 107
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  ],
+  "fieldByName": {
+    "id": {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 3,
+          "col": 14,
+          "endLine": 3,
+          "endCol": 18,
+          "start": 37,
+          "end": 41
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "name": {
+      "name": "name",
+      "columnName": "name",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "VARCHAR",
+        "args": [
+          {
+            "kind": "NumberLiteral",
+            "value": 100
+          }
+        ],
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 4,
+          "col": 14,
+          "endLine": 4,
+          "endCol": 26,
+          "start": 95,
+          "end": 107
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    }
+  },
+  "columnToField": {
+    "id": "id",
+    "name": "name"
+  },
+  "relations": [
+    {
+      "name": "members",
+      "kind": "hasMany",
+      "targetModel": "TeamMember",
+      "localKey": "id",
+      "foreignKey": "teamId",
+      "unique": false
+    },
+    {
+      "name": "notes",
+      "kind": "hasMany",
+      "targetModel": "Note",
+      "localKey": "id",
+      "foreignKey": "teamId",
+      "unique": false
+    },
+    {
+      "name": "announcements",
+      "kind": "hasMany",
+      "targetModel": "Announcement",
+      "localKey": "id",
+      "foreignKey": "teamId",
+      "unique": false
+    }
+  ]
+} as const;
+export const teamMemberModelMeta = {
+  "name": "TeamMember",
+  "tableName": "team_member",
+  "quotedTableName": "team_member",
+  "primaryKeyFields": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 14,
+          "col": 15,
+          "endLine": 14,
+          "endCol": 19,
+          "start": 247,
+          "end": 251
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "teamId",
+      "columnName": "team_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 15,
+          "col": 15,
+          "endLine": 15,
+          "endCol": 19,
+          "start": 301,
+          "end": 305
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "userId",
+      "columnName": "user_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 16,
+          "col": 15,
+          "endLine": 16,
+          "endCol": 19,
+          "start": 320,
+          "end": 324
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    {
+      "name": "isActive",
+      "columnName": "is_active",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "BOOLEAN",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 17,
+          "col": 15,
+          "endLine": 17,
+          "endCol": 22,
+          "start": 339,
+          "end": 346
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": true
+    }
+  ],
+  "fieldByName": {
+    "id": {
+      "name": "id",
+      "columnName": "id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 14,
+          "col": 15,
+          "endLine": 14,
+          "endCol": 19,
+          "start": 247,
+          "end": 251
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": true,
+      "isUnique": true,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "teamId": {
+      "name": "teamId",
+      "columnName": "team_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 15,
+          "col": 15,
+          "endLine": 15,
+          "endCol": 19,
+          "start": 301,
+          "end": 305
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "userId": {
+      "name": "userId",
+      "columnName": "user_id",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "UUID",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 16,
+          "col": 15,
+          "endLine": 16,
+          "endCol": 19,
+          "start": 320,
+          "end": 324
+        }
+      },
+      "optional": false,
+      "hasDefault": false,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": true,
+      "isBoolean": false
+    },
+    "isActive": {
+      "name": "isActive",
+      "columnName": "is_active",
+      "type": {
+        "kind": "TypeExpr",
+        "name": "BOOLEAN",
+        "loc": {
+          "file": "/Users/delleansantosteixeira/Projects/postgrest.js/schema/team.schema",
+          "line": 17,
+          "col": 15,
+          "endLine": 17,
+          "endCol": 22,
+          "start": 339,
+          "end": 346
+        }
+      },
+      "optional": false,
+      "hasDefault": true,
+      "isId": false,
+      "isUnique": false,
+      "isEnum": false,
+      "isNumeric": false,
+      "isString": false,
+      "isBoolean": true
+    }
+  },
+  "columnToField": {
+    "id": "id",
+    "team_id": "teamId",
+    "user_id": "userId",
+    "is_active": "isActive"
+  },
+  "relations": [
+    {
+      "name": "team",
+      "kind": "belongsTo",
+      "targetModel": "Team",
+      "localKey": "teamId",
+      "foreignKey": "id",
+      "unique": true
+    },
     {
       "name": "user",
       "kind": "belongsTo",
@@ -2339,6 +3146,14 @@ export const userModelMeta = {
       "name": "orders",
       "kind": "hasMany",
       "targetModel": "Order",
+      "localKey": "id",
+      "foreignKey": "userId",
+      "unique": false
+    },
+    {
+      "name": "teamMembers",
+      "kind": "hasMany",
+      "targetModel": "TeamMember",
       "localKey": "id",
       "foreignKey": "userId",
       "unique": false

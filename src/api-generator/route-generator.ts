@@ -360,7 +360,10 @@ export class RouteGenerator {
     }
 
     if (modelHasPolicies) {
-      lines.push(`  assertPolicy('${this.model.name}', auth.role, 'insert');`);
+      lines.push(
+        `  const policy = assertPolicy('${this.model.name}', auth.role, 'insert');`,
+        '  const policyWhere = resolvePolicyWhere(policy, auth);',
+      );
     }
 
     lines.push('  const body = c.req.valid(\'json\');');
@@ -370,10 +373,23 @@ export class RouteGenerator {
         `  const hookCtx = createHookContext({ c, db, auth, model: '${this.model.name}', operation: 'create', data: body });`,
         `  const gate = await runBeforeHooks('${this.model.name}', 'create', hookCtx);`,
         '  if (!gate.proceed) return gate.response ?? cancelledResponse(c);',
-        `  const row = await db.${clientKey}.create(hookCtx.data);`,
+      );
+
+      if (modelHasPolicies) {
+        lines.push(`  const row = await db.${clientKey}.create(hookCtx.data, { where: policyWhere });`);
+      } else {
+        lines.push(`  const row = await db.${clientKey}.create(hookCtx.data);`);
+      }
+
+      lines.push(
         '  hookCtx.result = row;',
         `  await runAfterHooks('${this.model.name}', 'create', hookCtx);`,
         `  return ${this.mutationJsonRow('hookCtx.result', constantPrefix, 201)};`,
+      );
+    } else if (modelHasPolicies) {
+      lines.push(
+        `  const row = await db.${clientKey}.create(body, { where: policyWhere });`,
+        `  return ${this.mutationJsonRow('row', constantPrefix, 201)};`,
       );
     } else {
       lines.push(

@@ -41,7 +41,7 @@ describe('repo schema/ fragments', () => {
     );
     assert.deepEqual(
       loaded.schema.models.map((item) => item.name),
-      ['Log', 'Order', 'Product', 'ProductOrder', 'Profile', 'User'],
+      ['Announcement', 'Log', 'Note', 'Order', 'Product', 'ProductOrder', 'Profile', 'Team', 'TeamMember', 'User'],
     );
     assert.deepEqual(
       loaded.schema.functions.map((item) => item.name),

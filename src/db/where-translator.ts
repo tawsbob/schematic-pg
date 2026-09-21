@@ -7,6 +7,13 @@ export interface WhereClause {
   params: unknown[];
 }
 
+export interface SqlWhereFragment {
+  sql: string;
+  params: unknown[];
+}
+
+const SQL_WHERE_KEY = '$sql';
+
 export class WhereTranslator {
   private readonly scalarFields: Set<string>;
   private paramIndex: number;
@@ -29,6 +36,11 @@ export class WhereTranslator {
     const clauses: string[] = [];
 
     for (const [key, value] of Object.entries(where)) {
+      if (key === SQL_WHERE_KEY) {
+        clauses.push(this.translateSqlFragment(value, params));
+        continue;
+      }
+
       if (key === 'AND') {
         clauses.push(this.translateLogical(value, 'AND', params));
         continue;
@@ -75,6 +87,11 @@ export class WhereTranslator {
     const nestedClauses: string[] = [];
 
     for (const [key, value] of Object.entries(where)) {
+      if (key === SQL_WHERE_KEY) {
+        nestedClauses.push(this.translateSqlFragment(value, params));
+        continue;
+      }
+
       if (key === 'AND') {
         nestedClauses.push(this.translateLogical(value, 'AND', params));
         continue;
@@ -95,6 +112,18 @@ export class WhereTranslator {
     }
 
     return nestedClauses.join(' AND ');
+  }
+
+  /**
+   * Embeds a developer-authored SQL predicate, renumbering `$n` placeholders
+   * to continue from the current parameter index and wrapping in parentheses.
+   */
+  private translateSqlFragment(value: unknown, params: unknown[]): string {
+    const fragment = assertSqlFragment(value);
+    const renumbered = renumberPlaceholders(fragment.sql, this.paramIndex);
+    this.paramIndex += fragment.params.length;
+    params.push(...fragment.params);
+    return `(${renumbered})`;
   }
 
   private translateField(fieldName: string, value: unknown, params: unknown[]): string {
@@ -178,6 +207,57 @@ export class WhereTranslator {
     this.paramIndex += 1;
     return placeholder;
   }
+}
+
+function assertSqlFragment(value: unknown): SqlWhereFragment {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    !('sql' in value) ||
+    !('params' in value)
+  ) {
+    throw new Error('$sql expects { sql: string, params: unknown[] }');
+  }
+
+  const fragment = value as { sql: unknown; params: unknown };
+  if (typeof fragment.sql !== 'string' || !Array.isArray(fragment.params)) {
+    throw new Error('$sql expects { sql: string, params: unknown[] }');
+  }
+
+  return { sql: fragment.sql, params: fragment.params };
+}
+
+/**
+ * Rewrites `$1`, `$2`, … in a fragment so they continue from `startIndex`.
+ * Placeholders are remapped by original index (not left-to-right appearance)
+ * so repeated `$1` references stay consistent.
+ */
+export function renumberPlaceholders(sql: string, startIndex: number): string {
+  const indices = new Set<number>();
+
+  for (const match of sql.matchAll(/\$(\d+)\b/g)) {
+    indices.add(Number(match[1]));
+  }
+
+  if (indices.size === 0) {
+    return sql;
+  }
+
+  const sorted = [...indices].sort((a, b) => a - b);
+  const mapping = new Map<number, number>();
+
+  for (let i = 0; i < sorted.length; i += 1) {
+    mapping.set(sorted[i]!, startIndex + i);
+  }
+
+  return sql.replace(/\$(\d+)\b/g, (_, rawIndex: string) => {
+    const next = mapping.get(Number(rawIndex));
+    if (next === undefined) {
+      throw new Error(`Missing placeholder mapping for $${rawIndex}`);
+    }
+    return `$${next}`;
+  });
 }
 
 function wrapLikePattern(value: string, operator: 'contains' | 'startsWith' | 'endsWith'): string {

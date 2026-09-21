@@ -315,7 +315,7 @@ Models with `@policy` attributes enforce role checks and row-level filters on ev
 |--------|------|---------|------------|
 | `GET` | `/` | `findMany({ where: mergeWhere(queryWhere, policyWhere), orderBy, take, skip, include })` | Query params |
 | `GET` | `/{pk}` | `findUnique(mergeWhere(pk, policyWhere), { include })` | Path params + query params |
-| `POST` | `/` | `create(body)` — policy check only | JSON body |
+| `POST` | `/` | `create(body, { where: policyWhere })` — role check; row predicate when `where` is set | JSON body |
 | `PUT` | `/{pk}` | `update({ where: mergeWhere(pk, policyWhere), data })` | Path params + JSON body |
 | `DELETE` | `/{pk}` | `delete(mergeWhere(pk, policyWhere))` | Path params |
 

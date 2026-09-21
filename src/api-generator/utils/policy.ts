@@ -1,4 +1,4 @@
-import type { ArrayLiteral, Attribute, Identifier, Model, StringLiteral, Value } from '../../schema-dsl/ast.js';
+import type { Attribute, Model, Value } from '../../schema-dsl/ast.js';
 import { assertKeyValueArgs, getKvPair, getOptionalKvPair } from '../../sql-generator/utils/ast-helpers.js';
 
 export const PUBLIC_ROLE = 'PUBLIC';
@@ -83,11 +83,11 @@ function parseIdentifierValue(value: Value, fieldName: string): string {
 }
 
 function parseStringValue(value: Value, fieldName: string): string {
-  if (value.kind !== 'StringLiteral') {
-    throw new Error(`Policy ${fieldName} must be a string`);
+  if (value.kind === 'StringLiteral' || value.kind === 'TripleStringLiteral') {
+    return value.value.trim();
   }
 
-  return (value as StringLiteral).value;
+  throw new Error(`Policy ${fieldName} must be a string`);
 }
 
 function isPolicyOperation(value: string): value is PolicyOperation {

@@ -42,6 +42,7 @@ schema/
   user.schema         # UserRole, User, Profile, getUserBalance
   order.schema        # OrderStatus, Order, ProductOrder
   product.schema      # Log, Product, searchProducts
+  team.schema         # Team, TeamMember, Note, Announcement (SQL policy examples)
 ```
 
 **Extensions only:**

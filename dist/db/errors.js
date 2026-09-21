@@ -46,6 +46,15 @@ export class NotFoundError extends DatabaseError {
         this.where = where;
     }
 }
+/** Thrown when INSERT … SELECT with a policy predicate returns no rows. */
+export class PolicyInsertDeniedError extends DatabaseError {
+    model;
+    constructor(model) {
+        super(`Insert denied by policy for model ${model}`);
+        this.name = 'PolicyInsertDeniedError';
+        this.model = model;
+    }
+}
 export function mapPgError(error, modelName, columnToField) {
     if (!(error && typeof error === 'object' && 'code' in error)) {
         return new DatabaseError(error instanceof Error ? error.message : String(error), { cause: error });

@@ -5,7 +5,9 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
 import { serve } from '@hono/node-server';
+import announcementsRouter from './routes/announcements.js';
 import logsRouter from './routes/logs.js';
+import notesRouter from './routes/notes.js';
 import ordersRouter from './routes/orders.js';
 import productsRouter from './routes/products.js';
 import productOrdersRouter from './routes/product-orders.js';
@@ -46,7 +48,9 @@ export function createApp(options: CreateAppOptions = {}): Hono<AppEnv> {
   app.use(createAuthMiddleware(options.authResolver ?? createJwtResolver()));
   app.onError(handleError);
 
+  app.route('/announcements', announcementsRouter);
   app.route('/logs', logsRouter);
+  app.route('/notes', notesRouter);
   app.route('/orders', ordersRouter);
   app.route('/products', productsRouter);
   app.route('/product-orders', productOrdersRouter);

@@ -21,7 +21,7 @@ model User {
 |----------|------|-------------|
 | `role` | enum identifier | Role this policy applies to (must match a value in your schema enums, e.g. `UserRole`) |
 | `allow` | `all` or `[select, insert, update, delete]` | Operations permitted for this role |
-| `where` | string (optional) | Row-level filter applied on read/update/delete; supports `{{auth.*}}` templates |
+| `where` | string (optional) | PostgreSQL boolean predicate applied on read/update/delete/insert; supports `{{auth.*}}` templates |
 
 **Operations map to HTTP methods:**
 
@@ -36,6 +36,8 @@ Models **without** `@policy` attributes are open — generated routes skip ACL c
 
 Use `@rest` when an operation should not exist as HTTP at all (custom signup, checkout workflows). `@policy` only controls who may call a **generated** handler.
 
+schematic-pg does **not** provide a built-in tenant, organization, or ownership model. Applications express their own authorization relationships as SQL predicates in `where`.
+
 ## How enforcement works
 
 For each model that has policies, generated routes call the policy guard before every DB operation:
@@ -44,14 +46,14 @@ For each model that has policies, generated routes call the policy guard before 
 const auth = c.get('auth');
 const policy = assertPolicy('User', auth.role, 'select');
 const policyWhere = resolvePolicyWhere(policy, auth);
-const rows = await db.user.findMany({ where: policyWhere });
+const rows = await db.user.findMany({ where: mergeWhere(routeWhere, policyWhere) });
 ```
 
 1. **`assertPolicy(model, role, operation)`** — Looks up the policy for the caller's role in `generated/policies.ts`. Throws `403 Forbidden` if the role has no policy or the operation is not in `allow`. Returns the matched policy.
-2. **`resolvePolicyWhere(policy, auth)`** — Interpolates `{{auth.user.id}}` (and other `{{auth.*}}` paths) from the request auth context, then parses the result into a `WhereInput` object.
-3. **`mergeWhere(routeWhere, policyWhere)`** — Combines route params (e.g. `:id`) with the policy filter via `AND` on read/update/delete.
+2. **`resolvePolicyWhere(policy, auth)`** — Replaces each `{{auth.*}}` placeholder with a positional `$n` parameter (values are never concatenated into SQL), then returns a `$sql` `WhereInput` fragment.
+3. **`mergeWhere(routeWhere, policyWhere)`** — Combines route params (e.g. `:id`) with the policy predicate via `AND` on read/update/delete.
 
-`POST` (insert) checks operation permission only — no `where` injection.
+`POST` (insert) checks operation permission and, when the matched policy has a `where`, enforces that predicate against the candidate row via `INSERT … SELECT … WHERE` (rejected inserts return `403`). Policies without `where` keep a normal `INSERT … VALUES`.
 
 ## Auth context
 
@@ -110,23 +112,70 @@ app.use(createAuthMiddleware(async (c) => {
 
 Return `null` for anonymous callers; throw `UnauthorizedError` for invalid credentials.
 
-## Where templates
+## Where predicates
 
-Policy `where` clauses support `{{auth.*}}` placeholders resolved against the auth context:
+Policy `where` is a developer-authored PostgreSQL boolean expression. Dynamic authentication values use `{{auth.*}}` placeholders and become query parameters:
 
 ```ts
 where: "id = {{auth.user.id}}"
 ```
 
-After interpolation, simple `field op value` forms are parsed into `WhereInput`:
+becomes conceptually:
 
-| Form | Example |
-|------|---------|
-| Equality | `id = {{auth.user.id}}` → `{ id: '…' }` |
-| Comparison | `balance >= 100` → `{ balance: { gte: 100 } }` |
-| Inequality | `role != ADMIN` → `{ NOT: { role: 'ADMIN' } }` |
+```sql
+WHERE (id = $1)   -- $1 = authenticated user id
+```
 
-Complex multi-clause SQL in `where` is not supported yet — keep policies to a single condition for now.
+Arbitrary SQL expressions are supported, including `AND` / `OR`, `IN`, `EXISTS`, subqueries, functions, and casts. Use a triple-quoted string for multiline predicates:
+
+**Ownership**
+
+```ts
+@policy(where: "user_id = {{auth.user.id}}", role: USER, allow: [select, update, delete])
+```
+
+**Scoped via subquery**
+
+```ts
+@policy(
+  role: OWNER,
+  allow: [select, update, delete],
+  where: """
+    restaurant_id IN (
+      SELECT restaurant_id
+      FROM "user"
+      WHERE id = {{auth.user.id}}
+    )
+  """
+)
+```
+
+**Membership via EXISTS**
+
+```ts
+@policy(
+  role: MANAGER,
+  allow: [select],
+  where: """
+    EXISTS (
+      SELECT 1
+      FROM restaurant_member rm
+      WHERE rm.restaurant_id = product.restaurant_id
+        AND rm.user_id = {{auth.user.id}}
+        AND rm.is_active = true
+    )
+  """
+)
+```
+
+Two roles that share the same predicate need two `@policy` attributes (one per `role`).
+
+**Notes**
+
+- Auth placeholders are parameterized; do not put `$1` / `$2` literals or `;` in the schema `where` text.
+- String literals in SQL must use single quotes (`'ADMIN'`), not bare identifiers.
+- Insert predicates can only see columns present in the request body — database defaults are not visible on the candidate row.
+- Column names in predicates are PostgreSQL column names (`snake_case`), matching the generated tables.
 
 ## Generated policy metadata
 

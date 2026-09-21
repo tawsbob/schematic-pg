@@ -55,10 +55,10 @@ function parseIdentifierValue(value, fieldName) {
     return value.name;
 }
 function parseStringValue(value, fieldName) {
-    if (value.kind !== 'StringLiteral') {
-        throw new Error(`Policy ${fieldName} must be a string`);
+    if (value.kind === 'StringLiteral' || value.kind === 'TripleStringLiteral') {
+        return value.value.trim();
     }
-    return value.value;
+    throw new Error(`Policy ${fieldName} must be a string`);
 }
 function isPolicyOperation(value) {
     return POLICY_OPERATIONS.includes(value);

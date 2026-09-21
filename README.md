@@ -341,11 +341,27 @@ model User {
 |----------|-------------|
 | `role` | Enum identifier (typically a `UserRole` value) |
 | `allow` | `all` or `[select, insert, update, delete]` |
-| `where` | Optional row-level filter; supports `{{auth.user.id}}` |
+| `where` | Optional PostgreSQL boolean predicate; supports `{{auth.user.id}}` (and other `{{auth.*}}` paths) as query parameters |
 
 `GET` → `select`, `POST` → `insert`, `PUT` → `update`, `DELETE` → `delete`. Unauthenticated requests default to `{ role: 'PUBLIC' }`.
 
-`where` is a single condition today (`id = {{auth.user.id}}`, `balance >= 100`). See [Access control](docs/access-control.md) for enforcement, JWT claims, and pluggable auth.
+`where` is a SQL predicate (comparisons, `AND` / `OR`, `IN`, `EXISTS`, subqueries). There is no built-in tenant model — applications express isolation in the predicate. Example:
+
+```ts
+@policy(
+  role: OWNER,
+  allow: [select, update, delete],
+  where: """
+    restaurant_id IN (
+      SELECT restaurant_id
+      FROM "user"
+      WHERE id = {{auth.user.id}}
+    )
+  """
+)
+```
+
+See [Access control](docs/access-control.md) for enforcement, JWT claims, and pluggable auth.
 
 ### Indexes (`@@index`)
 

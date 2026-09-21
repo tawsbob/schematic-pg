@@ -1,14 +1,20 @@
 import type { WhereInput } from '../../db/where-translator.js';
 import { ForbiddenError } from './errors.js';
 import type { NormalizedPolicy, PolicyOperation } from './policy-types.js';
-import { interpolateTemplate } from './template.js';
+import { bindAuthTemplate } from './template.js';
 import type { AuthContext } from './types.js';
 import { PUBLIC_ROLE } from './types.js';
 
 export type { NormalizedPolicy, PolicyOperation } from './policy-types.js';
 export { ForbiddenError, UnauthorizedError } from './errors.js';
 
-const SIMPLE_WHERE_PATTERN = /^(\w+)\s*(=|!=|<>|>=|<=|>|<)\s*(.+)$/;
+/** Marker key for a parameterized SQL predicate inside WhereInput. */
+export const SQL_WHERE_KEY = '$sql' as const;
+
+export interface SqlWhereFragment {
+  sql: string;
+  params: unknown[];
+}
 
 let policies: Record<string, NormalizedPolicy[]> = {};
 
@@ -36,13 +42,22 @@ export function assertPolicy(model: string, role: string, operation: PolicyOpera
   return policy;
 }
 
+/**
+ * Compiles a policy `where` string into a parameterized SQL fragment.
+ * Auth placeholders become `$n` bound values — never string interpolation.
+ */
 export function resolvePolicyWhere(policy: NormalizedPolicy, auth: AuthContext): WhereInput | undefined {
   if (!policy.where) {
     return undefined;
   }
 
-  const interpolated = interpolateTemplate(policy.where, auth);
-  return parseSimpleWhereClause(interpolated);
+  const bound = bindAuthTemplate(policy.where, auth);
+  return {
+    [SQL_WHERE_KEY]: {
+      sql: bound.sql,
+      params: bound.params,
+    } satisfies SqlWhereFragment,
+  };
 }
 
 export function mergeWhere(
@@ -80,66 +95,4 @@ function isOperationAllowed(policy: NormalizedPolicy, operation: PolicyOperation
   }
 
   return policy.operations.includes(operation);
-}
-
-function parseSimpleWhereClause(clause: string): WhereInput {
-  const trimmedClause = clause.trim();
-  const match = trimmedClause.match(SIMPLE_WHERE_PATTERN);
-
-  if (!match) {
-    throw new ForbiddenError(
-      `Unsupported policy where clause "${clause}". Only simple "field op value" forms are supported.`,
-    );
-  }
-
-  const [, field, operator, rawValue] = match;
-  const value = parseWhereValue(rawValue!.trim());
-
-  if (operator === '=') {
-    return { [field!]: value };
-  }
-
-  if (operator === '!=' || operator === '<>') {
-    return { NOT: { [field!]: value } };
-  }
-
-  const operatorMap = {
-    '>': 'gt',
-    '>=': 'gte',
-    '<': 'lt',
-    '<=': 'lte',
-  } as const;
-
-  const mappedOperator = operatorMap[operator as keyof typeof operatorMap];
-
-  if (!mappedOperator) {
-    throw new ForbiddenError(`Unsupported policy where operator "${operator}"`);
-  }
-
-  return { [field!]: { [mappedOperator]: value } };
-}
-
-function parseWhereValue(rawValue: string): string | number | boolean {
-  if (
-    (rawValue.startsWith("'") && rawValue.endsWith("'")) ||
-    (rawValue.startsWith('"') && rawValue.endsWith('"'))
-  ) {
-    return rawValue.slice(1, -1);
-  }
-
-  if (rawValue === 'true') {
-    return true;
-  }
-
-  if (rawValue === 'false') {
-    return false;
-  }
-
-  const numericValue = Number(rawValue);
-
-  if (!Number.isNaN(numericValue) && rawValue !== '') {
-    return numericValue;
-  }
-
-  return rawValue;
 }

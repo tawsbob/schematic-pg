@@ -1,13 +1,11 @@
-import type { QueryResultRow } from 'pg';
-import { mapPgError } from '../errors.js';
 import type { ModelMeta } from '../model-meta.js';
 import type { FindArgs, SqlQuery } from '../query-builder.js';
 import { QueryBuilder } from '../query-builder.js';
 import type { Queryable } from '../queryable.js';
 import { mapRow } from '../row-mapper.js';
 import type { LoadNode } from './planner.js';
-
-const ROOT_ALIAS = 'root';
+import { mapPgError } from '../errors.js';
+import type { QueryResultRow } from 'pg';
 
 export async function fetchRootWithJsonAgg<T extends Record<string, unknown>>(
   model: ModelMeta,
@@ -29,13 +27,16 @@ function buildJsonAggRootQuery(model: ModelMeta, plan: LoadNode, args: FindArgs)
     return baseQuery;
   }
 
+  // Alias with the table name (not a fixed "root") so policy predicates that
+  // qualify columns as table.column still resolve against the outer row.
   const tableRef = match[1]!;
+  const rootAlias = model.quotedTableName;
   const rest = match[2] ?? '';
-  const lateralJoins = plan.children.map((child) => buildRootLateralJoin(model, child));
+  const lateralJoins = plan.children.map((child) => buildRootLateralJoin(model, child, rootAlias));
 
   const sql = [
-    `SELECT ${ROOT_ALIAS}.*, ${lateralJoins.map((join) => join.select).join(', ')}`,
-    `FROM ${tableRef} ${ROOT_ALIAS}`,
+    `SELECT ${rootAlias}.*, ${lateralJoins.map((join) => join.select).join(', ')}`,
+    `FROM ${tableRef} ${rootAlias}`,
     lateralJoins.map((join) => join.join).join(' '),
     rest.trim(),
   ]
@@ -48,10 +49,11 @@ function buildJsonAggRootQuery(model: ModelMeta, plan: LoadNode, args: FindArgs)
 function buildRootLateralJoin(
   parentModel: ModelMeta,
   node: LoadNode,
+  rootAlias: string,
 ): { select: string; join: string } {
   const relation = node.relation!;
   const lateralAlias = `${relation.name}_data`;
-  const expression = buildRelationJsonExpression(parentModel, node, ROOT_ALIAS);
+  const expression = buildRelationJsonExpression(parentModel, node, rootAlias);
 
   return {
     select: `${lateralAlias}.${relation.name}`,

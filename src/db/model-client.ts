@@ -1,5 +1,5 @@
 import type { QueryResultRow } from 'pg';
-import { mapPgError } from './errors.js';
+import { mapPgError, PolicyInsertDeniedError } from './errors.js';
 import { fetchWithIncludes } from './include/load.js';
 import type { IncludeInput, IncludeOptions } from './include/types.js';
 import type { ModelMeta } from './model-meta.js';
@@ -20,7 +20,7 @@ export interface SelectArgs<TWhere, TOrderBy> {
 }
 
 export interface ModelClient<T, TCreate, TUpdate, TWhere, TOrderBy> {
-  create(data: TCreate): Promise<T>;
+  create(data: TCreate, args?: { where?: WhereInput }): Promise<T>;
   findUnique(
     where: Record<string, unknown>,
     args?: Omit<SelectArgs<TWhere, TOrderBy>, 'where'>,
@@ -68,9 +68,15 @@ export function createModelClient<T, TCreate, TUpdate, TWhere, TOrderBy>(
   }
 
   return {
-    async create(data: TCreate): Promise<T> {
-      const query = builder.insert(data as Record<string, unknown>);
+    async create(data: TCreate, args?: { where?: WhereInput }): Promise<T> {
+      const query = builder.insert(data as Record<string, unknown>, args?.where);
       const rows = await execute<QueryResultRow>(query.sql, query.params);
+      if (!rows[0]) {
+        if (args?.where && Object.keys(args.where).length > 0) {
+          throw new PolicyInsertDeniedError(model.name);
+        }
+        throw new Error(`Insert returned no rows for model ${model.name}`);
+      }
       return mapRow<T>(rows[0]!, model);
     },
 

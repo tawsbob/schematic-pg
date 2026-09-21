@@ -2,6 +2,14 @@
 import type { NormalizedPolicy } from 'schematic-pg/api/auth/policy';
 
 export const POLICIES: Record<string, NormalizedPolicy[]> = {
+  Announcement: [
+    { role: 'USER', operations: ['select', 'update', 'delete'], where: "EXISTS (\n          SELECT 1\n          FROM team_member tm\n          WHERE tm.team_id = announcement.team_id\n            AND tm.user_id = {{auth.user.id}}\n            AND tm.is_active = true\n        )" },
+    { role: 'ADMIN', operations: 'all' },
+  ],
+  Note: [
+    { role: 'USER', operations: ['select', 'insert', 'update', 'delete'], where: "team_id IN (\n          SELECT team_id\n          FROM team_member\n          WHERE user_id = {{auth.user.id}}\n            AND is_active = true\n        )" },
+    { role: 'ADMIN', operations: 'all' },
+  ],
   User: [
     { role: 'USER', operations: ['select'], where: "id = {{auth.user.id}}" },
     { role: 'ADMIN', operations: 'all' },
