@@ -7,8 +7,8 @@ import {
   AGENTS_TEMPLATE,
   APP_SCHEMA_TEMPLATE,
   AUTH_ROUTE_TEMPLATE,
+  createDockerComposeTemplate,
   createPackageJsonTemplate,
-  DOCKER_COMPOSE_TEMPLATE,
   ENV_TEMPLATE,
   GITIGNORE_TEMPLATE,
   HEALTH_ROUTE_TEMPLATE,
@@ -21,7 +21,6 @@ const INIT_FILES = [
   { relativePath: 'app.schema', content: APP_SCHEMA_TEMPLATE },
   { relativePath: '.env', content: ENV_TEMPLATE },
   { relativePath: '.gitignore', content: GITIGNORE_TEMPLATE },
-  { relativePath: 'docker-compose.yml', content: DOCKER_COMPOSE_TEMPLATE },
   { relativePath: 'Makefile', content: MAKEFILE_TEMPLATE },
   { relativePath: 'tsconfig.json', content: TSCONFIG_TEMPLATE },
   { relativePath: 'src/routes/health.ts', content: HEALTH_ROUTE_TEMPLATE },
@@ -102,6 +101,14 @@ export async function runInit(args: string[]): Promise<void> {
 
     await writeFile(filePath, file.content, 'utf8');
     console.log(`Created ${file.relativePath}`);
+  }
+
+  const dockerComposePath = path.join(targetDir, 'docker-compose.yml');
+  if (!existsSync(dockerComposePath)) {
+    await writeFile(dockerComposePath, createDockerComposeTemplate(projectName), 'utf8');
+    console.log('Created docker-compose.yml');
+  } else {
+    console.log('Skipped existing file: docker-compose.yml');
   }
 
   const packageJsonPath = path.join(targetDir, 'package.json');

@@ -44,10 +44,21 @@ docker_data/
 *.log
 npm-debug.log*
 `;
-export const DOCKER_COMPOSE_TEMPLATE = `services:
+function sanitizeComposeProjectName(projectName) {
+    const sanitized = projectName
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+    return sanitized || `${PACKAGE_NAME}-app`;
+}
+export function createDockerComposeTemplate(projectName) {
+    const composeName = sanitizeComposeProjectName(projectName);
+    return `name: ${composeName}
+services:
   postgres:
     image: postgres:18.4-bookworm
-    container_name: schematic-pg
+    container_name: ${composeName}-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -63,6 +74,7 @@ export const DOCKER_COMPOSE_TEMPLATE = `services:
       timeout: 5s
       retries: 5
 `;
+}
 export const TSCONFIG_TEMPLATE = `{
   "compilerOptions": {
     "target": "ES2022",

@@ -42,5 +42,13 @@ describe('runInit', () => {
     assert.match(content, /findMany/);
     assert.match(content, /ctx\.db/);
     assert.match(content, /c\.get\('db'\)/);
+
+    const projectName = path.basename(tempDir).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const composePath = path.join(tempDir, 'docker-compose.yml');
+    assert.equal(existsSync(composePath), true);
+
+    const composeContent = await readFile(composePath, 'utf8');
+    assert.match(composeContent, new RegExp(`^name: ${projectName}$`, 'm'));
+    assert.match(composeContent, new RegExp(`container_name: ${projectName}-postgres`));
   });
 });
