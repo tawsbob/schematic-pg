@@ -21,7 +21,7 @@ model User {
 |----------|------|-------------|
 | `role` | enum identifier | Role this policy applies to (must match a value in your schema enums, e.g. `UserRole`) |
 | `allow` | `all` or `[select, insert, update, delete]` | Operations permitted for this role |
-| `where` | string or predicate identifier (optional) | PostgreSQL boolean predicate applied on read/update/delete/insert; supports `{{auth.*}}` templates. An identifier must name an entry in the `predicates` section. |
+| `where` | string, triple-quoted string, or predicate identifier (optional) | PostgreSQL boolean predicate applied on read/update/delete/insert; supports `{{auth.*}}` templates. An identifier must name an entry in the `predicates` section. |
 
 **Operations map to HTTP methods:**
 
@@ -128,11 +128,20 @@ WHERE (id = $1)   -- $1 = authenticated user id
 
 ### Named predicates
 
-Declare reusable SQL once in a `predicates` section (any fragment). Merge combines them by name. `@policy` may reference a predicate by identifier; codegen inlines the SQL into `generated/policies.ts`.
+Declare reusable SQL once in a `predicates` section (any fragment). Merge combines them by name. Each body is a string or a triple-quoted multiline string. `@policy` may reference a predicate by identifier; codegen inlines the SQL into `generated/policies.ts`.
 
 ```ts
 predicates {
   ownUser: "id = {{auth.user.id}}"
+
+  activeTeamMember: """
+    team_id IN (
+      SELECT team_id
+      FROM team_member
+      WHERE user_id = {{auth.user.id}}
+        AND is_active = true
+    )
+  """
 }
 
 model User {
@@ -141,11 +150,18 @@ model User {
   @policy(role: USER, allow: [select], where: ownUser)
   @policy(role: ADMIN, allow: all)
 }
+
+model Note {
+  teamId: UUID
+
+  @policy(role: USER, allow: [select, insert, update, delete], where: activeTeamMember)
+  @policy(role: ADMIN, allow: all)
+}
 ```
 
 Unknown predicate names fail merged-schema validation. Prefer unqualified column names when a predicate is shared across models.
 
-Arbitrary SQL expressions are supported, including `AND` / `OR`, `IN`, `EXISTS`, subqueries, functions, and casts. Use a triple-quoted string for multiline predicates:
+Arbitrary SQL expressions are supported, including `AND` / `OR`, `IN`, `EXISTS`, subqueries, functions, and casts. Use a triple-quoted string for multiline predicates (inline on `@policy` or in `predicates`):
 
 **Ownership**
 

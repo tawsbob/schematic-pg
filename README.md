@@ -73,11 +73,20 @@ enums {
 
 ### Predicates
 
-Named SQL boolean expressions shared by `@policy` `where` clauses. Fragments merge them by name. Prefer unqualified column names when a predicate is reused across models.
+Named SQL boolean expressions shared by `@policy` `where` clauses. Fragments merge them by name. Prefer unqualified column names when a predicate is reused across models. Bodies are a string or a triple-quoted multiline string.
 
 ```ts
 predicates {
   ownUser: "id = {{auth.user.id}}"
+
+  activeTeamMember: """
+    team_id IN (
+      SELECT team_id
+      FROM team_member
+      WHERE user_id = {{auth.user.id}}
+        AND is_active = true
+    )
+  """
 }
 ```
 
@@ -85,6 +94,7 @@ Reference a predicate by identifier — codegen inlines the SQL into `generated/
 
 ```ts
 @policy(role: USER, allow: [select], where: ownUser)
+@policy(role: USER, allow: [select, insert, update, delete], where: activeTeamMember)
 ```
 
 A string `where` remains valid for one-off predicates.
@@ -359,7 +369,7 @@ model User {
 |----------|-------------|
 | `role` | Enum identifier (typically a `UserRole` value) |
 | `allow` | `all` or `[select, insert, update, delete]` |
-| `where` | Optional PostgreSQL boolean predicate (string) or a named `predicates` identifier; supports `{{auth.user.id}}` (and other `{{auth.*}}` paths) as query parameters |
+| `where` | Optional PostgreSQL boolean predicate (`"..."` or `"""..."""`) or a named `predicates` identifier; supports `{{auth.user.id}}` (and other `{{auth.*}}` paths) as query parameters |
 
 `GET` → `select`, `POST` → `insert`, `PUT` → `update`, `DELETE` → `delete`. Unauthenticated requests default to `{ role: 'PUBLIC' }`.
 

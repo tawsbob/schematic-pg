@@ -40,7 +40,7 @@ This repository uses domain fragments:
 ```
 schema/
   extensions.schema   # PostgreSQL extensions
-  access.schema       # Named policy predicates (ownUser, …)
+  access.schema       # Named policy predicates (ownUser, activeTeamMember, …)
   user.schema         # UserRole, User, Profile, getUserBalance
   order.schema        # OrderStatus, Order, ProductOrder
   product.schema      # Log, Product, searchProducts
@@ -53,6 +53,23 @@ schema/
 extensions {
   pgcrypto { version: "1.3" }
   uuid-ossp
+}
+```
+
+**Predicates only** (string or triple-quoted bodies):
+
+```ts
+predicates {
+  ownUser: "id = {{auth.user.id}}"
+
+  activeTeamMember: """
+    team_id IN (
+      SELECT team_id
+      FROM team_member
+      WHERE user_id = {{auth.user.id}}
+        AND is_active = true
+    )
+  """
 }
 ```
 

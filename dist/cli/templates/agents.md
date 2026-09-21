@@ -79,6 +79,15 @@ enums {
 
 predicates {
   ownUser: "id = {{auth.user.id}}"
+
+  activeTeamMember: """
+    team_id IN (
+      SELECT team_id
+      FROM team_member
+      WHERE user_id = {{auth.user.id}}
+        AND is_active = true
+    )
+  """
 }
 
 models {
@@ -107,8 +116,8 @@ models {
 
 - **Relations:** Put `@relation(fields: [...], references: [...])` on the FK-owning side. The inverse side is inferred.
 - **REST surface:** `@rest(only: [...])`, `@rest(except: [...])`, or `@rest(false)` controls which CRUD handlers are generated (`list`/`get`/`create`/`update`/`delete`).
-- **Policies:** `@policy(role: ..., allow: [select|insert|update|delete|all], where: "..." | predicateName)` — `where` is a PostgreSQL boolean predicate or a name from the `predicates` section; `{{auth.user.id}}` (and other `{{auth.*}}` paths) become query parameters. Supports `AND`/`OR`, `IN`, `EXISTS`, and subqueries. No built-in tenant model.
-- **Predicates:** `predicates { name: "sql..." }` — named SQL snippets merged across fragments; referenced as `@policy(where: name)`. Codegen inlines the SQL into `generated/policies.ts`.
+- **Policies:** `@policy(role: ..., allow: [select|insert|update|delete|all], where: "..." | """...""" | predicateName)` — `where` is a PostgreSQL boolean predicate (string or triple-quoted) or a name from the `predicates` section; `{{auth.user.id}}` (and other `{{auth.*}}` paths) become query parameters. Supports `AND`/`OR`, `IN`, `EXISTS`, and subqueries. No built-in tenant model.
+- **Predicates:** `predicates { name: "sql..." | """multiline sql...""" }` — named SQL snippets merged across fragments; referenced as `@policy(where: name)`. Codegen inlines the SQL into `generated/policies.ts`.
 - **Validation:** `@regex(...)`, `@range(min: ..., max: ...)` flow into generated Zod schemas.
 - **Indexes / triggers / partitions:** `@@index(...)`, `@@trigger { timing, event, level, execute: """...""" }`, `@@partition { by: RANGE|LIST|HASH, fields: [...], partition Name { … } }`.
 - **SQL functions:** optional `functions { function name(args): ReturnType { execute: """...""" } }` after `models`. `ReturnType` may be a scalar (`INTEGER`, `TRIGGER`, `VOID`, …) or `TABLE(col: Type, …)`. Names snake_case in SQL; call scalars with `SELECT fn($1)`, table functions with `SELECT * FROM fn($1)` via `db.$queryRaw`.
