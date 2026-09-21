@@ -15,5 +15,6 @@ export declare class MigrationPlanner {
     private diffFunctions;
     private triggerSignatures;
     private indexSignatures;
+    private suppressMigrationsCoveredByConvert;
 }
 export declare function getStoredFieldNames(model: Model, modelNames: Set<string>): string[];

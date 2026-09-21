@@ -119,4 +119,6 @@ export const DESTRUCTIVE_MIGRATION_KINDS = new Set([
   'DropExtension',
   'DropTrigger',
   'DropPartition',
+  'ConvertToPartitioned',
+  'ConvertFromPartitioned',
 ]);

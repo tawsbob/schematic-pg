@@ -103,10 +103,41 @@ After `db:migrate`, commit the updated `.schema-state/app.schema` so the next `d
 | Drop partitioned model | `DROP TABLE parent CASCADE` only (children go with it) |
 | Rename a partition | Drop old + create new (data loss unless you edit the SQL) |
 | Change `by` / `fields` / `expression` / HASH `count` | **Error** — unsupported rewrite; write a manual `migrations/*.sql` |
-| Convert a normal table to partitioned (or back) | **Error** — unsupported; manual migration required |
+| Convert a normal table to partitioned (or back) | `ConvertToPartitioned` / `ConvertFromPartitioned` rewrite (destructive) |
 | Change bounds/`in`/remainder on the same name | **Error** — drop the old name and add a new one |
 
-`DropPartition` is included in the destructive-change warning from `db:diff`. You can delete the `DROP TABLE` line after `DETACH` if you want to keep the data as a standalone table.
+`DropPartition`, `ConvertToPartitioned`, and `ConvertFromPartitioned` are included in the destructive-change warning from `db:diff`. You can delete the `DROP TABLE` line after `DETACH` if you want to keep the data as a standalone table.
+
+#### Converting to / from a partitioned table
+
+Postgres cannot `ALTER` a heap table into `PARTITION BY`. When you add or remove `@@partition` on an existing model, `db:diff` emits a rewrite:
+
+1. Drop incoming foreign keys that reference the table.
+2. `ALTER TABLE … RENAME TO …_pre_partition`.
+3. `CREATE TABLE` in the new shape (`PARTITION BY` when converting to partitioned).
+4. To-partitioned only: create each child with `PARTITION OF`.
+5. `INSERT INTO … SELECT …` for columns present on both sides (type casts when the column type changed). New columns take their defaults. Dropped columns are not copied.
+6. Recreate indexes, triggers, and foreign keys on the new table.
+7. Drop the staging table (`CASCADE` when converting back to a heap table, so partition children go with it).
+
+Same-diff column, index, trigger, and foreign-key changes for that model are folded into this rewrite — you will not see separate `AddColumn` / `CreateIndex` / `AddConstraint` lines for it.
+
+#### Production pitfalls
+
+Treat convert migrations as a **maintenance-window** operation, not an online schema tweak.
+
+- **Locks.** The rewrite holds exclusive locks on the table and on tables that have foreign keys to it for the duration of the copy. Small tables finish quickly; large tables mean downtime.
+- **Disk and WAL.** The copy needs roughly twice the disk until the staging table is dropped, and it writes a full-table amount of WAL.
+- **Transactional safety.** `db:migrate` runs each file in one transaction. If any row fails to land in a partition, or a type cast / `NOT NULL` fails, the whole migration rolls back and the old table remains.
+- **Out-of-range rows.** Rows that match no child cause the `INSERT` to fail. Fix the bounds (or the data) before retrying. Diff does not invent a default partition to catch them.
+- **Primary key shape.** Adding `@@partition` usually forces a composite primary key that includes the partition key. Uniqueness on `id` alone goes away, and REST paths may change (for example `/logs/:id` → `/logs/:id/:createdAt`). Update clients before applying.
+- **Dropped columns.** Values in columns removed in the same schema edit are not copied.
+- **Triggers.** Triggers do not run during the bulk `INSERT`. Existing rows are copied as-is; later writes still fire triggers.
+- **Objects outside the schema.** Grants, views, row-level security policies, and replication publications are not modeled. They stay attached to the staging table. The final drop can fail (and roll back), or with `CASCADE` on convert-from can drop dependent views. The new table also does not inherit old privileges — re-grant after migrate if you manage grants outside schematic-pg.
+- **Statistics.** The new table has no planner stats until `ANALYZE`. The first queries after migrate can be slow; run `ANALYZE` on the parent (and children if needed).
+- **Logical replication.** Subscribers do not follow the rewrite. Publications that listed the old table keep pointing at the staging name until it is dropped.
+
+Checklist before applying in production: backup, verify every existing row fits a declared partition, schedule a window, review the generated SQL, apply, then `ANALYZE` and re-check grants / dependents.
 
 ---
 

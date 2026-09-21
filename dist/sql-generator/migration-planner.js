@@ -1,5 +1,6 @@
 import { flattenPartitions, partitionStrategySignature, } from './generators/partitions.js';
-import { collectForeignKeys, functionIdentity, functionSignature, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, serializeColumnType, serializeDefault, serializeForeignKey, } from './utils/ast-helpers.js';
+import { collectForeignKeys, functionIdentity, functionSignature, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, parseForeignKeySignature, serializeColumnType, serializeDefault, serializeForeignKey, } from './utils/ast-helpers.js';
+import { toTableName } from './utils/snake-case.js';
 export class MigrationPlanner {
     generateMigration(oldSchema, newSchema) {
         const migrations = [];
@@ -11,7 +12,7 @@ export class MigrationPlanner {
         migrations.push(...this.diffIndexes(oldSchema, newSchema));
         migrations.push(...this.diffFunctions(oldSchema, newSchema));
         migrations.push(...this.diffTriggers(oldSchema, newSchema));
-        return migrations;
+        return this.suppressMigrationsCoveredByConvert(migrations);
     }
     diffExtensions(oldSchema, newSchema) {
         const migrations = [];
@@ -111,8 +112,13 @@ export class MigrationPlanner {
             const oldStrategy = partitionStrategySignature(oldModel.partition);
             const newStrategy = partitionStrategySignature(newModel.partition);
             if (oldStrategy !== newStrategy) {
-                if (oldStrategy === null || newStrategy === null) {
-                    throw new Error(`Unsupported partition change on model "${modelName}": converting to/from a partitioned table requires a manual migration.`);
+                if (oldStrategy === null && newStrategy !== null) {
+                    migrations.push({ kind: 'ConvertToPartitioned', modelName });
+                    continue;
+                }
+                if (oldStrategy !== null && newStrategy === null) {
+                    migrations.push({ kind: 'ConvertFromPartitioned', modelName });
+                    continue;
                 }
                 throw new Error(`Unsupported partition change on model "${modelName}": changing partition strategy or key requires a manual migration.`);
             }
@@ -341,6 +347,36 @@ export class MigrationPlanner {
     }
     indexSignatures(model, modelNames) {
         return new Set(getDirectives(model, 'index').map((directive) => JSON.stringify(normalizeIndexDirective(directive, model, modelNames))));
+    }
+    suppressMigrationsCoveredByConvert(migrations) {
+        const convertedModels = new Set(migrations
+            .filter((migration) => migration.kind === 'ConvertToPartitioned' ||
+            migration.kind === 'ConvertFromPartitioned')
+            .map((migration) => migration.modelName));
+        if (convertedModels.size === 0) {
+            return migrations;
+        }
+        const convertedTables = new Set([...convertedModels].map((modelName) => toTableName(modelName)));
+        return migrations.filter((migration) => {
+            if (migration.kind === 'AddColumn' ||
+                migration.kind === 'DropColumn' ||
+                migration.kind === 'AlterColumn' ||
+                migration.kind === 'CreateIndex' ||
+                migration.kind === 'DropIndex' ||
+                migration.kind === 'CreateTrigger' ||
+                migration.kind === 'DropTrigger') {
+                return !convertedModels.has(migration.modelName);
+            }
+            if (migration.kind === 'AddConstraint' || migration.kind === 'DropConstraint') {
+                if (migration.constraintType !== 'foreignKey') {
+                    return true;
+                }
+                const foreignKey = parseForeignKeySignature(migration.details);
+                return (!convertedTables.has(foreignKey.sourceTable) &&
+                    !convertedTables.has(foreignKey.targetTable));
+            }
+            return true;
+        });
     }
 }
 export function getStoredFieldNames(model, modelNames) {

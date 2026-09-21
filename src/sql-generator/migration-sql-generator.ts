@@ -12,6 +12,7 @@ import {
   generateDropIndex,
   type NormalizedIndex,
 } from './generators/indexes.js';
+import { generatePartitionConvertSql } from './generators/partition-convert.js';
 import {
   flattenPartitions,
   formatDetachAndDropPartition,
@@ -44,6 +45,8 @@ const MIGRATION_ORDER: Record<Migration['kind'], number> = {
   CreateTable: 3,
   AddColumn: 4,
   CreatePartition: 5,
+  ConvertToPartitioned: 5.5,
+  ConvertFromPartitioned: 5.5,
   AlterColumn: 6,
   CreateIndex: 7,
   AddConstraint: 8,
@@ -61,7 +64,7 @@ const MIGRATION_ORDER: Record<Migration['kind'], number> = {
 };
 
 export class MigrationSqlGenerator {
-  generate(migrations: Migration[], newSchema: Schema): string {
+  generate(migrations: Migration[], newSchema: Schema, oldSchema?: Schema): string {
     if (migrations.length === 0) {
       return '';
     }
@@ -81,6 +84,7 @@ export class MigrationSqlGenerator {
     const statements = ordered.map((migration) =>
       this.migrationToSql(migration, {
         newSchema,
+        oldSchema,
         enumNames,
         modelNames,
         modelMap,
@@ -96,6 +100,7 @@ export class MigrationSqlGenerator {
     migration: Migration,
     context: {
       newSchema: Schema;
+      oldSchema?: Schema;
       enumNames: Set<string>;
       modelNames: Set<string>;
       modelMap: Map<string, Model>;
@@ -103,7 +108,8 @@ export class MigrationSqlGenerator {
       functionMap: Map<string, SqlFunction>;
     },
   ): string {
-    const { enumNames, modelNames, modelMap, enumMap, functionMap } = context;
+    const { newSchema, oldSchema, enumNames, modelNames, modelMap, enumMap, functionMap } =
+      context;
 
     switch (migration.kind) {
       case 'CreateExtension':
@@ -193,6 +199,20 @@ export class MigrationSqlGenerator {
           values: { kind: 'default' },
           signature: '',
         });
+      case 'ConvertToPartitioned':
+      case 'ConvertFromPartitioned': {
+        if (!oldSchema) {
+          throw new Error(
+            `Partition conversion for model "${migration.modelName}" requires the previous schema snapshot`,
+          );
+        }
+        return generatePartitionConvertSql(
+          migration.kind,
+          migration.modelName,
+          oldSchema,
+          newSchema,
+        );
+      }
       case 'CreateIndex': {
         const model = modelMap.get(migration.modelName);
         if (!model) {

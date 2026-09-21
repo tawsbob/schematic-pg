@@ -16,7 +16,7 @@ describe('MigrationSqlGenerator', () => {
     const oldSchema = parse(oldSource);
     const newSchema = parse(newSource);
     const migrations = planner.generateMigration(oldSchema, newSchema);
-    return sqlGenerator.generate(migrations, newSchema);
+    return sqlGenerator.generate(migrations, newSchema, oldSchema);
   }
 
   it('generates CREATE TABLE for added models', () => {

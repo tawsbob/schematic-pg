@@ -3,6 +3,7 @@ import { generateCreateExtension, generateDropExtension } from './generators/ext
 import { generateForeignKey } from './generators/foreign-keys.js';
 import { generateCreateFunction, generateDropFunction, } from './generators/functions.js';
 import { generateCreateIndex, generateDropIndex, } from './generators/indexes.js';
+import { generatePartitionConvertSql } from './generators/partition-convert.js';
 import { flattenPartitions, formatDetachAndDropPartition, formatPartitionOfClause, } from './generators/partitions.js';
 import { generateColumnDefinition, generateTable } from './generators/tables.js';
 import { generateCreateTrigger, generateDropTrigger, } from './generators/triggers.js';
@@ -15,6 +16,8 @@ const MIGRATION_ORDER = {
     CreateTable: 3,
     AddColumn: 4,
     CreatePartition: 5,
+    ConvertToPartitioned: 5.5,
+    ConvertFromPartitioned: 5.5,
     AlterColumn: 6,
     CreateIndex: 7,
     AddConstraint: 8,
@@ -31,7 +34,7 @@ const MIGRATION_ORDER = {
     DropExtension: 19,
 };
 export class MigrationSqlGenerator {
-    generate(migrations, newSchema) {
+    generate(migrations, newSchema, oldSchema) {
         if (migrations.length === 0) {
             return '';
         }
@@ -43,6 +46,7 @@ export class MigrationSqlGenerator {
         const ordered = [...migrations].sort((left, right) => MIGRATION_ORDER[left.kind] - MIGRATION_ORDER[right.kind]);
         const statements = ordered.map((migration) => this.migrationToSql(migration, {
             newSchema,
+            oldSchema,
             enumNames,
             modelNames,
             modelMap,
@@ -52,7 +56,7 @@ export class MigrationSqlGenerator {
         return `${statements.join('\n\n')}\n`;
     }
     migrationToSql(migration, context) {
-        const { enumNames, modelNames, modelMap, enumMap, functionMap } = context;
+        const { newSchema, oldSchema, enumNames, modelNames, modelMap, enumMap, functionMap } = context;
         switch (migration.kind) {
             case 'CreateExtension':
                 return generateCreateExtension(migration.extensionName);
@@ -136,6 +140,13 @@ export class MigrationSqlGenerator {
                     values: { kind: 'default' },
                     signature: '',
                 });
+            case 'ConvertToPartitioned':
+            case 'ConvertFromPartitioned': {
+                if (!oldSchema) {
+                    throw new Error(`Partition conversion for model "${migration.modelName}" requires the previous schema snapshot`);
+                }
+                return generatePartitionConvertSql(migration.kind, migration.modelName, oldSchema, newSchema);
+            }
             case 'CreateIndex': {
                 const model = modelMap.get(migration.modelName);
                 if (!model) {

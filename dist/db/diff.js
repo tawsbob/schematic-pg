@@ -13,7 +13,7 @@ export function generateSchemaDiff(schemaPath, cwd = process.cwd()) {
     const { schema: newSchema } = loadSchemaFromArg(schemaPath, cwd);
     const planner = new MigrationPlanner();
     const migrations = planner.generateMigration(oldSchema, newSchema);
-    const sql = new MigrationSqlGenerator().generate(migrations, newSchema);
+    const sql = new MigrationSqlGenerator().generate(migrations, newSchema, oldSchema);
     const hasDestructiveChanges = migrations.some((migration) => DESTRUCTIVE_MIGRATION_KINDS.has(migration.kind));
     return { migrations, sql, hasDestructiveChanges };
 }

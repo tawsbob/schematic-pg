@@ -18,7 +18,9 @@ export type Migration =
   | CreateTrigger
   | DropTrigger
   | CreatePartition
-  | DropPartition;
+  | DropPartition
+  | ConvertToPartitioned
+  | ConvertFromPartitioned;
 
 export interface CreateTable {
   kind: 'CreateTable';
@@ -139,4 +141,14 @@ export interface DropPartition {
   partitionName: string;
   parentTable: string;
   tableName: string;
+}
+
+export interface ConvertToPartitioned {
+  kind: 'ConvertToPartitioned';
+  modelName: string;
+}
+
+export interface ConvertFromPartitioned {
+  kind: 'ConvertFromPartitioned';
+  modelName: string;
 }

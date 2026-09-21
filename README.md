@@ -449,7 +449,7 @@ RANGE bounds are half-open `[from, to)`. Use `MINVALUE` / `MAXVALUE`. LIST uses 
 
 The primary key and every unique constraint must include the partition key columns (PostgreSQL). Incoming foreign keys must reference that same key — prefer partitioning tables that are not FK targets. Nested `@@partition` inside a child is allowed one level deep.
 
-`db:diff` adds and removes child partitions (`CREATE TABLE … PARTITION OF` / `DETACH` + `DROP`). Changing strategy, key, or converting a table to/from partitioned requires a manual migration. See [Migrations](docs/migrations.md#partitions).
+`db:diff` adds and removes child partitions (`CREATE TABLE … PARTITION OF` / `DETACH` + `DROP`). Adding or removing `@@partition` on an existing model emits a destructive rewrite (`ConvertToPartitioned` / `ConvertFromPartitioned`): rename → recreate → copy rows → rebuild dependents. Changing strategy, key, or bounds on the same child name still requires a manual migration. See [Migrations — Partitions](docs/migrations.md#partitions) for the SQL steps and production pitfalls (locks, out-of-range rows, grants, `ANALYZE`).
 
 ### Triggers (`@@trigger`)
 
