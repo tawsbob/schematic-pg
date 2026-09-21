@@ -23,7 +23,77 @@ export const openApiDocument = {
         "properties": {
           "error": {
             "type": "string",
-            "description": "Human-readable error message"
+            "description": "Human-readable error message. Validation failures prefix the field path when present."
+          },
+          "issues": {
+            "type": "array",
+            "description": "Per-field validation issues. Present on Zod request validation failures.",
+            "items": {
+              "type": "object",
+              "required": [
+                "path",
+                "message"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Dot-separated field path (empty for the request root)"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Validation message for this path"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AnnouncementResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "teamId",
+          "message"
+        ]
+      },
+      "AnnouncementCreate": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId",
+          "message"
+        ]
+      },
+      "AnnouncementUpdate": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message": {
+            "type": "string"
           }
         }
       },
@@ -72,6 +142,66 @@ export const openApiDocument = {
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "NoteResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "teamId",
+          "title",
+          "body"
+        ]
+      },
+      "NoteCreate": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId",
+          "title",
+          "body"
+        ]
+      },
+      "NoteUpdate": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
           }
         }
       },
@@ -613,6 +743,712 @@ export const openApiDocument = {
     }
   },
   "paths": {
+    "/announcements": {
+      "get": {
+        "tags": [
+          "Announcement"
+        ],
+        "summary": "List Announcement",
+        "operationId": "listAnnouncement",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by id"
+          },
+          {
+            "name": "id_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter id with contains"
+          },
+          {
+            "name": "id_startsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter id with startsWith"
+          },
+          {
+            "name": "id_endsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter id with endsWith"
+          },
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by teamId"
+          },
+          {
+            "name": "teamId_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter teamId with contains"
+          },
+          {
+            "name": "teamId_startsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter teamId with startsWith"
+          },
+          {
+            "name": "teamId_endsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter teamId with endsWith"
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by message"
+          },
+          {
+            "name": "message_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter message with contains"
+          },
+          {
+            "name": "message_startsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter message with startsWith"
+          },
+          {
+            "name": "message_endsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter message with endsWith"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Max rows to return (max 100)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Number of rows to skip"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort field (prefix with - for desc). Allowed: id, teamId, message"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated relation paths (dot nesting). Available: team"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Announcement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnnouncementResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Announcement"
+        ],
+        "summary": "Create Announcement",
+        "operationId": "createAnnouncement",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnouncementCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created Announcement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/announcements/{id}": {
+      "get": {
+        "tags": [
+          "Announcement"
+        ],
+        "summary": "Get Announcement",
+        "operationId": "getAnnouncement",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated relation paths (dot nesting). Available: team"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcement record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Announcement"
+        ],
+        "summary": "Update Announcement",
+        "operationId": "updateAnnouncement",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnouncementUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated Announcement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Announcement"
+        ],
+        "summary": "Delete Announcement",
+        "operationId": "deleteAnnouncement",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted Announcement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/logs": {
       "get": {
         "tags": [
@@ -775,7 +1611,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -862,7 +1704,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -974,7 +1822,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -1085,7 +1939,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -1199,7 +2059,755 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notes": {
+      "get": {
+        "tags": [
+          "Note"
+        ],
+        "summary": "List Note",
+        "operationId": "listNote",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by id"
+          },
+          {
+            "name": "id_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter id with contains"
+          },
+          {
+            "name": "id_startsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter id with startsWith"
+          },
+          {
+            "name": "id_endsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter id with endsWith"
+          },
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter by teamId"
+          },
+          {
+            "name": "teamId_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter teamId with contains"
+          },
+          {
+            "name": "teamId_startsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter teamId with startsWith"
+          },
+          {
+            "name": "teamId_endsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter teamId with endsWith"
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by title"
+          },
+          {
+            "name": "title_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter title with contains"
+          },
+          {
+            "name": "title_startsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter title with startsWith"
+          },
+          {
+            "name": "title_endsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter title with endsWith"
+          },
+          {
+            "name": "body",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by body"
+          },
+          {
+            "name": "body_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter body with contains"
+          },
+          {
+            "name": "body_startsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter body with startsWith"
+          },
+          {
+            "name": "body_endsWith",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter body with endsWith"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Max rows to return (max 100)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Number of rows to skip"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort field (prefix with - for desc). Allowed: id, teamId, title, body"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated relation paths (dot nesting). Available: team"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NoteResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Note"
+        ],
+        "summary": "Create Note",
+        "operationId": "createNote",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created Note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notes/{id}": {
+      "get": {
+        "tags": [
+          "Note"
+        ],
+        "summary": "Get Note",
+        "operationId": "getNote",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated relation paths (dot nesting). Available: team"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Note record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Note"
+        ],
+        "summary": "Update Note",
+        "operationId": "updateNote",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated Note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Role \"USER\" is not allowed to list this resource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unique constraint violation on email"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Note"
+        ],
+        "summary": "Delete Note",
+        "operationId": "deleteNote",
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted Note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -1516,7 +3124,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -1603,7 +3217,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -1715,7 +3335,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -1826,7 +3452,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -1940,7 +3572,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -2382,7 +4020,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -2469,7 +4113,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -2581,7 +4231,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -2692,7 +4348,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -2806,7 +4468,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -3157,7 +4825,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -3244,7 +4918,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -3365,7 +5045,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -3485,7 +5171,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -3608,7 +5300,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -3903,7 +5601,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -3990,7 +5694,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -4102,7 +5812,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -4213,7 +5929,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -4327,7 +6049,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -4643,7 +6371,7 @@ export const openApiDocument = {
             "schema": {
               "type": "string"
             },
-            "description": "Comma-separated relation paths (dot nesting). Available: profile, orders"
+            "description": "Comma-separated relation paths (dot nesting). Available: profile, orders, teamMembers"
           }
         ],
         "responses": {
@@ -4668,7 +6396,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -4745,7 +6479,7 @@ export const openApiDocument = {
             "schema": {
               "type": "string"
             },
-            "description": "Comma-separated relation paths (dot nesting). Available: profile, orders"
+            "description": "Comma-separated relation paths (dot nesting). Available: profile, orders, teamMembers"
           }
         ],
         "responses": {
@@ -4767,7 +6501,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -4863,7 +6603,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }
@@ -4933,7 +6679,13 @@ export const openApiDocument = {
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Validation failed"
+                  "error": "email: Invalid input: expected string, received number",
+                  "issues": [
+                    {
+                      "path": "email",
+                      "message": "Invalid input: expected string, received number"
+                    }
+                  ]
                 }
               }
             }

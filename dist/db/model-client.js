@@ -1,4 +1,4 @@
-import { mapPgError } from './errors.js';
+import { mapPgError, PolicyInsertDeniedError } from './errors.js';
 import { fetchWithIncludes } from './include/load.js';
 import { QueryBuilder } from './query-builder.js';
 import { mapRow, mapRows } from './row-mapper.js';
@@ -28,9 +28,15 @@ export function createModelClient(model, executor, registry) {
         return mapRows(rows, model);
     }
     return {
-        async create(data) {
-            const query = builder.insert(data);
+        async create(data, args) {
+            const query = builder.insert(data, args?.where);
             const rows = await execute(query.sql, query.params);
+            if (!rows[0]) {
+                if (args?.where && Object.keys(args.where).length > 0) {
+                    throw new PolicyInsertDeniedError(model.name);
+                }
+                throw new Error(`Insert returned no rows for model ${model.name}`);
+            }
             return mapRow(rows[0], model);
         },
         async findUnique(where, args = {}) {

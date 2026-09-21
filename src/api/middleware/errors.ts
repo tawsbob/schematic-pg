@@ -1,22 +1,23 @@
-import type { ErrorHandler } from 'hono';
+import {
+  DatabaseError,
+  ForeignKeyConstraintError,
+  UniqueConstraintError,
+  PolicyInsertDeniedError,
+} from '../../db/errors.js';
 import { ForbiddenError, UnauthorizedError } from '../auth/errors.js';
 import {
   InvalidPasswordInputError,
   MissingAuthPepperError,
 } from '../auth/password/errors.js';
 import { InvalidTokenTtlError, MissingJwtSecretError } from '../auth/token/errors.js';
-import {
-  DatabaseError,
-  ForeignKeyConstraintError,
-  UniqueConstraintError,
-} from '../../db/errors.js';
+import type { ErrorHandler } from 'hono';
 
 export const handleError: ErrorHandler = (error, c) => {
   if (error instanceof UnauthorizedError) {
     return c.json({ error: error.message }, 401);
   }
 
-  if (error instanceof ForbiddenError) {
+  if (error instanceof ForbiddenError || error instanceof PolicyInsertDeniedError) {
     return c.json({ error: error.message }, 403);
   }
 

@@ -2,13 +2,158 @@
 import { z } from 'zod';
 import { validateIncludePaths } from 'schematic-pg/api/utils/include-query';
 import type {
+  Announcement,
   Log,
+  Note,
   Order,
   Product,
   ProductOrder,
   Profile,
+  Team,
+  TeamMember,
   User,
 } from '../db-types.js';
+
+export const AnnouncementCreateSchema = z.object({
+  teamId: z.string(),
+  message: z.string(),
+});
+
+export const AnnouncementUpdateSchema = z.object({
+  teamId: z.string().optional(),
+  message: z.string().optional(),
+});
+
+export const AnnouncementParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const ANNOUNCEMENT_SORTABLE_FIELDS = ['id', 'teamId', 'message'] as const;
+export const ANNOUNCEMENT_LIST_QUERY_FIELDS = [
+  {
+    "name": "id",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "teamId",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "message",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  }
+] as const;
+export const ANNOUNCEMENT_INCLUDABLE_RELATIONS = {
+  "team": {
+    "members": {
+      "team": {},
+      "user": {
+        "profile": {
+          "user": {}
+        },
+        "orders": {
+          "user": {},
+          "products": {
+            "order": {},
+            "product": {
+              "orders": {}
+            }
+          }
+        },
+        "teamMembers": {}
+      }
+    },
+    "notes": {
+      "team": {}
+    },
+    "announcements": {}
+  }
+} as const;
+export const ANNOUNCEMENT_OMIT_FIELDS = [] as const;
+export type AnnouncementResponse = Announcement;
+
+export const AnnouncementGetQuerySchema = z
+  .object({
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.include === undefined) {
+      return;
+    }
+    const includeError = validateIncludePaths(data.include, ANNOUNCEMENT_INCLUDABLE_RELATIONS);
+    if (includeError) {
+      ctx.addIssue({
+        code: 'custom',
+        message: includeError,
+        path: ['include'],
+      });
+    }
+  });
+
+
+
+export const AnnouncementListQuerySchema = z
+  .object({
+    id: z.coerce.string().optional(),
+    id_contains: z.coerce.string().optional(),
+    id_startsWith: z.coerce.string().optional(),
+    id_endsWith: z.coerce.string().optional(),
+    teamId: z.coerce.string().optional(),
+    teamId_contains: z.coerce.string().optional(),
+    teamId_startsWith: z.coerce.string().optional(),
+    teamId_endsWith: z.coerce.string().optional(),
+    message: z.coerce.string().optional(),
+    message_contains: z.coerce.string().optional(),
+    message_startsWith: z.coerce.string().optional(),
+    message_endsWith: z.coerce.string().optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+    sort: z.string().optional(),
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.sort !== undefined) {
+      const descending = data.sort.startsWith('-');
+      const field = descending ? data.sort.slice(1) : data.sort;
+      if (!(ANNOUNCEMENT_SORTABLE_FIELDS as readonly string[]).includes(field)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid sort field "${field}"`,
+          path: ['sort'],
+        });
+      }
+    }
+    if (data.include !== undefined) {
+      const includeError = validateIncludePaths(data.include, ANNOUNCEMENT_INCLUDABLE_RELATIONS);
+      if (includeError) {
+        ctx.addIssue({
+          code: 'custom',
+          message: includeError,
+          path: ['include'],
+        });
+      }
+    }
+  });
+
+
 
 export const LogCreateSchema = z.object({
   message: z.string(),
@@ -120,6 +265,163 @@ export const LogListQuerySchema = z
 
 
 
+export const NoteCreateSchema = z.object({
+  teamId: z.string(),
+  title: z.string(),
+  body: z.string(),
+});
+
+export const NoteUpdateSchema = z.object({
+  teamId: z.string().optional(),
+  title: z.string().optional(),
+  body: z.string().optional(),
+});
+
+export const NoteParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const NOTE_SORTABLE_FIELDS = ['id', 'teamId', 'title', 'body'] as const;
+export const NOTE_LIST_QUERY_FIELDS = [
+  {
+    "name": "id",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "teamId",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "title",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "body",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  }
+] as const;
+export const NOTE_INCLUDABLE_RELATIONS = {
+  "team": {
+    "members": {
+      "team": {},
+      "user": {
+        "profile": {
+          "user": {}
+        },
+        "orders": {
+          "user": {},
+          "products": {
+            "order": {},
+            "product": {
+              "orders": {}
+            }
+          }
+        },
+        "teamMembers": {}
+      }
+    },
+    "notes": {},
+    "announcements": {
+      "team": {}
+    }
+  }
+} as const;
+export const NOTE_OMIT_FIELDS = [] as const;
+export type NoteResponse = Note;
+
+export const NoteGetQuerySchema = z
+  .object({
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.include === undefined) {
+      return;
+    }
+    const includeError = validateIncludePaths(data.include, NOTE_INCLUDABLE_RELATIONS);
+    if (includeError) {
+      ctx.addIssue({
+        code: 'custom',
+        message: includeError,
+        path: ['include'],
+      });
+    }
+  });
+
+
+
+export const NoteListQuerySchema = z
+  .object({
+    id: z.coerce.string().optional(),
+    id_contains: z.coerce.string().optional(),
+    id_startsWith: z.coerce.string().optional(),
+    id_endsWith: z.coerce.string().optional(),
+    teamId: z.coerce.string().optional(),
+    teamId_contains: z.coerce.string().optional(),
+    teamId_startsWith: z.coerce.string().optional(),
+    teamId_endsWith: z.coerce.string().optional(),
+    title: z.coerce.string().optional(),
+    title_contains: z.coerce.string().optional(),
+    title_startsWith: z.coerce.string().optional(),
+    title_endsWith: z.coerce.string().optional(),
+    body: z.coerce.string().optional(),
+    body_contains: z.coerce.string().optional(),
+    body_startsWith: z.coerce.string().optional(),
+    body_endsWith: z.coerce.string().optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+    sort: z.string().optional(),
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.sort !== undefined) {
+      const descending = data.sort.startsWith('-');
+      const field = descending ? data.sort.slice(1) : data.sort;
+      if (!(NOTE_SORTABLE_FIELDS as readonly string[]).includes(field)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid sort field "${field}"`,
+          path: ['sort'],
+        });
+      }
+    }
+    if (data.include !== undefined) {
+      const includeError = validateIncludePaths(data.include, NOTE_INCLUDABLE_RELATIONS);
+      if (includeError) {
+        ctx.addIssue({
+          code: 'custom',
+          message: includeError,
+          path: ['include'],
+        });
+      }
+    }
+  });
+
+
+
 export const OrderCreateSchema = z.object({
   userId: z.string(),
   status: z.enum(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']).optional(),
@@ -217,7 +519,19 @@ export const ORDER_INCLUDABLE_RELATIONS = {
     "profile": {
       "user": {}
     },
-    "orders": {}
+    "orders": {},
+    "teamMembers": {
+      "team": {
+        "members": {},
+        "notes": {
+          "team": {}
+        },
+        "announcements": {
+          "team": {}
+        }
+      },
+      "user": {}
+    }
   },
   "products": {
     "order": {},
@@ -424,7 +738,19 @@ export const PRODUCT_INCLUDABLE_RELATIONS = {
         "profile": {
           "user": {}
         },
-        "orders": {}
+        "orders": {},
+        "teamMembers": {
+          "team": {
+            "members": {},
+            "notes": {
+              "team": {}
+            },
+            "announcements": {
+              "team": {}
+            }
+          },
+          "user": {}
+        }
       },
       "products": {}
     },
@@ -598,7 +924,19 @@ export const PRODUCT_ORDER_INCLUDABLE_RELATIONS = {
       "profile": {
         "user": {}
       },
-      "orders": {}
+      "orders": {},
+      "teamMembers": {
+        "team": {
+          "members": {},
+          "notes": {
+            "team": {}
+          },
+          "announcements": {
+            "team": {}
+          }
+        },
+        "user": {}
+      }
     },
     "products": {}
   },
@@ -764,6 +1102,18 @@ export const PROFILE_INCLUDABLE_RELATIONS = {
           "orders": {}
         }
       }
+    },
+    "teamMembers": {
+      "team": {
+        "members": {},
+        "notes": {
+          "team": {}
+        },
+        "announcements": {
+          "team": {}
+        }
+      },
+      "user": {}
     }
   }
 } as const;
@@ -828,6 +1178,285 @@ export const ProfileListQuerySchema = z
     }
     if (data.include !== undefined) {
       const includeError = validateIncludePaths(data.include, PROFILE_INCLUDABLE_RELATIONS);
+      if (includeError) {
+        ctx.addIssue({
+          code: 'custom',
+          message: includeError,
+          path: ['include'],
+        });
+      }
+    }
+  });
+
+
+
+export const TeamCreateSchema = z.object({
+  name: z.string(),
+});
+
+export const TeamUpdateSchema = z.object({
+  name: z.string().optional(),
+});
+
+export const TeamParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const TEAM_SORTABLE_FIELDS = ['id', 'name'] as const;
+export const TEAM_LIST_QUERY_FIELDS = [
+  {
+    "name": "id",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "name",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  }
+] as const;
+export const TEAM_INCLUDABLE_RELATIONS = {
+  "members": {
+    "team": {},
+    "user": {
+      "profile": {
+        "user": {}
+      },
+      "orders": {
+        "user": {},
+        "products": {
+          "order": {},
+          "product": {
+            "orders": {}
+          }
+        }
+      },
+      "teamMembers": {}
+    }
+  },
+  "notes": {
+    "team": {}
+  },
+  "announcements": {
+    "team": {}
+  }
+} as const;
+export const TEAM_OMIT_FIELDS = [] as const;
+export type TeamResponse = Team;
+
+export const TeamGetQuerySchema = z
+  .object({
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.include === undefined) {
+      return;
+    }
+    const includeError = validateIncludePaths(data.include, TEAM_INCLUDABLE_RELATIONS);
+    if (includeError) {
+      ctx.addIssue({
+        code: 'custom',
+        message: includeError,
+        path: ['include'],
+      });
+    }
+  });
+
+
+
+export const TeamListQuerySchema = z
+  .object({
+    id: z.coerce.string().optional(),
+    id_contains: z.coerce.string().optional(),
+    id_startsWith: z.coerce.string().optional(),
+    id_endsWith: z.coerce.string().optional(),
+    name: z.coerce.string().optional(),
+    name_contains: z.coerce.string().optional(),
+    name_startsWith: z.coerce.string().optional(),
+    name_endsWith: z.coerce.string().optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+    sort: z.string().optional(),
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.sort !== undefined) {
+      const descending = data.sort.startsWith('-');
+      const field = descending ? data.sort.slice(1) : data.sort;
+      if (!(TEAM_SORTABLE_FIELDS as readonly string[]).includes(field)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid sort field "${field}"`,
+          path: ['sort'],
+        });
+      }
+    }
+    if (data.include !== undefined) {
+      const includeError = validateIncludePaths(data.include, TEAM_INCLUDABLE_RELATIONS);
+      if (includeError) {
+        ctx.addIssue({
+          code: 'custom',
+          message: includeError,
+          path: ['include'],
+        });
+      }
+    }
+  });
+
+
+
+export const TeamMemberCreateSchema = z.object({
+  teamId: z.string(),
+  userId: z.string(),
+  isActive: z.boolean().optional(),
+});
+
+export const TeamMemberUpdateSchema = z.object({
+  teamId: z.string().optional(),
+  userId: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const TeamMemberParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const TEAM_MEMBER_SORTABLE_FIELDS = ['id', 'teamId', 'userId', 'isActive'] as const;
+export const TEAM_MEMBER_LIST_QUERY_FIELDS = [
+  {
+    "name": "id",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "teamId",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "userId",
+    "kind": "string",
+    "operators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ]
+  },
+  {
+    "name": "isActive",
+    "kind": "boolean",
+    "operators": [
+      "equals"
+    ]
+  }
+] as const;
+export const TEAM_MEMBER_INCLUDABLE_RELATIONS = {
+  "team": {
+    "members": {},
+    "notes": {
+      "team": {}
+    },
+    "announcements": {
+      "team": {}
+    }
+  },
+  "user": {
+    "profile": {
+      "user": {}
+    },
+    "orders": {
+      "user": {},
+      "products": {
+        "order": {},
+        "product": {
+          "orders": {}
+        }
+      }
+    },
+    "teamMembers": {}
+  }
+} as const;
+export const TEAM_MEMBER_OMIT_FIELDS = [] as const;
+export type TeamMemberResponse = TeamMember;
+
+export const TeamMemberGetQuerySchema = z
+  .object({
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.include === undefined) {
+      return;
+    }
+    const includeError = validateIncludePaths(data.include, TEAM_MEMBER_INCLUDABLE_RELATIONS);
+    if (includeError) {
+      ctx.addIssue({
+        code: 'custom',
+        message: includeError,
+        path: ['include'],
+      });
+    }
+  });
+
+
+
+export const TeamMemberListQuerySchema = z
+  .object({
+    id: z.coerce.string().optional(),
+    id_contains: z.coerce.string().optional(),
+    id_startsWith: z.coerce.string().optional(),
+    id_endsWith: z.coerce.string().optional(),
+    teamId: z.coerce.string().optional(),
+    teamId_contains: z.coerce.string().optional(),
+    teamId_startsWith: z.coerce.string().optional(),
+    teamId_endsWith: z.coerce.string().optional(),
+    userId: z.coerce.string().optional(),
+    userId_contains: z.coerce.string().optional(),
+    userId_startsWith: z.coerce.string().optional(),
+    userId_endsWith: z.coerce.string().optional(),
+    isActive: z.preprocess(
+    (value) => (typeof value === 'string' ? value.toLowerCase() : value),
+    z.union([z.boolean(), z.enum(['true', 'false'])]).transform((value) => value === true || value === 'true'),
+  ).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+    sort: z.string().optional(),
+    include: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.sort !== undefined) {
+      const descending = data.sort.startsWith('-');
+      const field = descending ? data.sort.slice(1) : data.sort;
+      if (!(TEAM_MEMBER_SORTABLE_FIELDS as readonly string[]).includes(field)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid sort field "${field}"`,
+          path: ['sort'],
+        });
+      }
+    }
+    if (data.include !== undefined) {
+      const includeError = validateIncludePaths(data.include, TEAM_MEMBER_INCLUDABLE_RELATIONS);
       if (includeError) {
         ctx.addIssue({
           code: 'custom',
@@ -952,6 +1581,18 @@ export const USER_INCLUDABLE_RELATIONS = {
         "orders": {}
       }
     }
+  },
+  "teamMembers": {
+    "team": {
+      "members": {},
+      "notes": {
+        "team": {}
+      },
+      "announcements": {
+        "team": {}
+      }
+    },
+    "user": {}
   }
 } as const;
 export const USER_OMIT_FIELDS = ["passwordHash"] as const;
@@ -1036,17 +1677,27 @@ export const UserListQuerySchema = z
 
 
 export const API_OMIT_FIELDS_BY_MODEL = {
+  "Announcement": [],
   "Log": [],
+  "Note": [],
   "Order": [],
   "Product": [],
   "ProductOrder": [],
   "Profile": [],
+  "Team": [],
+  "TeamMember": [],
   "User": [
     "passwordHash"
   ]
 } as const;
 export const API_RELATION_TARGETS = {
+  "Announcement": {
+    "team": "Team"
+  },
   "Log": {},
+  "Note": {
+    "team": "Team"
+  },
   "Order": {
     "user": "User",
     "products": "ProductOrder"
@@ -1061,8 +1712,18 @@ export const API_RELATION_TARGETS = {
   "Profile": {
     "user": "User"
   },
+  "Team": {
+    "members": "TeamMember",
+    "notes": "Note",
+    "announcements": "Announcement"
+  },
+  "TeamMember": {
+    "team": "Team",
+    "user": "User"
+  },
   "User": {
     "profile": "Profile",
-    "orders": "Order"
+    "orders": "Order",
+    "teamMembers": "TeamMember"
   }
 } as const;

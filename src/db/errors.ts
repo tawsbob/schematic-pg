@@ -54,6 +54,17 @@ export class NotFoundError extends DatabaseError {
   }
 }
 
+/** Thrown when INSERT … SELECT with a policy predicate returns no rows. */
+export class PolicyInsertDeniedError extends DatabaseError {
+  readonly model: string;
+
+  constructor(model: string) {
+    super(`Insert denied by policy for model ${model}`);
+    this.name = 'PolicyInsertDeniedError';
+    this.model = model;
+  }
+}
+
 interface PgErrorLike {
   code?: string;
   message?: string;

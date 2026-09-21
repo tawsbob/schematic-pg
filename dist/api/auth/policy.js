@@ -1,8 +1,9 @@
 import { ForbiddenError } from './errors.js';
-import { interpolateTemplate } from './template.js';
+import { bindAuthTemplate } from './template.js';
 import { PUBLIC_ROLE } from './types.js';
 export { ForbiddenError, UnauthorizedError } from './errors.js';
-const SIMPLE_WHERE_PATTERN = /^(\w+)\s*(=|!=|<>|>=|<=|>|<)\s*(.+)$/;
+/** Marker key for a parameterized SQL predicate inside WhereInput. */
+export const SQL_WHERE_KEY = '$sql';
 let policies = {};
 export function configurePolicies(next) {
     policies = next;
@@ -21,12 +22,21 @@ export function assertPolicy(model, role, operation) {
     }
     return policy;
 }
+/**
+ * Compiles a policy `where` string into a parameterized SQL fragment.
+ * Auth placeholders become `$n` bound values — never string interpolation.
+ */
 export function resolvePolicyWhere(policy, auth) {
     if (!policy.where) {
         return undefined;
     }
-    const interpolated = interpolateTemplate(policy.where, auth);
-    return parseSimpleWhereClause(interpolated);
+    const bound = bindAuthTemplate(policy.where, auth);
+    return {
+        [SQL_WHERE_KEY]: {
+            sql: bound.sql,
+            params: bound.params,
+        },
+    };
 }
 export function mergeWhere(primary, policyWhere) {
     if (!policyWhere || Object.keys(policyWhere).length === 0) {
@@ -52,47 +62,4 @@ function isOperationAllowed(policy, operation) {
         return true;
     }
     return policy.operations.includes(operation);
-}
-function parseSimpleWhereClause(clause) {
-    const trimmedClause = clause.trim();
-    const match = trimmedClause.match(SIMPLE_WHERE_PATTERN);
-    if (!match) {
-        throw new ForbiddenError(`Unsupported policy where clause "${clause}". Only simple "field op value" forms are supported.`);
-    }
-    const [, field, operator, rawValue] = match;
-    const value = parseWhereValue(rawValue.trim());
-    if (operator === '=') {
-        return { [field]: value };
-    }
-    if (operator === '!=' || operator === '<>') {
-        return { NOT: { [field]: value } };
-    }
-    const operatorMap = {
-        '>': 'gt',
-        '>=': 'gte',
-        '<': 'lt',
-        '<=': 'lte',
-    };
-    const mappedOperator = operatorMap[operator];
-    if (!mappedOperator) {
-        throw new ForbiddenError(`Unsupported policy where operator "${operator}"`);
-    }
-    return { [field]: { [mappedOperator]: value } };
-}
-function parseWhereValue(rawValue) {
-    if ((rawValue.startsWith("'") && rawValue.endsWith("'")) ||
-        (rawValue.startsWith('"') && rawValue.endsWith('"'))) {
-        return rawValue.slice(1, -1);
-    }
-    if (rawValue === 'true') {
-        return true;
-    }
-    if (rawValue === 'false') {
-        return false;
-    }
-    const numericValue = Number(rawValue);
-    if (!Number.isNaN(numericValue) && rawValue !== '') {
-        return numericValue;
-    }
-    return rawValue;
 }

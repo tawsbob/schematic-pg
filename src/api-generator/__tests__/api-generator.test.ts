@@ -28,6 +28,8 @@ const modelRouteFile: Record<string, string> = {
   Log: 'logs.ts',
   Product: 'products.ts',
   ProductOrder: 'product-orders.ts',
+  Note: 'notes.ts',
+  Announcement: 'announcements.ts',
 };
 
 describe('ZodSchemaGenerator', () => {
@@ -77,12 +79,12 @@ describe('ZodSchemaGenerator', () => {
 describe('RouteGenerator', () => {
   it('generates full CRUD for models without @rest, and read-only for User', () => {
     const routes = generateRouteFiles(schema);
+    const routableModels = schema.models.filter((model) => modelRouteFile[model.name]);
 
-    assert.equal(routes.size, schema.models.length);
+    assert.equal(routes.size, routableModels.length);
 
-    for (const model of schema.models) {
-      const normalizedName = modelRouteFile[model.name];
-      assert.ok(normalizedName, `missing route mapping for ${model.name}`);
+    for (const model of routableModels) {
+      const normalizedName = modelRouteFile[model.name]!;
       const content = routes.get(normalizedName);
       assert.ok(content, `missing route file for ${model.name}`);
       assert.match(content!, /router\.get\('\/'/);
@@ -177,6 +179,42 @@ models {
     assert.doesNotMatch(logs!, /resolvePolicyWhere/);
   });
 
+  it('passes policyWhere into create when insert is generated with policies', () => {
+    const policyModel = parse(`
+extensions {}
+enums {}
+models {
+  model PolicySource {
+    id: UUID @id
+    @policy(role: USER, allow: [insert], where: "owner_id = {{auth.user.id}}")
+  }
+}
+`).models[0]!;
+    const policyAttribute = policyModel.attributes.find((attribute) => attribute.name === 'policy');
+    assert.ok(policyAttribute);
+
+    const withPolicy = {
+      ...schema,
+      models: schema.models.map((model) => {
+        if (model.name !== 'Product') {
+          return model;
+        }
+
+        return {
+          ...model,
+          attributes: [...model.attributes, policyAttribute],
+        };
+      }),
+    };
+
+    const routes = generateRouteFiles(withPolicy);
+    const products = routes.get('products.ts')!;
+
+    assert.match(products, /assertPolicy\('Product', auth\.role, 'insert'\)/);
+    assert.match(products, /resolvePolicyWhere\(policy, auth\)/);
+    assert.match(products, /create\(body, \{ where: policyWhere \}\)/);
+  });
+
   it('generates list routes with query filters and omit wrappers on write handlers', () => {
     const routes = generateRouteFiles(schema);
     const users = routes.get('users.ts')!;
@@ -203,7 +241,16 @@ models {
 
     assert.deepEqual(
       mounts.map((entry) => entry.basePath),
-      ['logs', 'orders', 'products', 'product-orders', 'profiles', 'users'],
+      [
+        'announcements',
+        'logs',
+        'notes',
+        'orders',
+        'products',
+        'product-orders',
+        'profiles',
+        'users',
+      ],
     );
   });
 

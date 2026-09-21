@@ -15,8 +15,9 @@ models {
     updatedAt:    TIMESTAMP?  @unfilterable
     passwordHash: VARCHAR(255)? @omit @unfilterable
 
-    profile:    Profile?
-    orders:     Order[]
+    profile:     Profile?
+    orders:      Order[]
+    teamMembers: TeamMember[]
 
     @rest(except: [create, update, delete])
     @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")

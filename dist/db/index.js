@@ -9,7 +9,7 @@ export { runInTransaction } from './transaction.js';
 export { TypeGenerator, generateDbTypes } from './type-generator.js';
 export { DbClientGenerator, generateDbClientFiles } from './db-client-generator.js';
 export { buildModelMeta, buildModelMetaSnapshot, hydrateModelMeta } from './model-meta.js';
-export { DatabaseError, UniqueConstraintError, ForeignKeyConstraintError, NotFoundError, mapPgError, } from './errors.js';
+export { DatabaseError, UniqueConstraintError, ForeignKeyConstraintError, NotFoundError, PolicyInsertDeniedError, mapPgError, } from './errors.js';
 export { mapRow, mapRows } from './row-mapper.js';
 export { toCamelCase, pluralize, toTableName, toColumnName, toClientKey } from './utils/naming.js';
 export { loadEnv, resetLoadEnvForTests } from './load-env.js';

@@ -14,6 +14,10 @@ CREATE TYPE user_role AS ENUM ('ADMIN', 'USER', 'PUBLIC');
 
 DROP TABLE IF EXISTS "user" CASCADE;
 
+DROP TABLE IF EXISTS team_member CASCADE;
+
+DROP TABLE IF EXISTS team CASCADE;
+
 DROP TABLE IF EXISTS profile CASCADE;
 
 DROP TABLE IF EXISTS product_order CASCADE;
@@ -22,14 +26,31 @@ DROP TABLE IF EXISTS product CASCADE;
 
 DROP TABLE IF EXISTS "order" CASCADE;
 
+DROP TABLE IF EXISTS note CASCADE;
+
 DROP TABLE IF EXISTS log CASCADE;
 
+DROP TABLE IF EXISTS announcement CASCADE;
+
 -- Create tables
+
+CREATE TABLE announcement (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  team_id UUID NOT NULL,
+  message TEXT NOT NULL
+);
 
 CREATE TABLE log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   message TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+);
+
+CREATE TABLE note (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  team_id UUID NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  body TEXT NOT NULL
 );
 
 CREATE TABLE "order" (
@@ -72,6 +93,18 @@ CREATE TABLE profile (
   location POINT NOT NULL
 );
 
+CREATE TABLE team (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE team_member (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  team_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  is_active BOOLEAN DEFAULT true NOT NULL
+);
+
 CREATE TABLE "user" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -93,6 +126,8 @@ CREATE INDEX order_user_id_idx ON "order" (user_id);
 
 CREATE INDEX order_status_created_idx ON "order" (status, created_at);
 
+CREATE INDEX team_member_user_id_team_id_idx ON team_member (user_id, team_id);
+
 CREATE INDEX user_role_is_active_idx ON "user" (role, is_active);
 
 CREATE INDEX active_users_name_idx ON "user" USING btree (name) WHERE is_active = true;
@@ -100,6 +135,14 @@ CREATE INDEX active_users_name_idx ON "user" USING btree (name) WHERE is_active 
 CREATE UNIQUE INDEX user_email_idx ON "user" (email) WHERE role = 'PUBLIC';
 
 -- Alter tables (foreign keys)
+
+ALTER TABLE announcement ADD CONSTRAINT announcement_team_id_fkey
+  FOREIGN KEY (team_id) REFERENCES team (id)
+  ON DELETE CASCADE;
+
+ALTER TABLE note ADD CONSTRAINT note_team_id_fkey
+  FOREIGN KEY (team_id) REFERENCES team (id)
+  ON DELETE CASCADE;
 
 ALTER TABLE "order" ADD CONSTRAINT order_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES "user" (id);
@@ -114,6 +157,14 @@ ALTER TABLE profile ADD CONSTRAINT profile_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES "user" (id)
   ON DELETE CASCADE
   ON UPDATE SET NULL;
+
+ALTER TABLE team_member ADD CONSTRAINT team_member_team_id_fkey
+  FOREIGN KEY (team_id) REFERENCES team (id)
+  ON DELETE CASCADE;
+
+ALTER TABLE team_member ADD CONSTRAINT team_member_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES "user" (id)
+  ON DELETE CASCADE;
 
 -- Create functions
 

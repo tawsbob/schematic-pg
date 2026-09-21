@@ -7,6 +7,7 @@ import {
   assertGeneratedArtifacts,
   resetBootstrapAndSeed,
   TEST_JWT_SECRET,
+  type SeededTeams,
   type SeededUsers,
 } from '../../__tests__/helpers/integration.js';
 import {
@@ -48,7 +49,9 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
   let pool: Pool;
   let app: Hono<AppEnv>;
   let users: SeededUsers;
+  let teams: SeededTeams;
   let aliceToken: string;
+  let bobToken: string;
   let adminToken: string;
 
   before(async () => {
@@ -57,10 +60,11 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
     assertGeneratedArtifacts();
 
     pool = await assertDockerPostgres();
-    ({ users } = await resetBootstrapAndSeed(pool));
+    ({ users, teams } = await resetBootstrapAndSeed(pool));
     app = createApp({ pool });
 
     aliceToken = signTestJwt({ sub: users.alice.id, role: 'USER' }, TEST_JWT_SECRET);
+    bobToken = signTestJwt({ sub: users.bob.id, role: 'USER' }, TEST_JWT_SECRET);
     adminToken = signTestJwt({ sub: users.admin.id, role: 'ADMIN' }, TEST_JWT_SECRET);
   });
 
@@ -421,6 +425,168 @@ describe('ACL integration (Docker + HTTP)', { concurrency: 1 }, () => {
       });
 
       assert.equal(response.status, 404);
+    });
+  });
+
+  describe('SQL policy predicates (IN / EXISTS / mutations)', () => {
+    it('lists only notes for teams the caller belongs to (IN subquery)', async () => {
+      const response = await request(app, '/notes', { token: aliceToken });
+
+      assert.equal(response.status, 200);
+      const rows = (await response.json()) as Array<{ id: string; teamId: string }>;
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]!.id, teams.aliceAlphaNote.id);
+      assert.equal(rows[0]!.teamId, teams.alpha.id);
+    });
+
+    it('returns own-team note by id and 404 for another team', async () => {
+      const own = await request(app, `/notes/${teams.aliceAlphaNote.id}`, {
+        token: aliceToken,
+      });
+      assert.equal(own.status, 200);
+
+      const other = await request(app, `/notes/${teams.betaNote.id}`, {
+        token: aliceToken,
+      });
+      assert.equal(other.status, 404);
+    });
+
+    it('allows insert into a team the caller belongs to', async () => {
+      const response = await request(app, '/notes', {
+        method: 'POST',
+        token: aliceToken,
+        body: {
+          teamId: teams.alpha.id,
+          title: 'Alice created',
+          body: 'allowed by IN policy',
+        },
+      });
+
+      assert.equal(response.status, 201);
+      const row = (await response.json()) as { teamId: string; title: string };
+      assert.equal(row.teamId, teams.alpha.id);
+      assert.equal(row.title, 'Alice created');
+    });
+
+    it('rejects insert into a team the caller does not belong to with 403', async () => {
+      const response = await request(app, '/notes', {
+        method: 'POST',
+        token: aliceToken,
+        body: {
+          teamId: teams.beta.id,
+          title: 'Should fail',
+          body: 'denied by IN policy',
+        },
+      });
+
+      assert.equal(response.status, 403);
+    });
+
+    it('updates and deletes notes only within policy scope', async () => {
+      const create = await request(app, '/notes', {
+        method: 'POST',
+        token: aliceToken,
+        body: {
+          teamId: teams.alpha.id,
+          title: 'Mutable',
+          body: 'before',
+        },
+      });
+      assert.equal(create.status, 201);
+      const created = (await create.json()) as { id: string };
+
+      const update = await request(app, `/notes/${created.id}`, {
+        method: 'PUT',
+        token: aliceToken,
+        body: { title: 'Mutated', body: 'after' },
+      });
+      assert.equal(update.status, 200);
+      const updated = (await update.json()) as { title: string };
+      assert.equal(updated.title, 'Mutated');
+
+      const forbiddenUpdate = await request(app, `/notes/${teams.betaNote.id}`, {
+        method: 'PUT',
+        token: aliceToken,
+        body: { title: 'Nope', body: 'denied' },
+      });
+      assert.equal(forbiddenUpdate.status, 404);
+
+      const del = await request(app, `/notes/${created.id}`, {
+        method: 'DELETE',
+        token: aliceToken,
+      });
+      assert.equal(del.status, 200);
+
+      const forbiddenDelete = await request(app, `/notes/${teams.betaNote.id}`, {
+        method: 'DELETE',
+        token: aliceToken,
+      });
+      assert.equal(forbiddenDelete.status, 404);
+    });
+
+    it('scopes announcements with an EXISTS subquery', async () => {
+      const aliceList = await request(app, '/announcements', { token: aliceToken });
+      assert.equal(aliceList.status, 200);
+      const aliceRows = (await aliceList.json()) as Array<{ id: string }>;
+      assert.equal(aliceRows.length, 1);
+      assert.equal(aliceRows[0]!.id, teams.alphaAnnouncement.id);
+
+      const bobList = await request(app, '/announcements', { token: bobToken });
+      assert.equal(bobList.status, 200);
+      const bobRows = (await bobList.json()) as Array<{ id: string }>;
+      assert.equal(bobRows.length, 1);
+      assert.equal(bobRows[0]!.id, teams.betaAnnouncement.id);
+
+      const crossGet = await request(app, `/announcements/${teams.betaAnnouncement.id}`, {
+        token: aliceToken,
+      });
+      assert.equal(crossGet.status, 404);
+    });
+
+    it('hides notes when membership is inactive', async () => {
+      const db = createDbClient(pool);
+      const membership = await db.teamMember.findFirst({
+        where: { userId: users.alice.id, teamId: teams.alpha.id },
+      });
+      assert.ok(membership);
+
+      await db.teamMember.update({
+        where: { id: membership.id },
+        data: { isActive: false },
+      });
+
+      try {
+        const response = await request(app, '/notes', { token: aliceToken });
+        assert.equal(response.status, 200);
+        const rows = (await response.json()) as unknown[];
+        assert.equal(rows.length, 0);
+
+        const deniedInsert = await request(app, '/notes', {
+          method: 'POST',
+          token: aliceToken,
+          body: {
+            teamId: teams.alpha.id,
+            title: 'Inactive member',
+            body: 'should fail',
+          },
+        });
+        assert.equal(deniedInsert.status, 403);
+      } finally {
+        await db.teamMember.update({
+          where: { id: membership.id },
+          data: { isActive: true },
+        });
+      }
+    });
+
+    it('lets ADMIN bypass row predicates on notes', async () => {
+      const response = await request(app, '/notes', { token: adminToken });
+
+      assert.equal(response.status, 200);
+      const rows = (await response.json()) as Array<{ id: string }>;
+      assert.ok(rows.length >= 2);
+      assert.ok(rows.some((row) => row.id === teams.aliceAlphaNote.id));
+      assert.ok(rows.some((row) => row.id === teams.betaNote.id));
     });
   });
 });

@@ -25,4 +25,27 @@ describe('normalizePolicies', () => {
       },
     ]);
   });
+
+  it('accepts triple-quoted multiline where predicates', () => {
+    const model = parseModelBody(`
+      id: UUID @id
+      @policy(
+        role: OWNER,
+        allow: [select],
+        where: """
+          restaurant_id IN (
+            SELECT restaurant_id
+            FROM "user"
+            WHERE id = {{auth.user.id}}
+          )
+        """
+      )
+    `);
+
+    const policies = normalizePolicies(model);
+    assert.equal(policies.length, 1);
+    assert.match(policies[0]!.where!, /restaurant_id IN \(/);
+    assert.match(policies[0]!.where!, /\{\{auth\.user\.id\}\}/);
+    assert.equal(policies[0]!.where!.startsWith('restaurant_id'), true);
+  });
 });

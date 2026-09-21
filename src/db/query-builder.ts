@@ -1,4 +1,6 @@
 import type { ModelMeta } from './model-meta.js';
+import { mapColumnType } from '../sql-generator/utils/type-mapper.js';
+import { toSnakeCase } from '../sql-generator/utils/snake-case.js';
 import { WhereTranslator, type WhereInput } from './where-translator.js';
 
 export interface FindArgs {
@@ -31,7 +33,7 @@ export interface SqlQuery {
 export class QueryBuilder {
   constructor(private readonly model: ModelMeta) {}
 
-  insert(data: Record<string, unknown>): SqlQuery {
+  insert(data: Record<string, unknown>, where?: WhereInput): SqlQuery {
     const entries = this.model.fields.filter((field) => Object.prototype.hasOwnProperty.call(data, field.name));
 
     if (entries.length === 0) {
@@ -40,11 +42,40 @@ export class QueryBuilder {
 
     const columns = entries.map((field) => field.columnName);
     const values = entries.map((field) => data[field.name]);
-    const placeholders = values.map((_, index) => `$${index + 1}`);
 
-    const sql = `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+    if (!where || Object.keys(where).length === 0) {
+      const placeholders = values.map((_, index) => `$${index + 1}`);
+      const sql = `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+      return { sql, params: values };
+    }
 
-    return { sql, params: values };
+    const alias = this.model.quotedTableName;
+    const selectList = columns.map((column) => `${alias}.${column}`).join(', ');
+    const candidateSelect = entries
+      .map((field, index) => {
+        const cast = sqlTypeForField(field);
+        return `$${index + 1}::${cast} AS ${field.columnName}`;
+      })
+      .join(', ');
+
+    const whereTranslator = new WhereTranslator(this.model, values.length + 1);
+    const whereClause = whereTranslator.translate(where);
+
+    if (!whereClause.sql) {
+      const placeholders = values.map((_, index) => `$${index + 1}`);
+      const sql = `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+      return { sql, params: values };
+    }
+
+    const sql = [
+      `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')})`,
+      `SELECT ${selectList}`,
+      `FROM (SELECT ${candidateSelect}) AS ${alias}`,
+      `WHERE ${whereClause.sql}`,
+      'RETURNING *',
+    ].join(' ');
+
+    return { sql, params: [...values, ...whereClause.params] };
   }
 
   select(args: FindArgs = {}): SqlQuery {
@@ -157,4 +188,12 @@ export class QueryBuilder {
 
     return parts.length > 0 ? `ORDER BY ${parts.join(', ')}` : '';
   }
+}
+
+function sqlTypeForField(field: { type: import('../schema-dsl/ast.js').TypeExpr; isEnum: boolean }): string {
+  if (field.isEnum) {
+    return toSnakeCase(field.type.name);
+  }
+
+  return mapColumnType(field.type, new Set());
 }

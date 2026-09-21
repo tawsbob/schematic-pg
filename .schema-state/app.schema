@@ -16,10 +16,64 @@ enums {
 
 models {
 
+  model Announcement {
+      id:      UUID @id @default(gen_random_uuid())
+      teamId:  UUID
+      message: TEXT
+
+      team: Team @relation(
+        fields: [teamId],
+        references: [id],
+        onDelete: CASCADE
+      )
+
+      @policy(
+        role: USER,
+        allow: [select, update, delete],
+        where: """
+          EXISTS (
+            SELECT 1
+            FROM team_member tm
+            WHERE tm.team_id = announcement.team_id
+              AND tm.user_id = {{auth.user.id}}
+              AND tm.is_active = true
+          )
+        """
+      )
+      @policy(role: ADMIN, allow: all)
+    }
+
   model Log {
       id:        UUID      @id @default(gen_random_uuid())
       message:   TEXT
       createdAt: TIMESTAMP @default(now())
+    }
+
+  model Note {
+      id:     UUID         @id @default(gen_random_uuid())
+      teamId: UUID
+      title:  VARCHAR(255)
+      body:   TEXT
+
+      team: Team @relation(
+        fields: [teamId],
+        references: [id],
+        onDelete: CASCADE
+      )
+
+      @policy(
+        role: USER,
+        allow: [select, insert, update, delete],
+        where: """
+          team_id IN (
+            SELECT team_id
+            FROM team_member
+            WHERE user_id = {{auth.user.id}}
+              AND is_active = true
+          )
+        """
+      )
+      @policy(role: ADMIN, allow: all)
     }
 
   model Order {
@@ -105,6 +159,38 @@ models {
       )
     }
 
+  model Team {
+      id:      UUID         @id @default(gen_random_uuid())
+      name:    VARCHAR(100)
+
+      members: TeamMember[]
+      notes:   Note[]
+      announcements: Announcement[]
+
+      @rest(false)
+    }
+
+  model TeamMember {
+      id:       UUID    @id @default(gen_random_uuid())
+      teamId:   UUID
+      userId:   UUID
+      isActive: BOOLEAN @default(true)
+
+      team: Team @relation(
+        fields: [teamId],
+        references: [id],
+        onDelete: CASCADE
+      )
+      user: User @relation(
+        fields: [userId],
+        references: [id],
+        onDelete: CASCADE
+      )
+
+      @rest(false)
+      @@index(fields: [userId, teamId])
+    }
+
   model User {
       id:           UUID        @id @default(gen_random_uuid()) @unfilterable
       email:        VARCHAR(255) @unique @regex(pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", message: "Invalid email address")
@@ -117,8 +203,9 @@ models {
       updatedAt:    TIMESTAMP?  @unfilterable
       passwordHash: VARCHAR(255)? @omit @unfilterable
 
-      profile:    Profile?
-      orders:     Order[]
+      profile:     Profile?
+      orders:      Order[]
+      teamMembers: TeamMember[]
 
       @rest(except: [create, update, delete])
       @policy(role: USER, allow: [select], where: "id = {{auth.user.id}}")

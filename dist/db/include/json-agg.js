@@ -1,7 +1,6 @@
-import { mapPgError } from '../errors.js';
 import { QueryBuilder } from '../query-builder.js';
 import { mapRow } from '../row-mapper.js';
-const ROOT_ALIAS = 'root';
+import { mapPgError } from '../errors.js';
 export async function fetchRootWithJsonAgg(model, plan, args, executor) {
     const query = buildJsonAggRootQuery(model, plan, args);
     const rows = await executeQuery(executor, query.sql, query.params, model);
@@ -14,12 +13,15 @@ function buildJsonAggRootQuery(model, plan, args) {
     if (!match || plan.children.length === 0) {
         return baseQuery;
     }
+    // Alias with the table name (not a fixed "root") so policy predicates that
+    // qualify columns as table.column still resolve against the outer row.
     const tableRef = match[1];
+    const rootAlias = model.quotedTableName;
     const rest = match[2] ?? '';
-    const lateralJoins = plan.children.map((child) => buildRootLateralJoin(model, child));
+    const lateralJoins = plan.children.map((child) => buildRootLateralJoin(model, child, rootAlias));
     const sql = [
-        `SELECT ${ROOT_ALIAS}.*, ${lateralJoins.map((join) => join.select).join(', ')}`,
-        `FROM ${tableRef} ${ROOT_ALIAS}`,
+        `SELECT ${rootAlias}.*, ${lateralJoins.map((join) => join.select).join(', ')}`,
+        `FROM ${tableRef} ${rootAlias}`,
         lateralJoins.map((join) => join.join).join(' '),
         rest.trim(),
     ]
@@ -27,10 +29,10 @@ function buildJsonAggRootQuery(model, plan, args) {
         .join(' ');
     return { sql, params: baseQuery.params };
 }
-function buildRootLateralJoin(parentModel, node) {
+function buildRootLateralJoin(parentModel, node, rootAlias) {
     const relation = node.relation;
     const lateralAlias = `${relation.name}_data`;
-    const expression = buildRelationJsonExpression(parentModel, node, ROOT_ALIAS);
+    const expression = buildRelationJsonExpression(parentModel, node, rootAlias);
     return {
         select: `${lateralAlias}.${relation.name}`,
         join: `LEFT JOIN LATERAL (SELECT ${expression} AS ${relation.name}) ${lateralAlias} ON true`,

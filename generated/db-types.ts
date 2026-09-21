@@ -4,6 +4,38 @@ export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | '
 
 export type UserRole = 'ADMIN' | 'USER' | 'PUBLIC';
 
+export interface Announcement {
+  id: string;
+  teamId: string;
+  message: string;
+}
+
+export interface AnnouncementCreateInput {
+  teamId: string;
+  message: string;
+}
+
+export interface AnnouncementUpdateInput {
+  teamId?: string;
+  message?: string;
+}
+
+export interface AnnouncementWhereInput {
+  id?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  teamId?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  message?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  AND?: AnnouncementWhereInput[];
+  OR?: AnnouncementWhereInput[];
+  NOT?: AnnouncementWhereInput;
+}
+
+export interface AnnouncementOrderByInput {
+  id?: 'asc' | 'desc';
+  teamId?: 'asc' | 'desc';
+  message?: 'asc' | 'desc';
+}
+
+
 export interface Log {
   id: string;
   message: string;
@@ -33,6 +65,43 @@ export interface LogOrderByInput {
   id?: 'asc' | 'desc';
   message?: 'asc' | 'desc';
   createdAt?: 'asc' | 'desc';
+}
+
+
+export interface Note {
+  id: string;
+  teamId: string;
+  title: string;
+  body: string;
+}
+
+export interface NoteCreateInput {
+  teamId: string;
+  title: string;
+  body: string;
+}
+
+export interface NoteUpdateInput {
+  teamId?: string;
+  title?: string;
+  body?: string;
+}
+
+export interface NoteWhereInput {
+  id?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  teamId?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  title?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  body?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  AND?: NoteWhereInput[];
+  OR?: NoteWhereInput[];
+  NOT?: NoteWhereInput;
+}
+
+export interface NoteOrderByInput {
+  id?: 'asc' | 'desc';
+  teamId?: 'asc' | 'desc';
+  title?: 'asc' | 'desc';
+  body?: 'asc' | 'desc';
 }
 
 
@@ -241,6 +310,70 @@ export interface ProfileOrderByInput {
 }
 
 
+export interface Team {
+  id: string;
+  name: string;
+}
+
+export interface TeamCreateInput {
+  name: string;
+}
+
+export interface TeamUpdateInput {
+  name?: string;
+}
+
+export interface TeamWhereInput {
+  id?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  name?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  AND?: TeamWhereInput[];
+  OR?: TeamWhereInput[];
+  NOT?: TeamWhereInput;
+}
+
+export interface TeamOrderByInput {
+  id?: 'asc' | 'desc';
+  name?: 'asc' | 'desc';
+}
+
+
+export interface TeamMember {
+  id: string;
+  teamId: string;
+  userId: string;
+  isActive: boolean;
+}
+
+export interface TeamMemberCreateInput {
+  teamId: string;
+  userId: string;
+  isActive?: boolean;
+}
+
+export interface TeamMemberUpdateInput {
+  teamId?: string;
+  userId?: string;
+  isActive?: boolean;
+}
+
+export interface TeamMemberWhereInput {
+  id?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  teamId?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  userId?: string | { equals: string } | { contains: string } | { startsWith: string } | { endsWith: string };
+  isActive?: boolean;
+  AND?: TeamMemberWhereInput[];
+  OR?: TeamMemberWhereInput[];
+  NOT?: TeamMemberWhereInput;
+}
+
+export interface TeamMemberOrderByInput {
+  id?: 'asc' | 'desc';
+  teamId?: 'asc' | 'desc';
+  userId?: 'asc' | 'desc';
+  isActive?: 'asc' | 'desc';
+}
+
+
 export interface User {
   id: string;
   email: string;
@@ -308,12 +441,28 @@ export interface UserOrderByInput {
 }
 
 
+export interface AnnouncementIncludeArgs {
+  where?: AnnouncementWhereInput;
+  orderBy?: AnnouncementOrderByInput | AnnouncementOrderByInput[];
+  take?: number;
+  skip?: number;
+  include?: AnnouncementInclude;
+}
+
 export interface LogIncludeArgs {
   where?: LogWhereInput;
   orderBy?: LogOrderByInput | LogOrderByInput[];
   take?: number;
   skip?: number;
   include?: LogInclude;
+}
+
+export interface NoteIncludeArgs {
+  where?: NoteWhereInput;
+  orderBy?: NoteOrderByInput | NoteOrderByInput[];
+  take?: number;
+  skip?: number;
+  include?: NoteInclude;
 }
 
 export interface OrderIncludeArgs {
@@ -348,6 +497,22 @@ export interface ProfileIncludeArgs {
   include?: ProfileInclude;
 }
 
+export interface TeamIncludeArgs {
+  where?: TeamWhereInput;
+  orderBy?: TeamOrderByInput | TeamOrderByInput[];
+  take?: number;
+  skip?: number;
+  include?: TeamInclude;
+}
+
+export interface TeamMemberIncludeArgs {
+  where?: TeamMemberWhereInput;
+  orderBy?: TeamMemberOrderByInput | TeamMemberOrderByInput[];
+  take?: number;
+  skip?: number;
+  include?: TeamMemberInclude;
+}
+
 export interface UserIncludeArgs {
   where?: UserWhereInput;
   orderBy?: UserOrderByInput | UserOrderByInput[];
@@ -356,7 +521,15 @@ export interface UserIncludeArgs {
   include?: UserInclude;
 }
 
+export interface AnnouncementInclude {
+  team?: boolean | TeamIncludeArgs;
+}
+
 export interface LogInclude {}
+
+export interface NoteInclude {
+  team?: boolean | TeamIncludeArgs;
+}
 
 export interface OrderInclude {
   user?: boolean | UserIncludeArgs;
@@ -376,7 +549,19 @@ export interface ProfileInclude {
   user?: boolean | UserIncludeArgs;
 }
 
+export interface TeamInclude {
+  members?: boolean | TeamMemberIncludeArgs;
+  notes?: boolean | NoteIncludeArgs;
+  announcements?: boolean | AnnouncementIncludeArgs;
+}
+
+export interface TeamMemberInclude {
+  team?: boolean | TeamIncludeArgs;
+  user?: boolean | UserIncludeArgs;
+}
+
 export interface UserInclude {
   profile?: boolean | ProfileIncludeArgs;
   orders?: boolean | OrderIncludeArgs;
+  teamMembers?: boolean | TeamMemberIncludeArgs;
 }

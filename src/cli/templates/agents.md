@@ -103,7 +103,7 @@ models {
 
 - **Relations:** Put `@relation(fields: [...], references: [...])` on the FK-owning side. The inverse side is inferred.
 - **REST surface:** `@rest(only: [...])`, `@rest(except: [...])`, or `@rest(false)` controls which CRUD handlers are generated (`list`/`get`/`create`/`update`/`delete`).
-- **Policies:** `@policy(role: ..., allow: [select|insert|update|delete|all], where: "...")` — `where` supports `{{auth.user.id}}`.
+- **Policies:** `@policy(role: ..., allow: [select|insert|update|delete|all], where: "...")` — `where` is a PostgreSQL boolean predicate; `{{auth.user.id}}` (and other `{{auth.*}}` paths) become query parameters. Supports `AND`/`OR`, `IN`, `EXISTS`, and subqueries. No built-in tenant model.
 - **Validation:** `@regex(...)`, `@range(min: ..., max: ...)` flow into generated Zod schemas.
 - **Indexes / triggers / partitions:** `@@index(...)`, `@@trigger { timing, event, level, execute: """...""" }`, `@@partition { by: RANGE|LIST|HASH, fields: [...], partition Name { … } }`.
 - **SQL functions:** optional `functions { function name(args): ReturnType { execute: """...""" } }` after `models`. `ReturnType` may be a scalar (`INTEGER`, `TRIGGER`, `VOID`, …) or `TABLE(col: Type, …)`. Names snake_case in SQL; call scalars with `SELECT fn($1)`, table functions with `SELECT * FROM fn($1)` via `db.$queryRaw`.

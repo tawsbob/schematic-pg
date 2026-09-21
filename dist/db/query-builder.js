@@ -1,19 +1,46 @@
+import { mapColumnType } from '../sql-generator/utils/type-mapper.js';
+import { toSnakeCase } from '../sql-generator/utils/snake-case.js';
 import { WhereTranslator } from './where-translator.js';
 export class QueryBuilder {
     model;
     constructor(model) {
         this.model = model;
     }
-    insert(data) {
+    insert(data, where) {
         const entries = this.model.fields.filter((field) => Object.prototype.hasOwnProperty.call(data, field.name));
         if (entries.length === 0) {
             throw new Error(`No insertable fields provided for model ${this.model.name}`);
         }
         const columns = entries.map((field) => field.columnName);
         const values = entries.map((field) => data[field.name]);
-        const placeholders = values.map((_, index) => `$${index + 1}`);
-        const sql = `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
-        return { sql, params: values };
+        if (!where || Object.keys(where).length === 0) {
+            const placeholders = values.map((_, index) => `$${index + 1}`);
+            const sql = `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+            return { sql, params: values };
+        }
+        const alias = this.model.quotedTableName;
+        const selectList = columns.map((column) => `${alias}.${column}`).join(', ');
+        const candidateSelect = entries
+            .map((field, index) => {
+            const cast = sqlTypeForField(field);
+            return `$${index + 1}::${cast} AS ${field.columnName}`;
+        })
+            .join(', ');
+        const whereTranslator = new WhereTranslator(this.model, values.length + 1);
+        const whereClause = whereTranslator.translate(where);
+        if (!whereClause.sql) {
+            const placeholders = values.map((_, index) => `$${index + 1}`);
+            const sql = `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+            return { sql, params: values };
+        }
+        const sql = [
+            `INSERT INTO ${this.model.quotedTableName} (${columns.join(', ')})`,
+            `SELECT ${selectList}`,
+            `FROM (SELECT ${candidateSelect}) AS ${alias}`,
+            `WHERE ${whereClause.sql}`,
+            'RETURNING *',
+        ].join(' ');
+        return { sql, params: [...values, ...whereClause.params] };
     }
     select(args = {}) {
         const whereTranslator = new WhereTranslator(this.model);
@@ -94,4 +121,10 @@ export class QueryBuilder {
         }
         return parts.length > 0 ? `ORDER BY ${parts.join(', ')}` : '';
     }
+}
+function sqlTypeForField(field) {
+    if (field.isEnum) {
+        return toSnakeCase(field.type.name);
+    }
+    return mapColumnType(field.type, new Set());
 }

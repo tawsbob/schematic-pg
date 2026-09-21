@@ -24,7 +24,7 @@ export interface SqlQuery {
 export declare class QueryBuilder {
     private readonly model;
     constructor(model: ModelMeta);
-    insert(data: Record<string, unknown>): SqlQuery;
+    insert(data: Record<string, unknown>, where?: WhereInput): SqlQuery;
     select(args?: FindArgs): SqlQuery;
     update(args: UpdateArgs): SqlQuery;
     delete(args?: DeleteArgs): SqlQuery;
