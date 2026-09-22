@@ -1,6 +1,6 @@
 {
   "name": "schematic-pg",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Single-file backend framework for PostgreSQL and Node.js",
   "type": "module",
   "license": "MIT",
@@ -48,7 +48,8 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && mkdir -p dist/cli/templates && cp src/cli/templates/agents.md dist/cli/templates/",
+    "build": "tsc -p tsconfig.build.json && mkdir -p dist/cli/templates && cp src/cli/templates/agents.md dist/cli/templates/ && chmod +x dist/cli.js",
+    "prepack": "npm run build",
     "parse": "tsx src/schema-dsl/cli.ts",
     "tokenize": "tsx src/schema-dsl/cli.ts --tokens",
     "generate": "tsx src/cli.ts generate",

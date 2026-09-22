@@ -30,7 +30,8 @@ my-app/
 ├── schema.sql              # Generated PostgreSQL DDL (read-only)
 ├── AGENTS.md               # This file
 ├── .env                    # DATABASE_URL, JWT_*, CORS_ORIGIN
-├── docker-compose.yml      # Local PostgreSQL
+├── docker-compose.yml      # Local PostgreSQL (+ pg_cron via Dockerfile.postgres)
+├── Dockerfile.postgres     # Postgres 18 image with postgresql-18-cron
 ├── generated/              # Generated — do not edit
 │   ├── db.ts               # createDbClient(pool)
 │   ├── db-types.ts         # Model interfaces

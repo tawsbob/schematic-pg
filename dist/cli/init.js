@@ -3,7 +3,7 @@ import { PACKAGE_NAME } from '../constants.js';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { AGENTS_TEMPLATE, APP_SCHEMA_TEMPLATE, AUTH_ROUTE_TEMPLATE, createDockerComposeTemplate, createPackageJsonTemplate, ENV_TEMPLATE, GITIGNORE_TEMPLATE, HEALTH_ROUTE_TEMPLATE, MAKEFILE_TEMPLATE, TSCONFIG_TEMPLATE, } from './templates.js';
+import { AGENTS_TEMPLATE, APP_SCHEMA_TEMPLATE, AUTH_ROUTE_TEMPLATE, createDockerComposeTemplate, createPackageJsonTemplate, DOCKERFILE_POSTGRES_TEMPLATE, ENV_TEMPLATE, GITIGNORE_TEMPLATE, HEALTH_ROUTE_TEMPLATE, MAKEFILE_TEMPLATE, TSCONFIG_TEMPLATE, } from './templates.js';
 const INIT_FILES = [
     { relativePath: 'AGENTS.md', content: AGENTS_TEMPLATE },
     { relativePath: 'app.schema', content: APP_SCHEMA_TEMPLATE },
@@ -84,6 +84,14 @@ export async function runInit(args) {
     }
     else {
         console.log('Skipped existing file: docker-compose.yml');
+    }
+    const dockerfilePath = path.join(targetDir, 'Dockerfile.postgres');
+    if (!existsSync(dockerfilePath)) {
+        await writeFile(dockerfilePath, DOCKERFILE_POSTGRES_TEMPLATE, 'utf8');
+        console.log('Created Dockerfile.postgres');
+    }
+    else {
+        console.log('Skipped existing file: Dockerfile.postgres');
     }
     const packageJsonPath = path.join(targetDir, 'package.json');
     if (!existsSync(packageJsonPath)) {

@@ -46,6 +46,10 @@ jobs:
           fi
 
       - run: npm run build
+
+      - name: Verify CLI binary is executable
+        run: test -x dist/cli.js
+
       - run: npm test
 
       - run: npm publish
