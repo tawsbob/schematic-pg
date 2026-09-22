@@ -36,9 +36,15 @@ describe('SQL generator — views', () => {
   }
 `);
     const sql = generator.generate(schema);
+    assert.match(sql, /DROP VIEW IF EXISTS active_user CASCADE;/);
     assert.match(sql, /CREATE OR REPLACE VIEW active_user \(id, email\) AS/);
     assert.match(sql, /SELECT id, email FROM "user" WHERE is_active = true/);
     assert.doesNotMatch(sql, /MATERIALIZED VIEW/);
+
+    const dropHeader = sql.indexOf('-- Drop views');
+    const createHeader = sql.indexOf('-- Create views');
+    assert.ok(dropHeader >= 0);
+    assert.ok(createHeader > dropHeader);
   });
 
   it('emits CREATE MATERIALIZED VIEW WITH DATA and indexes', () => {
@@ -54,6 +60,7 @@ describe('SQL generator — views', () => {
   }
 `);
     const sql = generator.generate(schema);
+    assert.match(sql, /DROP MATERIALIZED VIEW IF EXISTS user_stats CASCADE;/);
     assert.match(sql, /CREATE MATERIALIZED VIEW user_stats \(role, count\) AS/);
     assert.match(sql, /WITH DATA;/);
     assert.match(sql, /CREATE UNIQUE INDEX user_stats_role_idx ON user_stats \(role\);/);

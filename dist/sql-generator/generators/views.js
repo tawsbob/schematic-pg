@@ -2,6 +2,21 @@ import { getDirectives, getModelNames, normalizeIndexDirective, } from '../utils
 import { joinSection } from '../utils/format.js';
 import { quoteIdentifier, toSnakeCase, toTableName } from '../utils/snake-case.js';
 import { generateCreateIndexOnRelation } from './indexes.js';
+export function generateDropViews(schema) {
+    if (schema.views.length === 0) {
+        return '';
+    }
+    const statements = [...schema.views]
+        .reverse()
+        .map((view) => {
+        const relationName = quoteIdentifier(toTableName(view.name));
+        if (view.materialized) {
+            return `DROP MATERIALIZED VIEW IF EXISTS ${relationName} CASCADE;`;
+        }
+        return `DROP VIEW IF EXISTS ${relationName} CASCADE;`;
+    });
+    return joinSection('Drop views', statements);
+}
 export function generateViews(schema) {
     if (schema.views.length === 0) {
         return '';

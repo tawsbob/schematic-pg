@@ -8,7 +8,7 @@ import { generateFunctions } from './generators/functions.js';
 import { generateIndexes } from './generators/indexes.js';
 import { generateTables } from './generators/tables.js';
 import { generateTriggers } from './generators/triggers.js';
-import { generateViews } from './generators/views.js';
+import { generateDropViews, generateViews } from './generators/views.js';
 export class SqlGenerator {
     generate(schema) {
         const sections = [
@@ -18,6 +18,7 @@ export class SqlGenerator {
             generateTables(schema),
             generateIndexes(schema),
             generateForeignKeys(schema),
+            generateDropViews(schema),
             generateViews(schema),
             generateFunctions(schema),
             generateTriggers(schema),

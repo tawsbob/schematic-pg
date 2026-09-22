@@ -623,7 +623,7 @@ Generated SQL upserts by job name (`unschedule` then `schedule`). `db:diff` emit
 
 **Ops requirements:** Local `docker-compose.yml` builds `Dockerfile.postgres` (Postgres 18 + `postgresql-18-cron`) and sets `shared_preload_libraries=pg_cron` with `cron.database_name=postgrest`. If you already had a data volume from an older image, recreate it with `npm run docker:reset`.
 
-Declare `pg_cron` in `extensions` (it is created without `WITH SCHEMA public` — the extension owns the `cron` schema). Jobs live outside `public`, so `db:bootstrap` upserts declared jobs but does not remove leftover unmanaged `cron.job` rows; use `db:diff` / `db:migrate` to drop jobs in production.
+Declare `pg_cron` in `extensions` (it is created without `WITH SCHEMA public` — the extension owns the `cron` schema). Jobs live outside `public`, so `db:bootstrap` / `dev` unschedules every row in `cron.job` before resetting `public`, then recreates only jobs declared in the schema. Use `db:diff` / `db:migrate` to drop jobs in production.
 
 Cron jobs are database objects only — they are not REST endpoints.
 
@@ -949,7 +949,7 @@ schematic-pg db:migrate [schema]           # Apply pending migration files
 schematic-pg db:migrate:status [schema]    # Show snapshot + migration file status
 ```
 
-`db:bootstrap` resets the `public` schema then applies full DDL — safe to re-run locally (including via `dev` watch). Use `db:diff` / `db:migrate` when evolving a database you need to keep.
+`db:bootstrap` unschedules all `cron.job` rows (when `pg_cron` is present), resets the `public` schema, then applies full DDL — safe to re-run locally (including via `dev` watch). Use `db:diff` / `db:migrate` when evolving a database you need to keep.
 
 For a full walkthrough (mental model, local loop, and automating staging/production with GitHub Actions), see [Migrations tutorial](docs/migrations.md).
 

@@ -33,6 +33,8 @@ describe('bootstrapDatabase', () => {
     await bootstrapDatabase(undefined, mockClient);
 
     assert.equal(executedSql.length, 2);
+    assert.match(executedSql[0]!, /to_regclass\('cron\.job'\)/);
+    assert.match(executedSql[0]!, /PERFORM cron\.unschedule\(jobid\) FROM cron\.job/);
     assert.match(executedSql[0]!, /DROP SCHEMA IF EXISTS public CASCADE/);
     assert.match(executedSql[1]!, /CREATE TABLE "user"/);
     assert.match(executedSql[1]!, /CREATE EXTENSION IF NOT EXISTS "pgcrypto"/);

@@ -31,11 +31,12 @@ npx schematic-pg db:bootstrap
 
 That:
 
-1. Resets the `public` schema (`DROP SCHEMA ... CASCADE`)
-2. Generates full DDL from the loaded schema and runs it against `DATABASE_URL`
-3. Writes `.schema-state/app.schema` as the baseline (merged canonical text)
+1. Unschedules every row in `cron.job` when `pg_cron` is installed (jobs live outside `public`)
+2. Resets the `public` schema (`DROP SCHEMA ... CASCADE`)
+3. Generates full DDL from the loaded schema and runs it against `DATABASE_URL`
+4. Writes `.schema-state/app.schema` as the baseline (merged canonical text)
 
-No `migrations/` files are required at this stage. Prefer bootstrap for greenfield local/dev setups — including `dev` watch reloads, which re-bootstrap on every schema change.
+No `migrations/` files are required at this stage. Prefer bootstrap for greenfield local/dev setups — including `dev` watch reloads, which re-bootstrap on every schema change. Production should still use `db:diff` / `db:migrate` to drop cron jobs incrementally.
 
 ---
 
