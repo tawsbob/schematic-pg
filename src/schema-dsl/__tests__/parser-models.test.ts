@@ -185,6 +185,21 @@ describe('Parser — model directives', () => {
     assert.equal(directive.args!.kind, 'KeyValueArgs');
   });
 
+  it('parses @@unique with fields and name', () => {
+    const model = parseModelBody(`
+      recipeId: UUID
+      stockItemId: UUID
+      @@unique(fields: [recipeId, stockItemId], name: "recipe_stock_item_key")
+    `);
+    const directive = getDirective(model, 'unique');
+    assert.equal(directive.name, 'unique');
+    const kv = assertKeyValueArgs(directive.args);
+    const fields = getKvPair(kv, 'fields').value;
+    assert.equal(fields.kind, 'ArrayLiteral');
+    assert.equal((fields as { elements: unknown[] }).elements.length, 2);
+    assert.ok(getKvPair(kv, 'name'));
+  });
+
   it('parses multiple @@trigger directives on same model', () => {
     const model = parseModelBody(`@@trigger { timing: BEFORE, event: UPDATE, execute: """A""" }
 @@trigger { timing: AFTER, event: INSERT, execute: """B""" }`);

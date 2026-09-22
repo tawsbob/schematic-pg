@@ -18,10 +18,12 @@ import {
   normalizeFunction,
   normalizeIndexDirective,
   normalizeTriggerDirective,
+  normalizeUniqueDirective,
   parseForeignKeySignature,
   serializeColumnType,
   serializeDefault,
   serializeForeignKey,
+  serializeUniqueConstraint,
 } from './utils/ast-helpers.js';
 import { toTableName } from './utils/snake-case.js';
 
@@ -33,6 +35,7 @@ export class MigrationPlanner {
     migrations.push(...this.diffModels(oldSchema, newSchema));
     migrations.push(...this.diffPartitions(oldSchema, newSchema));
     migrations.push(...this.diffConstraints(oldSchema, newSchema));
+    migrations.push(...this.diffUniqueConstraints(oldSchema, newSchema));
     const viewMigrations = this.diffViews(oldSchema, newSchema);
     migrations.push(...viewMigrations);
     migrations.push(...this.diffIndexes(oldSchema, newSchema, viewMigrations));
@@ -353,6 +356,46 @@ export class MigrationPlanner {
     return migrations;
   }
 
+  private diffUniqueConstraints(oldSchema: Schema, newSchema: Schema): Migration[] {
+    const migrations: Migration[] = [];
+    const oldModels = new Map(oldSchema.models.map((model) => [model.name, model]));
+    const newModels = new Map(newSchema.models.map((model) => [model.name, model]));
+
+    for (const [modelName, newModel] of newModels) {
+      const oldModel = oldModels.get(modelName);
+      if (!oldModel) {
+        continue;
+      }
+
+      const oldUniques = this.uniqueSignatures(oldModel);
+      const newUniques = this.uniqueSignatures(newModel);
+
+      for (const signature of newUniques) {
+        if (!oldUniques.has(signature)) {
+          migrations.push({
+            kind: 'AddConstraint',
+            modelName,
+            constraintType: 'unique',
+            details: signature,
+          });
+        }
+      }
+
+      for (const signature of oldUniques) {
+        if (!newUniques.has(signature)) {
+          migrations.push({
+            kind: 'DropConstraint',
+            modelName,
+            constraintType: 'unique',
+            details: signature,
+          });
+        }
+      }
+    }
+
+    return migrations;
+  }
+
   private diffIndexes(
     oldSchema: Schema,
     newSchema: Schema,
@@ -624,6 +667,14 @@ export class MigrationPlanner {
     );
   }
 
+  private uniqueSignatures(model: Model): Set<string> {
+    return new Set(
+      getDirectives(model, 'unique').map((directive) =>
+        serializeUniqueConstraint(normalizeUniqueDirective(directive)),
+      ),
+    );
+  }
+
   private suppressMigrationsCoveredByConvert(migrations: Migration[]): Migration[] {
     const convertedModels = new Set(
       migrations
@@ -657,6 +708,9 @@ export class MigrationPlanner {
       }
 
       if (migration.kind === 'AddConstraint' || migration.kind === 'DropConstraint') {
+        if (migration.constraintType === 'unique') {
+          return !convertedModels.has(migration.modelName);
+        }
         if (migration.constraintType !== 'foreignKey') {
           return true;
         }

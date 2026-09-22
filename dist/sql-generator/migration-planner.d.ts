@@ -10,6 +10,7 @@ export declare class MigrationPlanner {
     private isUnderParent;
     private diffField;
     private diffConstraints;
+    private diffUniqueConstraints;
     private diffIndexes;
     private diffViews;
     private viewColumnSignature;
@@ -19,6 +20,7 @@ export declare class MigrationPlanner {
     private cronJobSignature;
     private triggerSignatures;
     private indexSignatures;
+    private uniqueSignatures;
     private suppressMigrationsCoveredByConvert;
 }
 export declare function getStoredFieldNames(model: Model, modelNames: Set<string>): string[];

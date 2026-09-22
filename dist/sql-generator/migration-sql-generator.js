@@ -8,8 +8,9 @@ import { generatePartitionConvertSql } from './generators/partition-convert.js';
 import { flattenPartitions, formatDetachAndDropPartition, formatPartitionOfClause, } from './generators/partitions.js';
 import { generateColumnDefinition, generateTable } from './generators/tables.js';
 import { generateCreateTrigger, generateDropTrigger, } from './generators/triggers.js';
+import { generateAddUniqueConstraint, generateDropUniqueConstraint, } from './generators/unique-constraints.js';
 import { generateCreateView, generateDropView } from './generators/views.js';
-import { getDirectives, getDefaultExpression, getEnumNames, getModelNames, getStoredFields, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, parseForeignKeySignature, } from './utils/ast-helpers.js';
+import { getDirectives, getDefaultExpression, getEnumNames, getModelNames, getStoredFields, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, parseForeignKeySignature, parseUniqueConstraintSignature, } from './utils/ast-helpers.js';
 import { quoteIdentifier, toSnakeCase, toTableName } from './utils/snake-case.js';
 const MIGRATION_ORDER = {
     CreateExtension: 0,
@@ -179,12 +180,18 @@ export class MigrationSqlGenerator {
                 return generateDropIndexOnRelation(migration.modelName, normalized);
             }
             case 'AddConstraint': {
+                if (migration.constraintType === 'unique') {
+                    return generateAddUniqueConstraint(migration.modelName, parseUniqueConstraintSignature(migration.details));
+                }
                 if (migration.constraintType !== 'foreignKey') {
                     throw new Error(`Unsupported constraint type: ${migration.constraintType}`);
                 }
                 return generateForeignKey(parseForeignKeySignature(migration.details));
             }
             case 'DropConstraint': {
+                if (migration.constraintType === 'unique') {
+                    return generateDropUniqueConstraint(migration.modelName, parseUniqueConstraintSignature(migration.details));
+                }
                 if (migration.constraintType !== 'foreignKey') {
                     throw new Error(`Unsupported constraint type: ${migration.constraintType}`);
                 }

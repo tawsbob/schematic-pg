@@ -331,6 +331,45 @@ export function normalizeIndexDirective(
   };
 }
 
+export interface NormalizedUnique {
+  fields: string[];
+  name?: string;
+}
+
+export function normalizeUniqueDirective(directive: Directive): NormalizedUnique {
+  const args = assertKeyValueArgs(directive.args);
+  const fields = getIdentifierNames(getKvPair(args, 'fields').value);
+  const namePair = getOptionalKvPair(args, 'name');
+
+  return {
+    fields,
+    name: namePair?.value.kind === 'StringLiteral' ? namePair.value.value : undefined,
+  };
+}
+
+export function buildUniqueConstraintName(tableName: string, fields: string[]): string {
+  const fieldPart = fields.map(toSnakeCase).join('_');
+  return `${tableName}_${fieldPart}_key`;
+}
+
+export function resolveUniqueConstraintName(
+  relationName: string,
+  normalized: NormalizedUnique,
+): string {
+  return normalized.name ?? buildUniqueConstraintName(toTableName(relationName), normalized.fields);
+}
+
+export function serializeUniqueConstraint(normalized: NormalizedUnique): string {
+  return JSON.stringify({
+    fields: normalized.fields,
+    name: normalized.name,
+  });
+}
+
+export function parseUniqueConstraintSignature(signature: string): NormalizedUnique {
+  return JSON.parse(signature) as NormalizedUnique;
+}
+
 export interface NormalizedTrigger {
   timing: string;
   event: string;

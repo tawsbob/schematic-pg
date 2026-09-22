@@ -93,6 +93,24 @@ describe('Parser — views', () => {
     );
   });
 
+  it('rejects @@unique on views', () => {
+    assert.throws(
+      () =>
+        parse(
+          wrapViews(`
+  view ActiveUser {
+    id: UUID @id
+    email: VARCHAR(255)
+    as: "SELECT id, email FROM \\"user\\""
+    @@unique(fields: [id, email])
+  }
+`),
+        ),
+      (error: unknown) =>
+        error instanceof SchemaError && /@@unique is not allowed on view/.test(error.message),
+    );
+  });
+
   it('rejects write @rest operations', () => {
     assert.throws(
       () =>

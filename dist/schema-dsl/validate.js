@@ -19,6 +19,9 @@ export function validateSchema(schema) {
     const modelNames = new Set(schema.models.map((model) => model.name));
     const partitionNames = new Map();
     for (const model of schema.models) {
+        validateUniqueDirectives(model, modelNames);
+    }
+    for (const model of schema.models) {
         if (!model.partition) {
             continue;
         }
@@ -230,6 +233,69 @@ function validateUniqueConstraintsIncludeKey(model, partitionFields, modelNames,
         if (!keySetIsCovered(fields, keySet)) {
             throw new SchemaError(`unique index must include partition key fields [${partitionFields.join(', ')}]`, directive.loc);
         }
+    }
+    for (const directive of model.directives.filter((item) => item.name === 'unique')) {
+        if (!directive.args || directive.args.kind !== 'KeyValueArgs') {
+            continue;
+        }
+        const fieldsPair = directive.args.pairs.find((pair) => pair.key === 'fields');
+        if (!fieldsPair || fieldsPair.value.kind !== 'ArrayLiteral') {
+            continue;
+        }
+        const fields = fieldsPair.value.elements
+            .filter((element) => element.kind === 'Identifier')
+            .map((element) => element.name);
+        if (!keySetIsCovered(fields, keySet)) {
+            throw new SchemaError(`unique constraint must include partition key fields [${partitionFields.join(', ')}]`, directive.loc);
+        }
+    }
+}
+const UNIQUE_DIRECTIVE_KEYS = new Set(['fields', 'name']);
+function validateUniqueDirectives(model, modelNames) {
+    const storedNames = new Set(model.fields.filter((field) => !modelNames.has(field.type.name)).map((field) => field.name));
+    const seenFieldLists = new Map();
+    for (const directive of model.directives.filter((item) => item.name === 'unique')) {
+        if (!directive.args || directive.args.kind !== 'KeyValueArgs') {
+            throw new SchemaError(`@@unique on model "${model.name}" requires fields`, directive.loc);
+        }
+        for (const pair of directive.args.pairs) {
+            if (!UNIQUE_DIRECTIVE_KEYS.has(pair.key)) {
+                throw new SchemaError(`@@unique does not support "${pair.key}" (use @@index with unique: true for where/type)`, directive.loc);
+            }
+        }
+        const fieldsPair = directive.args.pairs.find((pair) => pair.key === 'fields');
+        if (!fieldsPair || fieldsPair.value.kind !== 'ArrayLiteral') {
+            throw new SchemaError(`@@unique on model "${model.name}" requires fields`, directive.loc);
+        }
+        const fields = fieldsPair.value.elements.map((element) => {
+            if (element.kind !== 'Identifier') {
+                throw new SchemaError(`@@unique fields must be identifiers on model "${model.name}"`, directive.loc);
+            }
+            return element.name;
+        });
+        if (fields.length < 2) {
+            throw new SchemaError(`@@unique requires at least two fields (use @unique for a single column)`, directive.loc);
+        }
+        const seenInList = new Set();
+        for (const fieldName of fields) {
+            if (!storedNames.has(fieldName)) {
+                throw new SchemaError(`@@unique field "${fieldName}" is not a stored column on model "${model.name}"`, directive.loc);
+            }
+            if (seenInList.has(fieldName)) {
+                throw new SchemaError(`@@unique lists field "${fieldName}" more than once on model "${model.name}"`, directive.loc);
+            }
+            seenInList.add(fieldName);
+        }
+        const namePair = directive.args.pairs.find((pair) => pair.key === 'name');
+        if (namePair && namePair.value.kind !== 'StringLiteral') {
+            throw new SchemaError(`@@unique name must be a string on model "${model.name}"`, directive.loc);
+        }
+        const signature = [...fields].sort().join('\0');
+        const existing = seenFieldLists.get(signature);
+        if (existing) {
+            throw new SchemaError(`duplicate @@unique field list on model "${model.name}"`, directive.loc);
+        }
+        seenFieldLists.set(signature, directive.loc);
     }
 }
 function validateIncomingForeignKeys(schema, modelNames) {

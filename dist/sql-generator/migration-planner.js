@@ -1,6 +1,6 @@
 import { normalizeCronJob } from './generators/cron-jobs.js';
 import { flattenPartitions, partitionStrategySignature, } from './generators/partitions.js';
-import { collectForeignKeys, functionIdentity, functionSignature, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, parseForeignKeySignature, serializeColumnType, serializeDefault, serializeForeignKey, } from './utils/ast-helpers.js';
+import { collectForeignKeys, functionIdentity, functionSignature, getDirectives, getEnumNames, getModelNames, getStoredFields, isStoredField, normalizeFunction, normalizeIndexDirective, normalizeTriggerDirective, normalizeUniqueDirective, parseForeignKeySignature, serializeColumnType, serializeDefault, serializeForeignKey, serializeUniqueConstraint, } from './utils/ast-helpers.js';
 import { toTableName } from './utils/snake-case.js';
 export class MigrationPlanner {
     generateMigration(oldSchema, newSchema) {
@@ -10,6 +10,7 @@ export class MigrationPlanner {
         migrations.push(...this.diffModels(oldSchema, newSchema));
         migrations.push(...this.diffPartitions(oldSchema, newSchema));
         migrations.push(...this.diffConstraints(oldSchema, newSchema));
+        migrations.push(...this.diffUniqueConstraints(oldSchema, newSchema));
         const viewMigrations = this.diffViews(oldSchema, newSchema);
         migrations.push(...viewMigrations);
         migrations.push(...this.diffIndexes(oldSchema, newSchema, viewMigrations));
@@ -258,6 +259,40 @@ export class MigrationPlanner {
         }
         return migrations;
     }
+    diffUniqueConstraints(oldSchema, newSchema) {
+        const migrations = [];
+        const oldModels = new Map(oldSchema.models.map((model) => [model.name, model]));
+        const newModels = new Map(newSchema.models.map((model) => [model.name, model]));
+        for (const [modelName, newModel] of newModels) {
+            const oldModel = oldModels.get(modelName);
+            if (!oldModel) {
+                continue;
+            }
+            const oldUniques = this.uniqueSignatures(oldModel);
+            const newUniques = this.uniqueSignatures(newModel);
+            for (const signature of newUniques) {
+                if (!oldUniques.has(signature)) {
+                    migrations.push({
+                        kind: 'AddConstraint',
+                        modelName,
+                        constraintType: 'unique',
+                        details: signature,
+                    });
+                }
+            }
+            for (const signature of oldUniques) {
+                if (!newUniques.has(signature)) {
+                    migrations.push({
+                        kind: 'DropConstraint',
+                        modelName,
+                        constraintType: 'unique',
+                        details: signature,
+                    });
+                }
+            }
+        }
+        return migrations;
+    }
     diffIndexes(oldSchema, newSchema, viewMigrations) {
         const migrations = [];
         const oldModels = new Map(oldSchema.models.map((model) => [model.name, model]));
@@ -451,6 +486,9 @@ export class MigrationPlanner {
     indexSignatures(relation, modelNames) {
         return new Set(getDirectives(relation, 'index').map((directive) => JSON.stringify(normalizeIndexDirective(directive, relation, modelNames))));
     }
+    uniqueSignatures(model) {
+        return new Set(getDirectives(model, 'unique').map((directive) => serializeUniqueConstraint(normalizeUniqueDirective(directive))));
+    }
     suppressMigrationsCoveredByConvert(migrations) {
         const convertedModels = new Set(migrations
             .filter((migration) => migration.kind === 'ConvertToPartitioned' ||
@@ -471,6 +509,9 @@ export class MigrationPlanner {
                 return !convertedModels.has(migration.modelName);
             }
             if (migration.kind === 'AddConstraint' || migration.kind === 'DropConstraint') {
+                if (migration.constraintType === 'unique') {
+                    return !convertedModels.has(migration.modelName);
+                }
                 if (migration.constraintType !== 'foreignKey') {
                     return true;
                 }

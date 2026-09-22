@@ -209,13 +209,23 @@ model User {
 
 Built-in functions: `gen_random_uuid()`, `now()`.
 
-### Unique constraints (`@unique`)
+### Unique constraints (`@unique`, `@@unique`)
 
 ```ts
 model User {
   email: VARCHAR(255) @unique
 }
+
+model RecipeIngredient {
+  recipeId:    UUID
+  stockItemId: UUID
+
+  @@unique(fields: [recipeId, stockItemId])
+  @@unique(fields: [recipeId, stockItemId], name: "recipe_stock_item_key")
+}
 ```
+
+`@unique` is a single-column UNIQUE constraint. `@@unique` is a composite UNIQUE constraint on two or more columns (the combination must be unique; each column alone may repeat).
 
 For a partial unique index, use `@@index` with `unique: true` instead — see [Indexes](#indexes-index).
 

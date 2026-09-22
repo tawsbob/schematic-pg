@@ -1,8 +1,9 @@
-import { collectValidationComments, getDefaultExpression, getEnumNames, getModelNames, getPrimaryKey, getStoredFields, fieldHasAttribute, } from '../utils/ast-helpers.js';
+import { collectValidationComments, getDefaultExpression, getDirectives, getEnumNames, getModelNames, getPrimaryKey, getStoredFields, fieldHasAttribute, normalizeUniqueDirective, } from '../utils/ast-helpers.js';
 import { formatCreateTable, joinSection } from '../utils/format.js';
 import { mapColumnType } from '../utils/type-mapper.js';
 import { quoteIdentifier, toSnakeCase, toTableName } from '../utils/snake-case.js';
 import { flattenPartitions, formatPartitionBy, formatPartitionOfClause, } from './partitions.js';
+import { formatTableUniqueConstraint } from './unique-constraints.js';
 export function generateTables(schema) {
     const enumNames = getEnumNames(schema);
     const modelNames = getModelNames(schema);
@@ -45,6 +46,10 @@ export function generateTable(model, enumNames, modelNames) {
     if (primaryKey?.composite) {
         const pkColumns = primaryKey.fields.map(toSnakeCase).join(', ');
         blocks.push([`PRIMARY KEY (${pkColumns})`]);
+    }
+    for (const directive of getDirectives(model, 'unique')) {
+        const normalized = normalizeUniqueDirective(directive);
+        blocks.push([formatTableUniqueConstraint(model.name, normalized)]);
     }
     const tableName = quoteIdentifier(toTableName(model.name));
     const partitionBy = model.partition ? formatPartitionBy(model.partition) : undefined;

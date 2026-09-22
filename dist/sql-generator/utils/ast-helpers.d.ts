@@ -48,6 +48,15 @@ export declare function normalizeIndexDirective(directive: Directive, relation: 
     name?: string;
     type?: string;
 };
+export interface NormalizedUnique {
+    fields: string[];
+    name?: string;
+}
+export declare function normalizeUniqueDirective(directive: Directive): NormalizedUnique;
+export declare function buildUniqueConstraintName(tableName: string, fields: string[]): string;
+export declare function resolveUniqueConstraintName(relationName: string, normalized: NormalizedUnique): string;
+export declare function serializeUniqueConstraint(normalized: NormalizedUnique): string;
+export declare function parseUniqueConstraintSignature(signature: string): NormalizedUnique;
 export interface NormalizedTrigger {
     timing: string;
     event: string;

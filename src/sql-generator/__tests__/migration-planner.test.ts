@@ -104,6 +104,40 @@ model Profile { id: UUID @id userId: UUID }`),
     assert.ok(migrations.some((migration) => migration.kind === 'DropIndex'));
   });
 
+  it('detects unique constraint additions and removals', () => {
+    const oldSchema = parse(
+      wrapModels(`model RecipeIngredient {
+        id: UUID @id
+        recipeId: UUID
+        stockItemId: UUID
+      }`),
+    );
+    const newSchema = parse(
+      wrapModels(`model RecipeIngredient {
+        id: UUID @id
+        recipeId: UUID
+        stockItemId: UUID
+        @@unique(fields: [recipeId, stockItemId])
+      }`),
+    );
+
+    const migrations = planner.generateMigration(oldSchema, newSchema);
+    assert.ok(
+      migrations.some(
+        (migration) =>
+          migration.kind === 'AddConstraint' && migration.constraintType === 'unique',
+      ),
+    );
+
+    const reverse = planner.generateMigration(newSchema, oldSchema);
+    assert.ok(
+      reverse.some(
+        (migration) =>
+          migration.kind === 'DropConstraint' && migration.constraintType === 'unique',
+      ),
+    );
+  });
+
   it('detects added enums and enum values', () => {
     const oldSchema = parse(`extensions {}\nenums { UserRole { ADMIN, USER } }\nmodels {}`);
     const newSchema = parse(

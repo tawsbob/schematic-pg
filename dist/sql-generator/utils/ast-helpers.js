@@ -230,6 +230,31 @@ export function normalizeIndexDirective(directive, relation, modelNames) {
         type: typePair?.value.kind === 'Identifier' ? typePair.value.name : undefined,
     };
 }
+export function normalizeUniqueDirective(directive) {
+    const args = assertKeyValueArgs(directive.args);
+    const fields = getIdentifierNames(getKvPair(args, 'fields').value);
+    const namePair = getOptionalKvPair(args, 'name');
+    return {
+        fields,
+        name: namePair?.value.kind === 'StringLiteral' ? namePair.value.value : undefined,
+    };
+}
+export function buildUniqueConstraintName(tableName, fields) {
+    const fieldPart = fields.map(toSnakeCase).join('_');
+    return `${tableName}_${fieldPart}_key`;
+}
+export function resolveUniqueConstraintName(relationName, normalized) {
+    return normalized.name ?? buildUniqueConstraintName(toTableName(relationName), normalized.fields);
+}
+export function serializeUniqueConstraint(normalized) {
+    return JSON.stringify({
+        fields: normalized.fields,
+        name: normalized.name,
+    });
+}
+export function parseUniqueConstraintSignature(signature) {
+    return JSON.parse(signature);
+}
 export function normalizeTriggerDirective(directive) {
     const args = assertKeyValueArgs(directive.args);
     const timing = getKvPair(args, 'timing').value;

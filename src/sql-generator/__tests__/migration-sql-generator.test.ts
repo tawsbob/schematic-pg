@@ -98,6 +98,68 @@ model Order { id: UUID @id }`),
     assert.match(sql, /CREATE INDEX user_name_idx ON "user"/);
   });
 
+  it('generates unique constraint add and drop', () => {
+    const sql = diffSql(
+      wrapModels(`model RecipeIngredient {
+        id: UUID @id
+        recipeId: UUID
+        stockItemId: UUID
+      }`),
+      wrapModels(`model RecipeIngredient {
+        id: UUID @id
+        recipeId: UUID
+        stockItemId: UUID
+        @@unique(fields: [recipeId, stockItemId])
+      }`),
+    );
+
+    assert.match(
+      sql,
+      /ALTER TABLE recipe_ingredient ADD CONSTRAINT recipe_ingredient_recipe_id_stock_item_id_key UNIQUE \(recipe_id, stock_item_id\)/,
+    );
+
+    const reverse = diffSql(
+      wrapModels(`model RecipeIngredient {
+        id: UUID @id
+        recipeId: UUID
+        stockItemId: UUID
+        @@unique(fields: [recipeId, stockItemId])
+      }`),
+      wrapModels(`model RecipeIngredient {
+        id: UUID @id
+        recipeId: UUID
+        stockItemId: UUID
+      }`),
+    );
+
+    assert.match(
+      reverse,
+      /ALTER TABLE recipe_ingredient DROP CONSTRAINT recipe_ingredient_recipe_id_stock_item_id_key/,
+    );
+  });
+
+  it('embeds @@unique in CREATE TABLE for new models without a separate ADD CONSTRAINT', () => {
+    const sql = diffSql(
+      wrapModels('model User { id: UUID @id }'),
+      wrapModels(`model User { id: UUID @id }
+model RecipeIngredient {
+  id: UUID @id
+  recipeId: UUID
+  stockItemId: UUID
+  @@unique(fields: [recipeId, stockItemId])
+}`),
+    );
+
+    assert.match(
+      sql,
+      /CONSTRAINT recipe_ingredient_recipe_id_stock_item_id_key UNIQUE \(recipe_id, stock_item_id\)/,
+    );
+    assert.doesNotMatch(
+      sql,
+      /ALTER TABLE recipe_ingredient ADD CONSTRAINT recipe_ingredient_recipe_id_stock_item_id_key/,
+    );
+  });
+
   it('generates foreign key add and drop', () => {
     const sql = diffSql(
       wrapModels(`model User { id: UUID @id }

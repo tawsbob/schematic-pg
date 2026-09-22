@@ -28,6 +28,7 @@ import {
   TRIGGER_KEYS,
   TRIGGER_LEVELS,
   TRIGGER_TIMINGS,
+  UNIQUE_KEYS,
 } from './catalog.js';
 import {
   findContainingFunction,
@@ -86,6 +87,10 @@ export function getCompletions(
       ...INDEX_KEYS.map((key) => item(key, CompletionItemKind.Property)),
       ...INDEX_TYPES.map((type) => item(type, CompletionItemKind.Enum)),
     ];
+  }
+
+  if (/@@unique\s*\([^)]*$/.test(prefix) || /@@unique\s*\{[^}]*$/.test(prefix)) {
+    return UNIQUE_KEYS.map((key) => item(key, CompletionItemKind.Property));
   }
 
   if (/@@trigger\s*\{[^}]*$/.test(prefix)) {

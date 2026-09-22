@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { loadRepoSchema } from '../../__tests__/helpers/repo-schema.js';
 import { parse } from '../../schema-dsl/index.js';
-import { wrapFunctions } from '../../schema-dsl/__tests__/helpers.js';
+import { wrapFunctions, wrapModels } from '../../schema-dsl/__tests__/helpers.js';
 import { SqlGenerator } from '../sql-generator.js';
 
 const fixturePath = join(process.cwd(), 'src/sql-generator/__tests__/fixtures/app.schema.sql');
@@ -63,6 +63,28 @@ describe('SqlGenerator — app.schema', () => {
   it('comments out validation attributes', () => {
     assert.match(sql, /-- @regex: pattern =/);
     assert.match(sql, /-- @range: min = 1, max = 120/);
+  });
+
+  it('emits composite UNIQUE constraints from @@unique', () => {
+    const uniqueSchema = parse(
+      wrapModels(`model RecipeIngredient {
+        id: UUID @id
+        recipeId: UUID
+        stockItemId: UUID
+        @@unique(fields: [recipeId, stockItemId])
+        @@unique(fields: [recipeId, id], name: "custom_recipe_id_key")
+      }`),
+    );
+    const generated = new SqlGenerator().generate(uniqueSchema);
+
+    assert.match(
+      generated,
+      /CONSTRAINT recipe_ingredient_recipe_id_stock_item_id_key UNIQUE \(recipe_id, stock_item_id\)/,
+    );
+    assert.match(
+      generated,
+      /CONSTRAINT custom_recipe_id_key UNIQUE \(recipe_id, id\)/,
+    );
   });
 
   it('generates SQL functions with snake_case names and plpgsql wrapping', () => {

@@ -2,11 +2,13 @@ import type { Field, Model, Schema } from '../../schema-dsl/ast.js';
 import {
   collectValidationComments,
   getDefaultExpression,
+  getDirectives,
   getEnumNames,
   getModelNames,
   getPrimaryKey,
   getStoredFields,
   fieldHasAttribute,
+  normalizeUniqueDirective,
 } from '../utils/ast-helpers.js';
 import { formatCreateTable, joinSection } from '../utils/format.js';
 import { mapColumnType } from '../utils/type-mapper.js';
@@ -16,6 +18,7 @@ import {
   formatPartitionBy,
   formatPartitionOfClause,
 } from './partitions.js';
+import { formatTableUniqueConstraint } from './unique-constraints.js';
 
 export function generateTables(schema: Schema): string {
   const enumNames = getEnumNames(schema);
@@ -77,6 +80,11 @@ export function generateTable(model: Model, enumNames: Set<string>, modelNames: 
   if (primaryKey?.composite) {
     const pkColumns = primaryKey.fields.map(toSnakeCase).join(', ');
     blocks.push([`PRIMARY KEY (${pkColumns})`]);
+  }
+
+  for (const directive of getDirectives(model, 'unique')) {
+    const normalized = normalizeUniqueDirective(directive);
+    blocks.push([formatTableUniqueConstraint(model.name, normalized)]);
   }
 
   const tableName = quoteIdentifier(toTableName(model.name));
